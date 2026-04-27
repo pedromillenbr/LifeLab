@@ -295,7 +295,21 @@ export default function FinanceiroPage() {
               </select>
             </div>
           )}
-          <button onClick={handleAdd} className="btn-primary w-full justify-center py-3">Salvar Transacao</button>
+          {(() => {
+            const amt = parseFloat(form.amount)
+            const valid = form.description.trim().length > 0 && !isNaN(amt) && amt > 0
+            return (
+              <button
+                onClick={handleAdd}
+                disabled={!valid}
+                className="btn-primary w-full justify-center py-3"
+                style={{ opacity: valid ? 1 : 0.4, cursor: valid ? 'pointer' : 'not-allowed' }}
+                title={valid ? '' : 'Preencha descrição e valor (> 0)'}
+              >
+                Salvar Transacao
+              </button>
+            )
+          })()}
         </div>
       </Modal>
     </div>

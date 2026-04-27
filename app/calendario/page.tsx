@@ -25,6 +25,7 @@ export default function CalendarioPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ title: '', type: 'custom' as 'treino' | 'custom', date: '' })
+  const [dayEventsDate, setDayEventsDate] = useState<string | null>(null)
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -45,6 +46,12 @@ export default function CalendarioPage() {
   function openAddEvent(date: string) {
     setForm({ title: '', type: 'custom', date })
     setShowModal(true)
+  }
+
+  function openDayClick(date: string) {
+    const events = calendarEvents.filter(e => e.date === date)
+    if (events.length > 0) setDayEventsDate(date)
+    else openAddEvent(date)
   }
 
   function handleAdd() {
@@ -195,9 +202,9 @@ export default function CalendarioPage() {
               const isToday = dateStr === todayStr
               const events = dateStr ? calendarEvents.filter(e => e.date === dateStr) : []
               return (
-                <motion.div 
-                  key={i} 
-                  onClick={() => dateStr && openAddEvent(dateStr)}
+                <motion.div
+                  key={i}
+                  onClick={() => dateStr && openDayClick(dateStr)}
                   className="min-h-[90px] p-2 cursor-pointer"
                   style={{
                     borderRight: `1px solid ${BORDER}`,
@@ -239,7 +246,7 @@ export default function CalendarioPage() {
                       return (
                         <motion.div
                           key={event.id}
-                          onClick={(e) => { e.stopPropagation(); removeCalendarEvent(event.id) }}
+                          onClick={(e) => { e.stopPropagation(); setDayEventsDate(dateStr) }}
                           className="text-[10px] px-1.5 py-1 rounded-md truncate flex items-center gap-1 cursor-pointer transition-all"
                           style={{
                             background: c.bg,
@@ -372,6 +379,60 @@ export default function CalendarioPage() {
           </div>
         </motion.div>
       )}
+
+      {/* Day Events Modal */}
+      <AnimatePresence>
+        {dayEventsDate && (() => {
+          const events = calendarEvents.filter(e => e.date === dayEventsDate)
+          const dateLabel = new Date(dayEventsDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
+          return (
+            <Modal open={!!dayEventsDate} onClose={() => setDayEventsDate(null)} title={`Eventos · ${dateLabel}`}>
+              <div className="space-y-3">
+                {events.length === 0 && (
+                  <p className="text-sm" style={{ color: TT }}>Nenhum evento neste dia.</p>
+                )}
+                {events.map(event => {
+                  const c = EVENT_COLORS[event.type]
+                  const Icon = c.icon
+                  return (
+                    <div key={event.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                      style={{ background: BG2, border: `1px solid ${BORDER}` }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+                        <Icon size={14} style={{ color: c.text }} />
+                      </div>
+                      <span className="flex-1 text-sm font-medium truncate" style={{ color: TM }}>{event.title}</span>
+                      <button
+                        onClick={() => {
+                          removeCalendarEvent(event.id)
+                          if (events.length === 1) setDayEventsDate(null)
+                        }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                        style={{ background: 'transparent', color: TT, border: '1px solid transparent' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = 'rgba(248,113,113,0.3)'; e.currentTarget.style.background = 'rgba(248,113,113,0.08)' }}
+                        onMouseLeave={e => { e.currentTarget.style.color = TT; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'transparent' }}
+                        title="Remover evento"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )
+                })}
+                <Button
+                  onClick={() => {
+                    const d = dayEventsDate
+                    setDayEventsDate(null)
+                    if (d) openAddEvent(d)
+                  }}
+                  className="w-full justify-center"
+                >
+                  <Plus size={14} /> Adicionar evento
+                </Button>
+              </div>
+            </Modal>
+          )
+        })()}
+      </AnimatePresence>
 
       {/* Add Event Modal */}
       <AnimatePresence>

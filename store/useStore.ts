@@ -69,6 +69,11 @@ interface AuraStore {
   completePrayer: (date: string) => void
   updatePrayerReflection: (id: string, reflection: string) => void
 
+  // Access tracking — Constância da Vitória
+  accessLog: string[]
+  recordAccess: () => void
+  getAccessStreak: () => number
+
   // Workout
   routines: WorkoutRoutine[]
   addRoutine: (r: Omit<WorkoutRoutine, 'id' | 'createdAt'>) => void
@@ -121,6 +126,7 @@ export const useStore = create<AuraStore>()(
       bibleReadings: [],
       activePlanId: 'nt1year',
       prayerLog: [],
+      accessLog: [],
       routines: defaultRoutines,
       workoutSessions: [],
       calendarEvents: [],
@@ -219,6 +225,26 @@ export const useStore = create<AuraStore>()(
       updatePrayerReflection: (id, reflection) => set((s) => ({
         prayerLog: s.prayerLog.map(p => p.id === id ? { ...p, reflection } : p)
       })),
+
+      recordAccess: () => set((s) => {
+        const t = today()
+        if (s.accessLog.includes(t)) return {}
+        return { accessLog: [...s.accessLog, t] }
+      }),
+
+      getAccessStreak: () => {
+        const log = get().accessLog
+        if (log.length === 0) return 0
+        const set = new Set(log)
+        let streak = 0
+        const d = new Date()
+        while (true) {
+          const ds = d.toISOString().split('T')[0]
+          if (set.has(ds)) { streak++; d.setDate(d.getDate() - 1) }
+          else break
+        }
+        return streak
+      },
 
       addRoutine: (r) => set((s) => ({
         routines: [...s.routines, { ...r, id: generateId(), createdAt: today() }]
@@ -323,6 +349,7 @@ export const useStore = create<AuraStore>()(
         bibleReadings:  state.bibleReadings,
         activePlanId:   state.activePlanId,
         prayerLog:      state.prayerLog,
+        accessLog:      state.accessLog,
         routines:       state.routines,
         workoutSessions: state.workoutSessions,
         calendarEvents: state.calendarEvents,

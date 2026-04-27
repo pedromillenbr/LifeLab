@@ -28,7 +28,9 @@ export default function DashboardPage() {
     bibleReadings, activePlanId, toggleMission, addMission,
     toggleHabitCompletion, addWeight, getPillarScores,
     getOverallScore, getBalance, getBibleStreak, completeBibleReading,
+    getAccessStreak,
   } = useStore()
+  const accessStreak = getAccessStreak()
 
   const [hideBalance, setHideBalance] = useState(false)
   const [radarTab, setRadarTab] = useState<'hoje' | 'mes'>('hoje')
@@ -106,10 +108,14 @@ export default function DashboardPage() {
           <p>"{getTodayMotivation()}"</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="streak-pill">
+          <div
+            className="streak-pill"
+            title="Constância da Vitória"
+            style={{ cursor: 'help' }}
+          >
             <div className="dot" />
             <span className="fire-icon"><Flame size={12} style={{ color: '#f97316' }} /></span>
-            14 dias
+            {accessStreak} {accessStreak === 1 ? 'dia' : 'dias'}
           </div>
           <div className="xp-widget">
             <div>

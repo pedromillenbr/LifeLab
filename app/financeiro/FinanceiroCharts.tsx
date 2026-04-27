@@ -36,8 +36,8 @@ export default function FinanceiroCharts({ catData, evolutionData, hideValues }:
               {catData.map(c => (
                 <div key={c.key} className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color, boxShadow: `0 0 6px ${c.color}` }} />
-                  <span className="text-xs text-gray-500 flex-1 truncate">{c.name}</span>
-                  <span className="text-xs text-white font-semibold">{hideValues ? '**' : formatCurrency(c.value)}</span>
+                  <span className="text-xs flex-1 truncate" style={{ color: 'rgba(255,255,255,0.7)' }}>{c.name}</span>
+                  <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.95)' }}>{hideValues ? '**' : formatCurrency(c.value)}</span>
                 </div>
               ))}
             </div>
