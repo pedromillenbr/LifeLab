@@ -23,7 +23,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
 
       {/* Painel — Glass */}
       <div
-        className={cn('relative w-full max-w-md z-10 rounded-xl p-6', className)}
+        className={cn('relative w-full max-w-md z-10 rounded-xl p-5 md:p-6 max-h-[90vh] overflow-y-auto', className)}
         style={{
           background: 'rgba(255,255,255,0.05)',
           backdropFilter: 'blur(32px)',

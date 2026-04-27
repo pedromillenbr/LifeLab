@@ -3,6 +3,7 @@ import './globals.css'
 import dynamic from 'next/dynamic'
 import { Syne, Inter, JetBrains_Mono } from 'next/font/google'
 import { Sidebar } from '@/components/Sidebar'
+import { MobileNav } from '@/components/MobileNav'
 import { StoreHydration } from '@/components/StoreHydration'
 
 const CursorEffects = dynamic(
@@ -17,6 +18,13 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], weight: ['400','500',
 export const metadata: Metadata = {
   title: 'LifeLab',
   description: 'Seu sistema pessoal de alta performance',
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#0b0c10',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -35,10 +43,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CursorEffects />
 
         <Sidebar />
+        <MobileNav />
 
         <main
-          className="flex-1 min-h-screen overflow-auto"
-          style={{ marginLeft: 56, position: 'relative', zIndex: 1 }}
+          className="flex-1 min-h-screen overflow-x-hidden md:overflow-auto pt-14 md:pt-0 md:ml-[56px]"
+          style={{ position: 'relative', zIndex: 1 }}
         >
           {children}
         </main>

@@ -62,23 +62,23 @@ export default function HabitosPage() {
   const ICONS = ['★', '◆', '●', '▲', '■', '◉', '✦', '✚', '▣', '◈', '⬡', '✸']
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8 animate-fade-in">
         <div>
           <p className="slabel" style={{ marginBottom: 4 }}>Consistência</p>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color: P, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)' }}>
+          <h1 className="text-2xl md:text-[30px]" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: P, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)' }}>
             Hábitos Diários
           </h1>
           <p style={{ color: TT, fontSize: 13, marginTop: 4 }}>Controle de execução — hábitos, consistência e progresso</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary btn-glow">
+        <button onClick={() => setShowModal(true)} className="btn-primary btn-glow w-full md:w-auto justify-center min-h-[48px]">
           <Plus size={16} /> Adicionar
         </button>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         {[
           { label: 'Hoje',         value: `${todayCompleted}/${habits.length}`, sub: 'concluídos' },
           { label: 'Taxa Hoje',    value: `${completionPct}%`,                  sub: 'de conclusão' },

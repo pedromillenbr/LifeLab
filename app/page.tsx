@@ -157,9 +157,9 @@ export default function DashboardPage() {
               <button className="card-action" onClick={(e) => { e.stopPropagation(); router.push('/financeiro') }}><ArrowUpRight size={13} /></button>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-            <div style={{ flex: 1 }}>
-              <div className="fin-amount">{hideBalance ? 'R$ ••••••' : formatCurrency(balance)}</div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 180px', minWidth: 0 }}>
+              <div className="fin-amount" style={{ wordBreak: 'break-word' }}>{hideBalance ? 'R$ ••••••' : formatCurrency(balance)}</div>
               <div className="fin-sub">Receita − Despesas</div>
               <div className="fin-row">
                 <div className="fin-item">

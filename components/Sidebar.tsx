@@ -26,7 +26,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="fixed left-0 top-0 h-full w-[56px] flex flex-col items-center py-4 gap-2 z-50"
+      className="hidden md:flex fixed left-0 top-0 h-full w-[56px] flex-col items-center py-4 gap-2 z-50"
       style={{
         background: 'rgba(11,12,16,0.65)',
         backdropFilter: 'blur(20px)',

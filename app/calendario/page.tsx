@@ -77,14 +77,14 @@ export default function CalendarioPage() {
   }
 
   return (
-    <motion.div 
-      className="p-6 max-w-[1400px] mx-auto"
+    <motion.div
+      className="p-4 md:p-6 max-w-[1400px] mx-auto"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <div>
           <motion.p
             className="slabel"
@@ -94,9 +94,9 @@ export default function CalendarioPage() {
             transition={{ delay: 0.05 }}
           >Agenda</motion.p>
           <motion.h1
+            className="text-2xl md:text-[30px]"
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: 30,
               fontWeight: 800,
               color: TM,
               letterSpacing: '-0.02em',
@@ -205,7 +205,7 @@ export default function CalendarioPage() {
                 <motion.div
                   key={i}
                   onClick={() => dateStr && openDayClick(dateStr)}
-                  className="min-h-[90px] p-2 cursor-pointer"
+                  className="min-h-[60px] md:min-h-[90px] p-1.5 md:p-2 cursor-pointer"
                   style={{
                     borderRight: `1px solid ${BORDER}`,
                     borderBottom: `1px solid ${BORDER}`,
@@ -288,14 +288,14 @@ export default function CalendarioPage() {
 
       {/* Week View */}
       {view === 'semana' && (
-        <motion.div 
-          className="rounded-2xl overflow-hidden"
+        <motion.div
+          className="rounded-2xl overflow-hidden scroll-x"
           style={{ border: `1px solid ${BORDER}`, background: BG1 }}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="grid grid-cols-8" style={{ background: BG2, borderBottom: `1px solid ${BORDER}` }}>
+          <div className="grid grid-cols-8 min-w-[720px]" style={{ background: BG2, borderBottom: `1px solid ${BORDER}` }}>
             <div className="py-3 px-3 text-xs" style={{ color: TT }} />
             {weekDays.map((d, i) => {
               const isToday = d === todayStr
@@ -362,7 +362,7 @@ export default function CalendarioPage() {
               )
             })}
           </div>
-          <div className="overflow-y-auto max-h-[480px]" style={{ background: BG1 }}>
+          <div className="overflow-y-auto max-h-[480px] min-w-[720px]" style={{ background: BG1 }}>
             {hours.map(h => (
               <div key={h} className="grid grid-cols-8 min-h-[44px]" style={{ borderBottom: `1px solid ${BORDER}` }}>
                 <div className="px-3 py-2 text-[10px]" style={{ color: TT }}>{String(h).padStart(2, '0')}:00</div>

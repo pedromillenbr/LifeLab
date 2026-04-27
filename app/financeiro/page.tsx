@@ -83,12 +83,12 @@ export default function FinanceiroPage() {
   const sorted = [...transactions].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <div>
           <p className="slabel" style={{ marginBottom: 4 }}>Controle financeiro</p>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color: TM, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)', animation: 'fadeIn 0.4s ease 0.05s both' }}>
+          <h1 className="text-2xl md:text-[30px]" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: TM, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)', animation: 'fadeIn 0.4s ease 0.05s both' }}>
             Financeiro
           </h1>
           <p style={{ color: TT, fontSize: 13, marginTop: 4 }}>Renda: <span style={{ color: '#22c55e' }}>{formatCurrency(PEDRO.monthlyIncome)}/mes</span> . Orcamento: <span style={{ color: '#F5A623' }}>{formatCurrency(PEDRO.monthlyBudget)}</span></p>
@@ -115,11 +115,11 @@ export default function FinanceiroPage() {
         <p className="text-sm mb-2 flex items-center justify-center gap-2" style={{ color: TT }}>
           <Wallet size={14} /> Saldo Atual
         </p>
-        <p className="text-6xl font-black mb-1 score-num" style={{ color: TM, textShadow: `0 0 30px ${P}30` }}>
+        <p className="text-4xl md:text-6xl font-black mb-1 score-num break-all" style={{ color: TM, textShadow: `0 0 30px ${P}30` }}>
           {hideValues ? '******' : formatCurrency(balance)}
         </p>
         <p className="text-xs mb-6" style={{ color: TT }}>Receita - Despesas</p>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: 'Entradas', value: receita, icon: TrendingUp, color: 'var(--color-primary)' },
             { label: 'Gastos', value: despesa, icon: TrendingDown, color: 'var(--color-primary)' },
@@ -141,12 +141,12 @@ export default function FinanceiroPage() {
         className="rounded-2xl p-5 mb-5"
         style={{ background: 'var(--bg1)', backdropFilter: 'blur(var(--blur))', WebkitBackdropFilter: 'blur(var(--blur))', border: '1px solid rgba(255,255,255,0.08)', animation: 'fadeIn 0.4s ease 0.15s both' }}
       >
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             <DollarSign size={14} className="text-primary" />
             <span className="text-white font-semibold text-sm">Orcamento Mensal</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
             <span className="text-white font-bold">{fmt(budgetUsed)}</span>
             <span className="text-gray-600">/ {fmt(budgetTotal)}</span>
             <span className="text-xs px-2 py-0.5 rounded-lg font-bold" style={{ background: `${budgetColor}20`, color: budgetColor }}>

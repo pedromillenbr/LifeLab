@@ -793,7 +793,8 @@ export default function FisicoPage() {
 }
 
 const fisicoCSS = `
-.fisico-page { padding: 24px 28px 40px; max-width: 1000px; margin: 0 auto; position: relative; z-index: 3; --green: #22c55e; --green-subtle: #4ade80; --gold: #eab308; --text-1: rgba(255,255,255,.93); --text-2: rgba(255,255,255,.55); --text-3: rgba(255,255,255,.3); --border: rgba(255,255,255,.09); --border-h: rgba(255,255,255,.18); }
+.fisico-page { padding: 16px; max-width: 1000px; margin: 0 auto; position: relative; z-index: 3; --green: #22c55e; --green-subtle: #4ade80; --gold: #eab308; --text-1: rgba(255,255,255,.93); --text-2: rgba(255,255,255,.55); --text-3: rgba(255,255,255,.3); --border: rgba(255,255,255,.09); --border-h: rgba(255,255,255,.18); }
+@media (min-width: 768px) { .fisico-page { padding: 24px 28px 40px; } }
 
 @keyframes fadeUp { from { opacity:0; transform: translateY(16px);} to { opacity:1; transform: translateY(0);} }
 @keyframes countUp { from { opacity:0; transform: translateY(10px);} to { opacity:1; transform: translateY(0);} }
@@ -832,7 +833,8 @@ const fisicoCSS = `
 /* Header */
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
 .pillar-label { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; }
-.pillar-title { font-size: 30px; font-weight: 800; letter-spacing: -1px; display: flex; align-items: center; gap: 10px; line-height: 1.1; }
+.pillar-title { font-size: 24px; font-weight: 800; letter-spacing: -1px; display: flex; align-items: center; gap: 10px; line-height: 1.1; flex-wrap: wrap; }
+@media (min-width: 768px) { .pillar-title { font-size: 30px; } }
 .pillar-title-text { color: var(--green); animation: nameGlow 3s ease-in-out infinite; }
 .pillar-badge { font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--green); background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.22); border-radius: 20px; padding: 3px 10px; display: inline-flex; align-items: center; gap: 4px; animation: badgePop .5s cubic-bezier(.22,.68,0,1.2) .5s both; }
 .pillar-sub { font-size: 12px; color: var(--text-3); margin-top: 4px; }
@@ -842,9 +844,9 @@ const fisicoCSS = `
 .reg-btn:hover { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.3); box-shadow: 0 0 24px rgba(34,197,94,.2); }
 .reg-btn:active { transform: scale(.96); }
 
-/* Stat grid */
-.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
-@media (max-width: 880px) { .stat-grid { grid-template-columns: 1fr; } }
+/* Stat grid — mobile first */
+.stat-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 14px; }
+@media (min-width: 880px) { .stat-grid { grid-template-columns: repeat(3, 1fr); } }
 .score-num { font-size: 52px; font-weight: 800; letter-spacing: -2.5px; line-height: 1; font-family: 'JetBrains Mono', monospace; color: var(--green); text-shadow: 0 0 24px rgba(34,197,94,.4); animation: countUp .6s ease both; }
 .score-denom { font-size: 18px; font-weight: 400; color: var(--text-3); font-family: 'Inter', sans-serif; }
 .score-week { font-size: 11px; color: var(--text-2); margin-top: 4px; }
@@ -895,8 +897,8 @@ const fisicoCSS = `
 .new-routine:hover { border-color: rgba(34,197,94,.3); color: var(--green); background: rgba(34,197,94,.08); }
 
 /* Stats */
-.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-@media (max-width: 880px) { .stats-grid { grid-template-columns: 1fr; } }
+.stats-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+@media (min-width: 880px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
 .history-card { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 9px; padding: 14px 16px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s, background .15s, transform .2s; animation: fadeUp .4s ease both; }
 .history-card:hover { border-color: var(--border-h); background: rgba(255,255,255,.06); transform: translateX(2px); }
 

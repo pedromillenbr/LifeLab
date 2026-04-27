@@ -72,30 +72,31 @@ export default function MissoesPage() {
   const totalXPAllTime = missions.filter(m => m.completed).reduce((a, m) => a + m.xpReward, 0)
 
   return (
-    <motion.div 
-      className="p-6 max-w-[1400px] mx-auto"
+    <motion.div
+      className="p-4 md:p-6 max-w-[1400px] mx-auto"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <div>
           <p className="slabel" style={{ marginBottom: 4 }}>Objetivos</p>
           <motion.h1
-            style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color: TM, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)' }}
+            className="text-2xl md:text-[30px] flex flex-wrap items-baseline gap-x-3"
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: TM, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)' }}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05, duration: 0.4 }}
           >
             Missões
-            <span className="text-sm font-normal ml-3 px-2 py-1 rounded-lg" style={{ background: `${P}15`, border: `1px solid ${P}30`, color: P }}>
+            <span className="text-sm font-normal px-2 py-1 rounded-lg" style={{ background: `${P}15`, border: `1px solid ${P}30`, color: P }}>
               Nível {profile.level}
             </span>
           </motion.h1>
           <p style={{ color: TT, fontSize: 13, marginTop: 4 }}>Suas tarefas e objetivos diários</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl"
             style={{ background: `${P}10`, border: `1px solid ${P}25` }}>
             <Flame size={15} style={{ color: P, filter: `drop-shadow(0 0 6px ${P}60)` }} />
@@ -109,7 +110,7 @@ export default function MissoesPage() {
       </div>
 
       {/* All-time stats */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         {[
           { label: 'Total Missões', value: totalMissionsAllTime, color: 'var(--color-primary)', icon: Target },
           { label: 'Concluídas', value: totalCompleted, color: 'var(--color-primary)', icon: CheckCircle2 },
@@ -127,13 +128,13 @@ export default function MissoesPage() {
       </div>
 
       {/* Weekly overview */}
-      <div className="grid grid-cols-7 gap-2 mb-5 animate-fade-in" style={{ animationDelay: '180ms' }}>
+      <div className="grid grid-cols-7 gap-1.5 md:gap-2 mb-5 animate-fade-in" style={{ animationDelay: '180ms' }}>
         {weekDays.map(day => {
           const isSelected = day.date === selectedDate
           const isToday = day.date === today()
           return (
             <button key={day.date} onClick={() => setSelectedDate(day.date)}
-              className="rounded-2xl p-3 text-center transition-all duration-200 hover:scale-[1.03]"
+              className="rounded-xl md:rounded-2xl p-2 md:p-3 text-center transition-all duration-200 active:scale-95"
               style={{
                 background: isSelected ? 'var(--color-primary)12' : 'linear-gradient(145deg, #141414, #0e0e0e)',
                 border: isSelected ? '1px solid var(--color-primary)40' : '1px solid #1e1e1e',

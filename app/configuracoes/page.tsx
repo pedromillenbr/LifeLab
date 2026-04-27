@@ -77,16 +77,16 @@ export default function ConfiguracoesPage() {
 
   return (
     <motion.div
-      className="p-6 max-w-[900px] mx-auto"
+      className="p-4 md:p-6 max-w-[900px] mx-auto"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       {/* Header */}
-      <div className="mb-8 animate-fade-in">
+      <div className="mb-6 md:mb-8 animate-fade-in">
         <p className="slabel" style={{ marginBottom: 4 }}>Conta</p>
-        <h1 className="flex items-center gap-3"
-          style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color: P, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)' }}>
+        <h1 className="flex items-center gap-3 text-2xl md:text-[30px]"
+          style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: P, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)' }}>
           <Settings size={26} style={{ color: P, filter: 'drop-shadow(0 0 8px var(--color-primary-glow))' }} />
           Configurações
         </h1>

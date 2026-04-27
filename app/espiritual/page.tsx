@@ -281,7 +281,7 @@ export default function EspiritualPage() {
     : <>Bom dia, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(34,197,94,.5)' }}>{profile.name}</span></>
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
+    <div className="p-4 md:p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
 
       {/* ── HEADER ──────────────────────────────────────────────────── */}
       <header className="flex items-start justify-between mb-6 flex-wrap gap-4">

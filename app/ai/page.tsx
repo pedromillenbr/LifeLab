@@ -88,14 +88,14 @@ export default function AIPage() {
 
   return (
     <motion.div
-      className="flex flex-col h-screen"
+      className="flex flex-col h-[calc(100vh-3.5rem)] md:h-screen"
       style={{ background: 'var(--bg0)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
       {/* Header */}
-      <div className="flex items-center gap-4 px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #1a1a1a', background: 'rgba(4,10,22,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
+      <div className="flex items-center gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-4 flex-shrink-0" style={{ borderBottom: '1px solid #1a1a1a', background: 'rgba(4,10,22,0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
         <div className="flex items-center gap-3 flex-1">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 0 16px #f9731640' }}>
@@ -113,7 +113,7 @@ export default function AIPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-6 animate-fade-in">
             <div className="w-20 h-20 rounded-3xl flex items-center justify-center"
@@ -182,7 +182,7 @@ export default function AIPage() {
       </div>
 
       {/* Input */}
-      <div className="px-6 py-4 flex-shrink-0" style={{ borderTop: '1px solid #1a1a1a' }}>
+      <div className="px-4 md:px-6 py-3 md:py-4 flex-shrink-0" style={{ borderTop: '1px solid #1a1a1a' }}>
         <div className="max-w-2xl mx-auto flex items-center gap-3 rounded-2xl px-4 py-2.5"
           style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 0 0 0 transparent', transition: 'box-shadow 0.2s' }}
           onFocus={() => {}} >
