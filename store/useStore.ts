@@ -93,12 +93,12 @@ interface AuraStore {
 }
 
 const defaultProfile: UserProfile = {
-  name: 'Pedro',
-  bio: 'Hunt or be hunted...',
+  name: 'Usuário',
+  bio: '',
   avatar: null,
-  level: 3,
-  xp: 512,
-  xpToNextLevel: 520,
+  level: 1,
+  xp: 0,
+  xpToNextLevel: 100,
   primaryColor: '#ef4444',
   darkMode: true,
   notifications: true,
@@ -106,88 +106,24 @@ const defaultProfile: UserProfile = {
   language: 'pt',
 }
 
-const defaultHabits: Habit[] = [
-  { id: 'h1', name: 'Treino', pillar: 'fisico', frequency: 'daily', completions: [], xpReward: 20, createdAt: '2024-01-01', icon: '★' },
-  { id: 'h2', name: 'Meditação', pillar: 'mental', frequency: 'daily', completions: [], xpReward: 15, createdAt: '2024-01-01', icon: '◉' },
-  { id: 'h3', name: 'Leitura', pillar: 'produtividade', frequency: 'daily', completions: [], xpReward: 15, createdAt: '2024-01-01', icon: '▣' },
-  { id: 'h4', name: 'Água 2L', pillar: 'fisico', frequency: 'daily', completions: [], xpReward: 10, createdAt: '2024-01-01', icon: '💧' },
-  { id: 'h5', name: 'Sem redes sociais', pillar: 'disciplina', frequency: 'daily', completions: [], xpReward: 20, createdAt: '2024-01-01', icon: '📵' },
-]
+const defaultHabits: Habit[] = []
 
-const defaultRoutines: WorkoutRoutine[] = [
-  {
-    id: 'r1', name: 'Legday', createdAt: '2026-03-18',
-    exercises: [
-      { id: 'e1', name: 'Agachamento livre', muscleGroup: 'quadriceps', sets: [{ id: 's1', reps: 10, weight: 40, completed: false }, { id: 's2', reps: 8, weight: 40, completed: false }, { id: 's3', reps: 7, weight: 40, completed: false }] },
-      { id: 'e2', name: 'Leg press', muscleGroup: 'quadriceps', sets: [{ id: 's4', reps: 12, weight: 80, completed: false }, { id: 's5', reps: 11, weight: 80, completed: false }, { id: 's6', reps: 9, weight: 80, completed: false }] },
-      { id: 'e3', name: 'Cadeira extensora', muscleGroup: 'quadriceps', sets: [{ id: 's7', reps: 12, weight: 54, completed: false }, { id: 's8', reps: 12, weight: 54, completed: false }, { id: 's9', reps: 12, weight: 54, completed: false }] },
-      { id: 'e4', name: 'Cadeira flexora', muscleGroup: 'biceps_femoral', sets: [{ id: 's10', reps: 12, weight: 42, completed: false }, { id: 's11', reps: 7, weight: 30, completed: false }, { id: 's12', reps: 6, weight: 30, completed: false }] },
-      { id: 'e5', name: 'Adutora', muscleGroup: 'adutores', sets: [{ id: 's13', reps: 12, weight: 54, completed: false }, { id: 's14', reps: 12, weight: 54, completed: false }, { id: 's15', reps: 0, weight: 54, completed: false }] },
-      { id: 'e6', name: 'Agachamento sumô', muscleGroup: 'gluteos', sets: [{ id: 's16', reps: 0, weight: 30, completed: false }, { id: 's17', reps: 0, weight: 30, completed: false }, { id: 's18', reps: 0, weight: 30, completed: false }] },
-    ]
-  },
-  {
-    id: 'r2', name: 'Pull', createdAt: '2026-03-18',
-    exercises: [
-      { id: 'e7', name: 'Puxada frontal', muscleGroup: 'costas', sets: [{ id: 's19', reps: 10, weight: 50, completed: false }, { id: 's20', reps: 10, weight: 50, completed: false }, { id: 's21', reps: 10, weight: 50, completed: false }] },
-      { id: 'e8', name: 'Remada curvada', muscleGroup: 'costas', sets: [{ id: 's22', reps: 10, weight: 40, completed: false }, { id: 's23', reps: 10, weight: 40, completed: false }, { id: 's24', reps: 10, weight: 40, completed: false }] },
-      { id: 'e9', name: 'Rosca direta', muscleGroup: 'biceps', sets: [{ id: 's25', reps: 12, weight: 20, completed: false }, { id: 's26', reps: 12, weight: 20, completed: false }, { id: 's27', reps: 10, weight: 20, completed: false }] },
-    ]
-  },
-  {
-    id: 'r3', name: 'Push - Peito Ombro Tríceps', createdAt: '2026-03-18',
-    exercises: [
-      { id: 'e10', name: 'Supino reto', muscleGroup: 'peitoral', sets: [{ id: 's28', reps: 10, weight: 60, completed: false }, { id: 's29', reps: 10, weight: 60, completed: false }, { id: 's30', reps: 8, weight: 60, completed: false }] },
-      { id: 'e11', name: 'Desenvolvimento', muscleGroup: 'deltoides', sets: [{ id: 's31', reps: 10, weight: 30, completed: false }, { id: 's32', reps: 10, weight: 30, completed: false }, { id: 's33', reps: 10, weight: 30, completed: false }] },
-      { id: 'e12', name: 'Tríceps corda', muscleGroup: 'triceps', sets: [{ id: 's34', reps: 15, weight: 25, completed: false }, { id: 's35', reps: 15, weight: 25, completed: false }, { id: 's36', reps: 12, weight: 25, completed: false }] },
-    ]
-  },
-]
+const defaultRoutines: WorkoutRoutine[] = []
 
 export const useStore = create<AuraStore>()(
   persist(
     (set, get) => ({
       profile: defaultProfile,
       habits: defaultHabits,
-      missions: [
-        { id: 'm1', title: 'Fazer treino', date: today(), completed: false, xpReward: 20, pillar: 'fisico' },
-        { id: 'm2', title: 'Ler a Bíblia', date: today(), completed: false, xpReward: 15, pillar: 'espiritual' },
-        { id: 'm3', title: 'Revisar finanças', date: today(), completed: false, xpReward: 10, pillar: 'financeiro' },
-      ],
-      weightLog: [
-        { id: 'w1', date: '2026-04-15', weight: 66 },
-        { id: 'w2', date: '2026-04-17', weight: 65 },
-        { id: 'w3', date: '2026-04-18', weight: 64 },
-        { id: 'w4', date: '2026-04-19', weight: 63 },
-        { id: 'w5', date: today(), weight: 63 },
-      ],
-      transactions: [
-        { id: 't1', date: '2026-04-01', description: 'Salário', amount: 600, category: 'receita', type: 'receita' },
-        { id: 't2', date: '2026-04-03', description: 'Aluguel', amount: -150, category: 'outros', type: 'despesa' },
-        { id: 't3', date: '2026-04-05', description: 'Supermercado', amount: -45, category: 'alimentacao', type: 'despesa' },
-        { id: 't4', date: '2026-04-08', description: 'Academia', amount: -50, category: 'saude', type: 'despesa' },
-        { id: 't5', date: '2026-04-10', description: 'Transporte', amount: -20, category: 'transporte', type: 'despesa' },
-        { id: 't6', date: '2026-04-12', description: 'Farmácia', amount: -15, category: 'saude', type: 'despesa' },
-        { id: 't7', date: '2026-04-15', description: 'Restaurante', amount: -30, category: 'alimentacao', type: 'despesa' },
-        { id: 't8', date: '2026-04-18', description: 'Livro', amount: -25, category: 'educacao', type: 'despesa' },
-      ],
+      missions: [],
+      weightLog: [],
+      transactions: [],
       bibleReadings: [],
       activePlanId: 'nt1year',
       prayerLog: [],
       routines: defaultRoutines,
-      workoutSessions: [
-        { id: 'ws1', routineId: 'r3', routineName: 'Push - Peito Ombro Tríceps', date: '2026-04-13', duration: 58, exercises: [], volume: 2800 },
-        { id: 'ws2', routineId: 'r2', routineName: 'Pull', date: '2026-04-07', duration: 52, exercises: [], volume: 1800 },
-        { id: 'ws3', routineId: 'r1', routineName: 'Legday', date: '2026-04-08', duration: 65, exercises: [], volume: 4200 },
-        { id: 'ws4', routineId: 'r3', routineName: 'Push - Peito Ombro Tríceps', date: '2026-04-01', duration: 60, exercises: [], volume: 2700 },
-      ],
-      calendarEvents: [
-        { id: 'ce1', title: 'Push - Peito Ombro Tríceps', date: '2026-04-01', type: 'treino' },
-        { id: 'ce2', title: 'Pull', date: '2026-04-07', type: 'treino' },
-        { id: 'ce3', title: 'Legday', date: '2026-04-08', type: 'treino' },
-        { id: 'ce4', title: 'Legday', date: '2026-04-10', type: 'treino' },
-        { id: 'ce5', title: 'Push - Peito Ombro Tríceps', date: '2026-04-13', type: 'treino' },
-      ],
+      workoutSessions: [],
+      calendarEvents: [],
 
       updateProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
 

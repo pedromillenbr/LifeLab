@@ -6,7 +6,7 @@ interface CreditCardProps {
   expiry?: string
 }
 
-export function CreditCard({ name = 'Pedro', last4 = '4291', expiry = '12/27' }: CreditCardProps) {
+export function CreditCard({ name = 'Usuário', last4 = '••••', expiry = '••/••' }: CreditCardProps) {
   return (
     <div className="credit-card">
       <div className="cc-top">
