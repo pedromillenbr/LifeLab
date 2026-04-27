@@ -1,0 +1,303 @@
+﻿'use client'
+
+import { useState } from 'react'
+import { useStore } from '@/store/useStore'
+import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import dynamic from 'next/dynamic'
+import { Plus, Eye, EyeOff, TrendingUp, TrendingDown, DollarSign, Trash2, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { cn, formatCurrency, CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/utils'
+import { Transaction } from '@/store/types'
+import { PEDRO } from '@/lib/pedroProfile'
+
+const FinanceiroCharts = dynamic(() => import('./FinanceiroCharts'), {
+  ssr: false,
+  loading: () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+      <div className="rounded-2xl h-[228px] animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
+      <div className="rounded-2xl h-[228px] animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
+    </div>
+  ),
+})
+
+const P = 'var(--color-primary)'
+const PM = 'var(--color-primary-muted)'
+const PB = 'var(--color-primary-border)'
+const BG1 = 'var(--color-bg-1)'
+const BG2 = 'var(--color-bg-2)'
+const BORDER = 'var(--color-border)'
+const TM = 'var(--color-text-main)'
+const TT = 'var(--color-text-muted)'
+
+export default function FinanceiroPage() {
+  const { transactions, addTransaction, removeTransaction, getBalance } = useStore()
+  const [hideValues, setHideValues] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [form, setForm] = useState({
+    description: '', amount: '', type: 'despesa' as 'receita' | 'despesa',
+    category: 'outros' as Transaction['category'], date: new Date().toISOString().split('T')[0]
+  })
+
+  const balance = getBalance()
+  const receita = transactions.filter(t => t.type === 'receita').reduce((a, t) => a + t.amount, 0)
+  const despesa = Math.abs(transactions.filter(t => t.type === 'despesa').reduce((a, t) => a + t.amount, 0))
+  const budgetUsed = despesa
+  const budgetTotal = PEDRO.monthlyBudget
+  const budgetPct = Math.min(100, Math.round((budgetUsed / budgetTotal) * 100))
+  const budgetColor = budgetPct > 90 ? 'var(--color-primary)' : budgetPct > 70 ? 'var(--color-primary)' : 'var(--color-primary)'
+
+  const catData = Object.entries(CATEGORY_LABELS)
+    .filter(([k]) => k !== 'receita')
+    .map(([key, label]) => ({
+      name: label, key,
+      value: Math.abs(transactions.filter(t => t.category === key).reduce((a, t) => a + t.amount, 0)),
+      color: CATEGORY_COLORS[key],
+    }))
+    .filter(c => c.value > 0)
+
+  const now = new Date()
+  const evolutionData = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
+    const monthStr = d.toISOString().slice(0, 7)
+    const entradas = transactions.filter(t => t.date.startsWith(monthStr) && t.type === 'receita').reduce((a, t) => a + t.amount, 0)
+    const saidas = Math.abs(transactions.filter(t => t.date.startsWith(monthStr) && t.type === 'despesa').reduce((a, t) => a + t.amount, 0))
+    return { month: d.toLocaleDateString('pt-BR', { month: 'short' }), entradas, saidas, saldo: entradas - saidas }
+  })
+
+  function handleAdd() {
+    const amt = parseFloat(form.amount)
+    if (!form.description.trim() || isNaN(amt) || amt <= 0) return
+    addTransaction({
+      description: form.description,
+      amount: form.type === 'receita' ? amt : -amt,
+      type: form.type,
+      category: form.type === 'receita' ? 'receita' : form.category,
+      date: form.date,
+    })
+    setForm({ description: '', amount: '', type: 'despesa', category: 'outros', date: new Date().toISOString().split('T')[0] })
+    setShowModal(false)
+  }
+
+  const fmt = (v: number) => hideValues ? '****' : formatCurrency(v)
+  const sorted = [...transactions].sort((a, b) => b.date.localeCompare(a.date))
+
+  return (
+    <div className="p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <p className="slabel" style={{ marginBottom: 4 }}>Controle financeiro</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color: TM, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)', animation: 'fadeIn 0.4s ease 0.05s both' }}>
+            Financeiro
+          </h1>
+          <p style={{ color: TT, fontSize: 13, marginTop: 4 }}>Renda: <span style={{ color: '#22c55e' }}>{formatCurrency(PEDRO.monthlyIncome)}/mes</span> . Orcamento: <span style={{ color: '#F5A623' }}>{formatCurrency(PEDRO.monthlyBudget)}</span></p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setHideValues(!hideValues)}
+            className="w-9 h-9 rounded-lg flex items-center justify-center transition-all"
+            style={{ background: BG2, border: `1px solid ${BORDER}` }}>
+            {hideValues ? <EyeOff size={16} style={{ color: TT }} /> : <Eye size={16} style={{ color: TT }} />}
+          </button>
+          <Button onClick={() => setShowModal(true)}>
+            <Plus size={16} /> Nova Transacao
+          </Button>
+        </div>
+      </div>
+
+      {/* Balance hero */}
+      <div
+        className="rounded-2xl p-6 mb-5 text-center relative overflow-hidden"
+        style={{ background: BG1, border: `1px solid ${P}20`, boxShadow: `0 0 30px ${P}08`, animation: 'fadeIn 0.4s ease 0.1s both' }}
+      >
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 opacity-5 rounded-full"
+          style={{ background: `radial-gradient(circle, ${P}, transparent)`, transform: 'translate(-50%, -50%)' }} />
+        <p className="text-sm mb-2 flex items-center justify-center gap-2" style={{ color: TT }}>
+          <Wallet size={14} /> Saldo Atual
+        </p>
+        <p className="text-6xl font-black mb-1 score-num" style={{ color: TM, textShadow: `0 0 30px ${P}30` }}>
+          {hideValues ? '******' : formatCurrency(balance)}
+        </p>
+        <p className="text-xs mb-6" style={{ color: TT }}>Receita - Despesas</p>
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: 'Entradas', value: receita, icon: TrendingUp, color: 'var(--color-primary)' },
+            { label: 'Gastos', value: despesa, icon: TrendingDown, color: 'var(--color-primary)' },
+            { label: 'Renda', value: PEDRO.monthlyIncome, icon: DollarSign, color: 'var(--color-primary)' },
+            { label: 'Reserva', value: Math.max(0, balance), icon: Wallet, color: 'var(--color-primary)' },
+          ].map(({ label, value, icon: Icon, color }) => (
+            <div key={label} className="rounded-xl p-3.5" style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
+              <div className="flex items-center gap-1.5 text-xs mb-2" style={{ color: `${color}88` }}>
+                <Icon size={11} /> {label}
+              </div>
+              <p className="font-bold text-base" style={{ color }}>{fmt(value)}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Budget bar */}
+      <div
+        className="rounded-2xl p-5 mb-5"
+        style={{ background: 'var(--bg1)', backdropFilter: 'blur(var(--blur))', WebkitBackdropFilter: 'blur(var(--blur))', border: '1px solid rgba(255,255,255,0.08)', animation: 'fadeIn 0.4s ease 0.15s both' }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <DollarSign size={14} className="text-primary" />
+            <span className="text-white font-semibold text-sm">Orcamento Mensal</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-white font-bold">{fmt(budgetUsed)}</span>
+            <span className="text-gray-600">/ {fmt(budgetTotal)}</span>
+            <span className="text-xs px-2 py-0.5 rounded-lg font-bold" style={{ background: `${budgetColor}20`, color: budgetColor }}>
+              {budgetPct}%
+            </span>
+          </div>
+        </div>
+        <div className="progress-bar h-3">
+          <div className="progress-fill h-full transition-all duration-1000"
+            style={{ width: `${budgetPct}%`, background: `linear-gradient(90deg, ${budgetColor}99, ${budgetColor})`, boxShadow: `0 0 12px ${budgetColor}40` }} />
+        </div>
+        <p className="text-xs text-gray-600 mt-2">{fmt(Math.max(0, budgetTotal - budgetUsed))} restantes de orcamento</p>
+      </div>
+
+      {/* Charts */}
+      <FinanceiroCharts catData={catData} evolutionData={evolutionData} hideValues={hideValues} />
+
+      {/* Transactions + sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4" style={{ animation: 'fadeIn 0.4s ease 0.25s both' }}>
+        <div className="lg:col-span-2 animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <div className="rounded-2xl p-5" style={{ background: 'var(--bg1)', backdropFilter: 'blur(var(--blur))', WebkitBackdropFilter: 'blur(var(--blur))', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold">Transacoes</h3>
+              <button onClick={() => setShowModal(true)} className="btn-primary text-xs py-1.5"><Plus size={13} /></button>
+            </div>
+            <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+              {sorted.length === 0 && (
+                <p className="text-gray-600 text-sm text-center py-10">Nenhuma transacao registrada</p>
+              )}
+              {sorted.map(t => (
+                <div key={t.id}
+                  className="flex items-center gap-3 p-3 rounded-xl group transition-all duration-150 cursor-default"
+                  style={{ background: '#111', border: '1px solid transparent' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#2a2a2a')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'transparent')}
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-base"
+                    style={{ backgroundColor: `${CATEGORY_COLORS[t.category]}15`, border: `1px solid ${CATEGORY_COLORS[t.category]}25` }}>
+                    {t.type === 'receita' ? '💰' : '💸'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{t.description}</p>
+                    <p className="text-[10px] text-gray-600">{CATEGORY_LABELS[t.category]} . {new Date(t.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  <p className={cn('font-bold text-sm', t.amount > 0 ? 'text-green-400' : 'text-red-400')}>
+                    {t.amount > 0 ? '+' : ''}{hideValues ? '****' : formatCurrency(t.amount)}
+                  </p>
+                  <button onClick={() => removeTransaction(t.id)}
+                    className="opacity-0 group-hover:opacity-100 text-gray-700 hover:text-red-500 transition-all ml-1">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 animate-fade-in" style={{ animationDelay: '360ms' }}>
+          {/* Category breakdown */}
+          {catData.length > 0 && (
+            <div className="rounded-2xl p-5" style={{ background: 'var(--bg1)', backdropFilter: 'blur(var(--blur))', WebkitBackdropFilter: 'blur(var(--blur))', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <h3 className="text-white font-semibold mb-4">Distribuicao</h3>
+              <div className="space-y-3">
+                {catData.map(c => {
+                  const p = despesa > 0 ? Math.round((c.value / despesa) * 100) : 0
+                  return (
+                    <div key={c.key}>
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="text-gray-500">{c.name}</span>
+                        <span className="text-white font-semibold">{hideValues ? '**' : formatCurrency(c.value)}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#1e1e1e' }}>
+                        <div className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${p}%`, background: c.color, boxShadow: `0 0 6px ${c.color}50` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Card visual */}
+          <div className="rounded-2xl p-5" style={{ background: 'var(--bg1)', backdropFilter: 'blur(var(--blur))', WebkitBackdropFilter: 'blur(var(--blur))', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <DollarSign size={15} className="text-primary" /> Cartao
+            </h3>
+            <div className="rounded-2xl p-4 relative overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, var(--color-primary), #7f1d1d)', boxShadow: '0 4px 20px var(--color-primary)20' }}>
+              <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-20"
+                style={{ background: 'radial-gradient(circle, #fff, transparent)', transform: 'translate(30%, -30%)' }} />
+              <p className="text-[10px] text-white/60 mb-1">Nubank</p>
+              <p className="text-white font-bold tracking-widest text-sm">**** **** **** 4521</p>
+              <div className="flex justify-between mt-4 text-xs text-white/80">
+                <span>{fmt(balance)}</span>
+                <span>{fmt(despesa)} usados</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Modal open={showModal} onClose={() => setShowModal(false)} title="Nova Transacao">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            {(['receita', 'despesa'] as const).map(type => (
+              <button key={type} onClick={() => setForm(p => ({ ...p, type }))}
+                className="py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 border"
+                style={form.type === type
+                  ? type === 'receita'
+                    ? { background: 'var(--color-primary)15', borderColor: 'var(--color-primary)50', color: 'var(--color-primary)' }
+                    : { background: 'var(--color-primary)15', borderColor: 'var(--color-primary)50', color: 'var(--color-primary)' }
+                  : { background: '#111', borderColor: '#1e1e1e', color: '#6b7280' }
+                }>
+                {type === 'receita' ? '+ Receita' : '- Despesa'}
+              </button>
+            ))}
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1.5 block">Descricao</label>
+            <input className="input" placeholder="Ex: Salario, Supermercado..." value={form.description}
+              onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-400 mb-1.5 block">Valor (R$)</label>
+              <input type="number" step="0.01" className="input" placeholder="0,00" value={form.amount}
+                onChange={e => setForm(p => ({ ...p, amount: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 mb-1.5 block">Data</label>
+              <input type="date" className="input" value={form.date}
+                onChange={e => setForm(p => ({ ...p, date: e.target.value }))} />
+            </div>
+          </div>
+          {form.type === 'despesa' && (
+            <div>
+              <label className="text-xs text-gray-400 mb-1.5 block">Categoria</label>
+              <select className="input" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value as Transaction['category'] }))}>
+                <option value="alimentacao">Alimentacao</option>
+                <option value="transporte">Transporte</option>
+                <option value="lazer">Lazer</option>
+                <option value="saude">Saude</option>
+                <option value="educacao">Educacao</option>
+                <option value="outros">Outros</option>
+              </select>
+            </div>
+          )}
+          <button onClick={handleAdd} className="btn-primary w-full justify-center py-3">Salvar Transacao</button>
+        </div>
+      </Modal>
+    </div>
+  )
+}
