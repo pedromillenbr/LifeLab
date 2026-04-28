@@ -30,27 +30,40 @@ export default function HabitosPage() {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ name: '', pillar: 'fisico' as Pillar, frequency: 'daily' as const, xpReward: 15, icon: '★' })
 
-  const last30 = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (29 - i))
-    return d.toISOString().split('T')[0]
-  })
 
-  const progressData = last30.map((date, idx) => ({
+  // --- NOVA LÓGICA: datas relativas ao onboarding ---
+  const onboardingDate = useStore((s) => s.profile?.createdAt || new Date().toISOString().split('T')[0]);
+  const onboarding = new Date(onboardingDate);
+  const todayDate = new Date();
+  const daysSinceOnboarding = Math.max(0, Math.floor((todayDate.getTime() - onboarding.getTime()) / (1000 * 60 * 60 * 24)));
+
+  // Gera lista de datas desde o onboarding até hoje (máx 30 dias)
+  const lastNDays = Array.from({ length: Math.min(daysSinceOnboarding + 1, 30) }, (_, i) => {
+    const d = new Date(onboarding);
+    d.setDate(onboarding.getDate() + i);
+    return d.toISOString().split('T')[0];
+  });
+
+  // Progresso geral
+  const progressData = lastNDays.map((date, idx) => ({
     day: idx + 1,
     pct: habits.length > 0
       ? Math.round((habits.filter(h => h.completions.includes(date)).length / habits.length) * 100)
       : 0,
-  }))
+  }));
 
-  const todayCompleted = habits.filter(h => h.completions.includes(today())).length
-  const completionPct  = habits.length > 0 ? Math.round((todayCompleted / habits.length) * 100) : 0
+  const todayCompleted = habits.filter(h => h.completions.includes(today())).length;
+  const completionPct  = habits.length > 0 ? Math.round((todayCompleted / habits.length) * 100) : 0;
 
-  const weeks = Array.from({ length: 5 }, (_, wi) =>
-    Array.from({ length: 7 }, (_, di) => {
-      const d = new Date(); d.setDate(d.getDate() - (34 - wi * 7 - di))
-      return d.toISOString().split('T')[0]
-    })
-  )
+  // --- NOVA VISUALIZAÇÃO SEMANAL ---
+  // Apenas semana atual em foco
+  const weekStart = new Date(todayDate);
+  weekStart.setDate(todayDate.getDate() - todayDate.getDay()); // domingo
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    return d.toISOString().split('T')[0];
+  });
 
   function handleAdd() {
     if (!form.name.trim()) return
@@ -98,11 +111,12 @@ export default function HabitosPage() {
       {/* Progress chart */}
       <HabitosChart progressData={progressData} completionPct={completionPct} />
 
-      {/* Heatmap de consistência */}
+
+      {/* Grade de Consistência — NOVA VISUALIZAÇÃO SEMANAL */}
       <div className="rounded-lg p-5 mb-5 animate-fade-in"
         style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)', animationDelay: '240ms' }}>
         <div className="flex items-center justify-between mb-4">
-          <h3 style={{ color: TM, fontWeight: 600, fontSize: 14 }}>Grade de Consistência</h3>
+          <h3 style={{ color: TM, fontWeight: 600, fontSize: 14 }}>Grade de Consistência (Semana Atual)</h3>
           <button onClick={() => setShowModal(true)} className="btn-primary text-xs py-1.5">
             <Plus size={13} /> Adicionar
           </button>
@@ -122,9 +136,9 @@ export default function HabitosPage() {
               <thead>
                 <tr>
                   <th className="text-left py-1.5 pr-4 w-32" style={{ fontSize: 10, color: TT, fontWeight: 400 }}>Hábito</th>
-                  {weeks.map((_, wi) => (
-                    <th key={wi} colSpan={7} className="text-center py-1.5 px-1" style={{ fontSize: 10, color: TT, fontWeight: 400 }}>
-                      S{wi + 1}
+                  {weekDates.map((date, i) => (
+                    <th key={date} className="text-center py-1.5 px-1" style={{ fontSize: 10, color: TT, fontWeight: 400 }}>
+                      {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][i]}
                     </th>
                   ))}
                   <th className="text-right py-1.5 pl-4" style={{ fontSize: 10, color: TT, fontWeight: 400 }}>Streak</th>
@@ -132,8 +146,7 @@ export default function HabitosPage() {
               </thead>
               <tbody>
                 {habits.map(habit => {
-                  /* heatmap usa cor do pilar como DADO semântico */
-                  const pillarColor = PILLAR_COLORS[habit.pillar]
+                  const pillarColor = PILLAR_COLORS[habit.pillar];
                   return (
                     <tr key={habit.id} className="group">
                       <td className="py-1 pr-4">
@@ -142,47 +155,41 @@ export default function HabitosPage() {
                           <span style={{ fontSize: 11, color: '#9ca3af' }} className="truncate max-w-[72px]">{habit.name}</span>
                         </div>
                       </td>
-                      {weeks.map(week =>
-                        week.map(date => {
-                          const done    = habit.completions.includes(date)
-                          const isToday = date === today()
-                          return (
-                            <td key={date} className="py-1 px-0.5">
-                              <button
-  onClick={() => toggleHabitCompletion(habit.id, date)}
-  className="w-5 h-5 rounded flex items-center justify-center transition-all duration-300"
-  style={{
-    background: done ? 'rgba(16,185,129,0.15)' : isToday ? `${pillarColor}18` : BG4,
-    border: isToday && !done
-      ? `1px solid ${pillarColor}50`
-      : `1px solid ${BORDER}`,
-    boxShadow: done ? '0 0 10px rgba(16,185,129,0.6)' : 'none',
-  }}
-  title={date}
->
-  {done && (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      className="animate-[checkPop_0.25s_ease-out]"
-      style={{ filter: 'drop-shadow(0 0 4px #10b981)' }}
-    >
-      <path
-        d="M5 13l4 4L19 7"
-        stroke="#10b981"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )}
-</button>
-                            </td>
-                          )
-                        })
-                      )}
+                      {weekDates.map(date => {
+                        const done    = habit.completions.includes(date);
+                        const isToday = date === today();
+                        return (
+                          <td key={date} className="py-1 px-0.5">
+                            <button
+                              onClick={() => toggleHabitCompletion(habit.id, date)}
+                              className={cn(
+                                "w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300",
+                                done ? "bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg" : "bg-transparent",
+                                isToday && !done ? "ring-2 ring-emerald-400/60" : ""
+                              )}
+                              style={{
+                                border: done ? '2px solid gold' : `1px solid ${isToday ? pillarColor : BORDER}`,
+                                boxShadow: done ? '0 0 12px 2px gold, 0 0 10px #10b981' : 'none',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                color: done ? '#fff' : pillarColor,
+                                fontWeight: 700,
+                                fontSize: 13,
+                                transition: 'all 0.3s cubic-bezier(.4,0,.2,1)'
+                              }}
+                              title={date}
+                            >
+                              {done ? (
+                                <span className="animate-glow-in">
+                                  ✓
+                                </span>
+                              ) : (
+                                <span className="opacity-60">●</span>
+                              )}
+                            </button>
+                          </td>
+                        );
+                      })}
                       <td className="py-1 pl-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Flame size={11} style={{ color: P }} />
@@ -190,7 +197,7 @@ export default function HabitosPage() {
                         </div>
                       </td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
