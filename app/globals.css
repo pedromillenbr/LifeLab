@@ -304,6 +304,34 @@ a:focus-visible { outline: none; }
   100% { background-position: 200% 50%; }
 }
 
+/* ─── NOVAS ANIMAÇÕES PREMIUM ───────────────────────────────────── */
+@keyframes checkPop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes glowIn {
+  0% { box-shadow: 0 0 0 0 rgba(234,179,8,0); }
+  50% { box-shadow: 0 0 20px 4px rgba(234,179,8,0.6), 0 0 10px #10b981; }
+  100% { box-shadow: 0 0 12px 2px rgba(234,179,8,0.4), 0 0 8px #10b981; }
+}
+@keyframes progressFill {
+  0% { width: 0%; }
+  100% { width: var(--progress); }
+}
+@keyframes weekTransition {
+  0% { opacity: 0; transform: translateX(20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulseGold {
+  0%, 100% { box-shadow: 0 0 8px rgba(234,179,8,0.4); }
+  50% { box-shadow: 0 0 20px rgba(234,179,8,0.7); }
+}
+@keyframes fillUp {
+  0% { transform: scaleX(0); transform-origin: left; }
+  100% { transform: scaleX(1); transform-origin: left; }
+}
+
 /* ─── Animation Utilities ───────────────────────────────────────── */
 .animate-fade-in      { animation: fadeIn 0.45s var(--ease-out) both; }
 .animate-fade-in-left { animation: fadeInLeft 0.45s var(--ease-out) both; }
@@ -335,9 +363,18 @@ a:focus-visible { outline: none; }
 
 .name-glow { animation: nameGlow 3s ease-in-out infinite; }
 
+/* ─── NOVAS CLASSES PREMIUM ─────────────────────────────────────── */
+.animate-check-pop { animation: checkPop 0.3s var(--ease-out) both; }
+.animate-glow-in { animation: glowIn 0.5s var(--ease-out) both; }
+.animate-progress-fill { animation: progressFill 1s var(--ease-out) both; }
+.animate-week-transition { animation: weekTransition 0.4s var(--ease-out) both; }
+.animate-pulse-gold { animation: pulseGold 2s ease-in-out infinite; }
+.animate-fill-up { animation: fillUp 0.6s var(--ease-out) both; }
+
 /* ─── Sombras / Glow ────────────────────────────────────────────── */
 .glow-primary { box-shadow: var(--shadow-glow); }
 .glow-accent  { box-shadow: var(--shadow-glow); }
+.glow-gold    { box-shadow: var(--shadow-gold); }
 .glow-gold    { box-shadow: 0 0 18px rgba(234,179,8,0.30); }
 .glow-red     { box-shadow: var(--shadow-glow); }
 .glow-blue    { box-shadow: var(--shadow-glow); }

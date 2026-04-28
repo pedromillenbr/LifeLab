@@ -210,22 +210,27 @@ export default function HabitosPage() {
         {habits.map((habit, i) => {
           const done         = habit.completions.includes(today())
           const streak       = getHabitStreak(habit.id)
-          const monthCmpl    = habit.completions.filter(d => last30.includes(d)).length
-          const pct          = Math.round((monthCmpl / 30) * 100)
+          const monthCmpl    = habit.completions.filter(d => lastNDays.includes(d)).length
+          const pct          = lastNDays.length > 0 ? Math.round((monthCmpl / lastNDays.length) * 100) : 0
           return (
             <div key={habit.id}
-              className="rounded-lg p-4 animate-fade-in card-hover"
+              className="rounded-lg p-4 animate-fade-in card-hover transition-all duration-300"
               style={{
                 background: BG2,
-                border: `1px solid ${done ? PB : BORDER}`,
-                boxShadow: done ? 'var(--shadow-glow-sm)' : 'var(--shadow-card)',
+                border: `1px solid ${done ? 'rgba(234,179,8,0.4)' : BORDER}`,
+                boxShadow: done ? '0 0 20px rgba(234,179,8,0.2), var(--shadow-glow-sm)' : 'var(--shadow-card)',
                 animationDelay: `${i * 40}ms`,
               }}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: PM, border: `1px solid ${PB}`, fontSize: 18 }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"
+                    style={{ 
+                      background: done ? 'rgba(234,179,8,0.15)' : PM, 
+                      border: `1px solid ${done ? 'rgba(234,179,8,0.5)' : PB}`, 
+                      fontSize: 18,
+                      boxShadow: done ? '0 0 12px rgba(234,179,8,0.3)' : 'none'
+                    }}>
                     {habit.icon || '★'}
                   </div>
                   <div>
@@ -238,9 +243,9 @@ export default function HabitosPage() {
                     <div
   className="w-6 h-6 flex items-center justify-center rounded-full transition-all duration-300"
   style={{
-    background: done ? 'rgba(16,185,129,0.15)' : 'transparent',
-    border: `1px solid ${done ? '#10b981' : TT}`,
-    boxShadow: done ? '0 0 10px rgba(16,185,129,0.6)' : 'none',
+    background: done ? 'rgba(234,179,8,0.2)' : 'transparent',
+    border: `1px solid ${done ? '#facc15' : TT}`,
+    boxShadow: done ? '0 0 12px 2px rgba(234,179,8,0.5), 0 0 8px #10b981' : 'none',
   }}
 >
   {done && (
@@ -249,12 +254,12 @@ export default function HabitosPage() {
       height="14"
       viewBox="0 0 24 24"
       fill="none"
-      className="animate-[checkPop_0.25s_ease-out]"
-      style={{ filter: 'drop-shadow(0 0 6px #10b981)' }}
+      className="animate-check-pop"
+      style={{ filter: 'drop-shadow(0 0 6px #facc15)' }}
     >
       <path
         d="M5 13l4 4L19 7"
-        stroke="#10b981"
+        stroke="#facc15"
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
