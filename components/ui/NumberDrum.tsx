@@ -1,9 +1,5 @@
 'use client'
-import { useRef } from 'react'
-
-const ITEM_H = 48
-const VISIBLE = 5
-const HALF = Math.floor(VISIBLE / 2)
+import { useRef, useState, useEffect } from 'react'
 
 interface Props {
   value: number
@@ -16,124 +12,229 @@ interface Props {
 
 export function NumberDrum({ value, onChange, values, label, color = 'var(--color-primary)', unit }: Props) {
   const idx = Math.max(0, values.findIndex(v => v === Math.round(value)))
-  const dragRef = useRef<{ startY: number; startIdx: number } | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const idxRef = useRef(idx)
+  idxRef.current = idx
+
+  const holdRef = useRef<number | null>(null)
+  const dragRef = useRef<{ startX: number; startIdx: number; moved: boolean } | null>(null)
+  const popKeyRef = useRef(0)
+
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
   function moveTo(newIdx: number) {
     const clamped = Math.max(0, Math.min(values.length - 1, newIdx))
-    if (values[clamped] !== value) onChange(values[clamped])
+    if (values[clamped] !== value) {
+      popKeyRef.current++
+      onChange(values[clamped])
+    }
   }
 
-  function handleWheel(e: React.WheelEvent) {
-    e.preventDefault()
-    moveTo(idx + (e.deltaY > 0 ? 1 : -1))
+  function startHold(dir: 1 | -1) {
+    moveTo(idxRef.current + dir)
+    holdRef.current = window.setTimeout(function loop() {
+      moveTo(idxRef.current + dir)
+      holdRef.current = window.setTimeout(loop, 60)
+    }, 320)
   }
+  function endHold() {
+    if (holdRef.current) { clearTimeout(holdRef.current); holdRef.current = null }
+  }
+  useEffect(() => () => endHold(), [])
 
   function handlePointerDown(e: React.PointerEvent) {
-    dragRef.current = { startY: e.clientY, startIdx: idx }
-    containerRef.current?.setPointerCapture(e.pointerId)
+    if ((e.target as HTMLElement).closest('button, input')) return
+    dragRef.current = { startX: e.clientX, startIdx: idx, moved: false }
+    ;(e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId)
   }
-
   function handlePointerMove(e: React.PointerEvent) {
     if (!dragRef.current) return
-    const delta = dragRef.current.startY - e.clientY
-    const steps = Math.round(delta / (ITEM_H * 0.55))
-    moveTo(dragRef.current.startIdx + steps)
+    const delta = dragRef.current.startX - e.clientX
+    if (Math.abs(delta) > 6) dragRef.current.moved = true
+    const steps = Math.round(delta / 26)
+    if (steps !== 0) moveTo(dragRef.current.startIdx + steps)
+  }
+  function handlePointerUp() { dragRef.current = null }
+
+  function commitDraft() {
+    const n = parseInt(draft, 10)
+    if (!isNaN(n)) {
+      const clamped = Math.max(values[0], Math.min(values[values.length - 1], n))
+      onChange(clamped)
+    }
+    setEditing(false)
+    setDraft('')
   }
 
-  function handlePointerUp() {
-    dragRef.current = null
-  }
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [editing])
 
-  const translateY = (HALF - idx) * ITEM_H
+  const atMin = idx === 0
+  const atMax = idx === values.length - 1
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      {label && (
-        <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          {label}
-        </p>
-      )}
+    <div
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 8,
+        padding: '10px',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 14,
+        position: 'relative', overflow: 'hidden',
+      }}
+    >
       <div
-        ref={containerRef}
+        aria-hidden
         style={{
-          width: '100%',
-          height: ITEM_H * VISIBLE,
-          position: 'relative',
-          overflow: 'hidden',
-          cursor: 'ns-resize',
-          userSelect: 'none',
-          touchAction: 'none',
-          borderRadius: 14,
-          background: 'rgba(8,18,40,0.6)',
-          border: `1px solid rgba(255,255,255,0.07)`,
+          position: 'absolute', inset: 0,
+          background: `radial-gradient(ellipse at center, ${color}10 0%, transparent 70%)`,
+          pointerEvents: 'none', opacity: 0.8,
         }}
-        onWheel={handleWheel}
+      />
+
+      {label && (
+        <p style={{
+          fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)',
+          letterSpacing: '0.14em', textTransform: 'uppercase',
+          fontFamily: "'JetBrains Mono',monospace",
+          textAlign: 'center', position: 'relative', zIndex: 1,
+        }}>{label}</p>
+      )}
+
+      {/* Single value row — no scroll capture, click to type */}
+      <div
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onClick={(e) => {
+          if (dragRef.current?.moved) return
+          if (!editing && !(e.target as HTMLElement).closest('button')) {
+            setDraft(String(values[idx]))
+            setEditing(true)
+          }
+        }}
+        style={{
+          display: 'flex', alignItems: 'baseline', justifyContent: 'center',
+          height: 48, position: 'relative', zIndex: 1,
+          cursor: editing ? 'text' : 'ew-resize',
+          touchAction: 'pan-y', userSelect: 'none',
+        }}
       >
-        {/* Fade top */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4, pointerEvents: 'none',
-          height: ITEM_H * HALF,
-          background: `linear-gradient(to bottom, rgba(8,18,40,0.96) 0%, rgba(8,18,40,0.5) 60%, transparent 100%)`,
-        }} />
-
-        {/* Fade bottom */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4, pointerEvents: 'none',
-          height: ITEM_H * HALF,
-          background: `linear-gradient(to top, rgba(8,18,40,0.96) 0%, rgba(8,18,40,0.5) 60%, transparent 100%)`,
-        }} />
-
-        {/* Selected highlight */}
-        <div style={{
-          position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-          left: 10, right: 10, height: ITEM_H - 4,
-          background: `${color}14`,
-          border: `1px solid ${color}40`,
-          borderRadius: 10,
-          zIndex: 2, pointerEvents: 'none',
-          boxShadow: `0 0 18px ${color}15`,
-        }} />
-
-        {/* Scrolling list */}
-        <div style={{
-          transform: `translateY(${translateY}px)`,
-          transition: dragRef.current ? 'none' : 'transform 180ms cubic-bezier(0.16,1,0.3,1)',
-          position: 'relative', zIndex: 3,
-        }}>
-          {values.map((v, i) => {
-            const dist = Math.abs(i - idx)
-            const isSelected = dist === 0
-            return (
-              <div
-                key={v}
-                style={{
-                  height: ITEM_H,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: isSelected ? 26 : dist === 1 ? 18 : 14,
-                  fontWeight: isSelected ? 700 : 400,
-                  color: isSelected ? color : 'var(--fg1)',
-                  opacity: isSelected ? 1 : dist === 1 ? 0.32 : 0.1,
-                  transition: 'all 180ms cubic-bezier(0.16,1,0.3,1)',
-                  letterSpacing: isSelected ? '-0.02em' : '0',
-                  cursor: dist > 0 ? 'pointer' : 'default',
-                }}
-                onClick={() => dist > 0 && moveTo(i)}
-              >
-                {v}
-                {isSelected && unit && (
-                  <span style={{ fontSize: 12, fontWeight: 400, color: `${color}90`, marginLeft: 1 }}>{unit}</span>
-                )}
-              </div>
-            )
-          })}
-        </div>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="number"
+            inputMode="numeric"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commitDraft}
+            onKeyDown={e => {
+              if (e.key === 'Enter') commitDraft()
+              if (e.key === 'Escape') { setEditing(false); setDraft('') }
+            }}
+            style={{
+              width: 88, height: 42,
+              fontFamily: "'JetBrains Mono',monospace",
+              fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em',
+              color, background: 'rgba(255,255,255,0.06)',
+              border: `1px solid ${color}55`,
+              borderRadius: 8, textAlign: 'center', outline: 'none',
+              MozAppearance: 'textfield' as any,
+            }}
+          />
+        ) : (
+          <span
+            key={popKeyRef.current}
+            style={{
+              fontFamily: "'JetBrains Mono',monospace",
+              fontSize: 30, fontWeight: 800, letterSpacing: '-0.03em',
+              color, textShadow: `0 0 16px ${color}90, 0 0 32px ${color}30`,
+              lineHeight: 1,
+              display: 'inline-flex', alignItems: 'baseline', gap: 3,
+              animation: 'numTick 200ms cubic-bezier(0.16,1,0.3,1) both',
+            }}
+          >
+            {values[idx]}
+            {unit && (
+              <span style={{
+                fontSize: 11, fontWeight: 500,
+                color: `${color}b8`, fontFamily: 'Inter, sans-serif',
+                textShadow: 'none', letterSpacing: 0,
+              }}>{unit}</span>
+            )}
+          </span>
+        )}
       </div>
+
+      {/* ± buttons */}
+      <div style={{ display: 'flex', gap: 6, position: 'relative', zIndex: 1 }}>
+        <button
+          onPointerDown={(e) => { e.preventDefault(); startHold(-1) }}
+          onPointerUp={endHold}
+          onPointerLeave={endHold}
+          onPointerCancel={endHold}
+          onContextMenu={(e) => e.preventDefault()}
+          disabled={atMin}
+          aria-label="Diminuir"
+          className="num-btn"
+          style={{
+            flex: 1, height: 34, borderRadius: 10,
+            background: atMin ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${atMin ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.09)'}`,
+            color: atMin ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.7)',
+            fontSize: 18, fontWeight: 700,
+            cursor: atMin ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background 120ms, border-color 120ms, color 120ms, transform 80ms',
+            userSelect: 'none', touchAction: 'manipulation',
+            ['--c' as any]: color,
+          }}
+        >−</button>
+        <button
+          onPointerDown={(e) => { e.preventDefault(); startHold(1) }}
+          onPointerUp={endHold}
+          onPointerLeave={endHold}
+          onPointerCancel={endHold}
+          onContextMenu={(e) => e.preventDefault()}
+          disabled={atMax}
+          aria-label="Aumentar"
+          className="num-btn"
+          style={{
+            flex: 1, height: 34, borderRadius: 10,
+            background: atMax ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${atMax ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.09)'}`,
+            color: atMax ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.7)',
+            fontSize: 18, fontWeight: 700,
+            cursor: atMax ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background 120ms, border-color 120ms, color 120ms, transform 80ms',
+            userSelect: 'none', touchAction: 'manipulation',
+            ['--c' as any]: color,
+          }}
+        >+</button>
+      </div>
+
+      <style>{`
+        @keyframes numTick {
+          0%   { transform: scale(0.85); opacity: 0.4; }
+          60%  { transform: scale(1.08); opacity: 1; }
+          100% { transform: scale(1); }
+        }
+        .num-btn:not(:disabled):hover {
+          background: color-mix(in srgb, var(--c) 10%, transparent) !important;
+          border-color: color-mix(in srgb, var(--c) 30%, transparent) !important;
+          color: var(--c) !important;
+        }
+        .num-btn:not(:disabled):active { transform: scale(0.94); }
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      `}</style>
     </div>
   )
 }

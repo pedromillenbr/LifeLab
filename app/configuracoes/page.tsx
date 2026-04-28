@@ -1,10 +1,70 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback, type ReactNode, type CSSProperties } from 'react'
 import { useStore } from '@/store/useStore'
 import { Toggle } from '@/components/ui/Toggle'
 import { Camera, Shield, Bell, Moon, Palette, Save, DollarSign, Settings } from 'lucide-react'
 import { PEDRO } from '@/lib/pedroProfile'
 import { motion } from 'framer-motion'
+
+/* ───── 3D tilt + spotlight wrapper ───── */
+function TiltCard({ children, className, style }: {
+  children: ReactNode; className?: string; style?: CSSProperties
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const onMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = ref.current; if (!el) return
+    const r = el.getBoundingClientRect()
+    const x = (e.clientX - r.left) / r.width
+    const y = (e.clientY - r.top) / r.height
+    el.style.setProperty('--mx', (x * 100).toFixed(1) + '%')
+    el.style.setProperty('--my', (y * 100).toFixed(1) + '%')
+    el.style.transform = `perspective(900px) rotateX(${((y - .5) * -7).toFixed(2)}deg) rotateY(${((x - .5) * 7).toFixed(2)}deg) scale(1.012)`
+  }, [])
+  const onLeave = useCallback(() => {
+    const el = ref.current; if (!el) return
+    el.style.transform = ''
+  }, [])
+  return (
+    <div ref={ref} className={`tilt-card ${className || ''}`} style={style} onMouseMove={onMove} onMouseLeave={onLeave}>
+      <div className="tilt-laser" aria-hidden />
+      <div className="tilt-spot" aria-hidden />
+      <div style={{ position: 'relative', zIndex: 4 }}>{children}</div>
+    </div>
+  )
+}
+
+const tiltCSS = `
+@keyframes tiltLaserSpin { to { --laser-angle: 360deg; } }
+.tilt-card {
+  position: relative;
+  transition: transform .35s cubic-bezier(.22,.68,0,1.2), box-shadow .3s, border-color .3s;
+  --mx: 50%; --my: 50%; --laser-angle: 0deg;
+  transform-style: preserve-3d;
+  overflow: hidden;
+}
+.tilt-card:hover {
+  box-shadow: 0 14px 44px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.18), 0 0 32px rgba(34,197,94,.10) !important;
+  border-color: rgba(34,197,94,.32) !important;
+}
+.tilt-laser {
+  position: absolute; inset: -1px; border-radius: inherit;
+  background: conic-gradient(from var(--laser-angle), transparent 0deg, #22c55e 12deg, #4ade80 22deg, transparent 38deg);
+  padding: 1px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity .35s;
+  animation: tiltLaserSpin 5s linear infinite;
+  pointer-events: none; z-index: 2;
+}
+.tilt-card:hover .tilt-laser { opacity: 1; }
+.tilt-spot {
+  position: absolute; inset: 0; border-radius: inherit;
+  background: radial-gradient(280px circle at var(--mx) var(--my), rgba(34,197,94,0.10) 0%, transparent 70%);
+  opacity: 0; transition: opacity .25s;
+  pointer-events: none; z-index: 1;
+}
+.tilt-card:hover .tilt-spot { opacity: 1; }
+`
 
 type Tab = 'perfil' | 'preferencias' | 'seguranca'
 
@@ -82,6 +142,7 @@ export default function ConfiguracoesPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
+      <style>{tiltCSS}</style>
       {/* Header */}
       <div className="mb-6 md:mb-8 animate-fade-in">
         <p className="slabel" style={{ marginBottom: 4 }}>Conta</p>
@@ -94,7 +155,7 @@ export default function ConfiguracoesPage() {
       </div>
 
       {/* Cartão de perfil */}
-      <div className="rounded-lg p-5 mb-6 animate-fade-in"
+      <TiltCard className="rounded-lg p-5 mb-6 animate-fade-in"
         style={{ background: BG2, border: `1px solid ${PB}`, boxShadow: 'var(--shadow-glow-sm)', animationDelay: '60ms' }}>
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0"
@@ -123,17 +184,18 @@ export default function ConfiguracoesPage() {
           <div className="xp-fill" style={{ width: `${xpPercent}%` }} />
         </div>
         <p style={{ fontSize: 10, color: TT, marginTop: 4 }}>{xpPercent}% para nível {profile.level + 1}</p>
-      </div>
+      </TiltCard>
 
       {/* Tabs */}
       <div className="flex rounded-xl p-1 mb-6 gap-1 animate-fade-in"
         style={{ background: BG3, border: `1px solid ${BORDER}`, animationDelay: '120ms' }}>
         {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+          <button key={t.key}
+            onClick={(e) => { setTab(t.key); (e.currentTarget as HTMLButtonElement).blur() }}
             className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
             style={tab === t.key
               ? { background: P, color: '#fff', boxShadow: '0 2px 12px var(--color-primary-glow)' }
-              : { color: TT }
+              : { background: 'transparent', color: TT, boxShadow: 'none' }
             }
             onMouseEnter={e => { if (tab !== t.key) (e.currentTarget as HTMLElement).style.color = TM }}
             onMouseLeave={e => { if (tab !== t.key) (e.currentTarget as HTMLElement).style.color = TT }}
@@ -210,7 +272,7 @@ export default function ConfiguracoesPage() {
             { icon: Moon, label: 'Tema Escuro',   sub: 'Modo escuro ativo',          prop: 'darkMode'       as const },
             { icon: Bell, label: 'Notificações',  sub: 'Receber lembretes diários',   prop: 'notifications'  as const },
           ].map(({ icon: Icon, label, sub, prop }) => (
-            <div key={prop} className="rounded-lg p-5"
+            <TiltCard key={prop} className="rounded-lg p-5"
               style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -225,11 +287,11 @@ export default function ConfiguracoesPage() {
                 </div>
                 <Toggle checked={!!(profile as any)[prop]} onChange={v => updateProfile({ [prop]: v })} />
               </div>
-            </div>
+            </TiltCard>
           ))}
 
           {/* Seletor de cor */}
-          <div className="rounded-lg p-5"
+          <TiltCard className="rounded-lg p-5"
             style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center"
@@ -255,14 +317,14 @@ export default function ConfiguracoesPage() {
                 />
               ))}
             </div>
-          </div>
+          </TiltCard>
         </div>
       )}
 
       {/* ── SEGURANÇA ──────────────────────────────────────────────── */}
       {tab === 'seguranca' && (
         <div className="animate-fade-in" style={{ animationDelay: '180ms' }}>
-          <div className="rounded-lg p-5"
+          <TiltCard className="rounded-lg p-5"
             style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center gap-3 mb-5">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center"
@@ -312,7 +374,7 @@ export default function ConfiguracoesPage() {
                 Atualizar Senha
               </button>
             </div>
-          </div>
+          </TiltCard>
         </div>
       )}
 

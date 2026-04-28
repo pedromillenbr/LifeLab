@@ -215,8 +215,12 @@ function VolBarChart({ data, labels }: { data: number[]; labels: string[] }) {
 export default function FisicoPage() {
   const {
     weightLog, addWeight, routines, addRoutine, removeRoutine,
-    updateRoutine, workoutSessions, addWorkoutSession, getPillarScores,
+    updateRoutine, workoutSessions, addWorkoutSession, getPillarScores, addXP,
   } = useStore()
+
+  const [recordCelebration, setRecordCelebration] = useState<null | {
+    todayT: number; prevT: number; deltaT: number; xpBonus: number
+  }>(null)
 
   const [tab, setTab] = useState<Tab>('dashboard')
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0 })
@@ -301,7 +305,7 @@ export default function FisicoPage() {
   function handleSelectExercise(ex: ExerciseTemplate) {
     setDraftExercises(prev => [...prev, {
       id: genId(), name: ex.name, muscleGroup: ex.muscle,
-      sets: Array.from({ length: ex.defaultSets }, () => ({
+      sets: Array.from({ length: 3 }, () => ({
         id: genId(), reps: ex.defaultReps, weight: ex.defaultWeight, completed: false,
       })),
     }])
@@ -311,13 +315,35 @@ export default function FisicoPage() {
     if (!editingRoutine) return
     const newEx: Exercise = {
       id: genId(), name: ex.name, muscleGroup: ex.muscle,
-      sets: Array.from({ length: ex.defaultSets }, () => ({
+      sets: Array.from({ length: 3 }, () => ({
         id: genId(), reps: ex.defaultReps, weight: ex.defaultWeight, completed: false,
       })),
     }
     const updated = { ...editingRoutine, exercises: [...editingRoutine.exercises, newEx] }
     setEditingRoutine(updated)
     updateRoutine(editingRoutine.id, updated)
+  }
+
+  function addSetToExercise(exerciseId: string) {
+    setWorkoutSets(prev => {
+      const sets = prev[exerciseId] || []
+      const last = sets[sets.length - 1]
+      const newSet: WorkoutSet = {
+        id: genId(),
+        reps: last?.reps ?? 10,
+        weight: last?.weight ?? 0,
+        completed: false,
+      }
+      return { ...prev, [exerciseId]: [...sets, newSet] }
+    })
+  }
+
+  function removeSetFromExercise(exerciseId: string, setId: string) {
+    setWorkoutSets(prev => {
+      const sets = prev[exerciseId] || []
+      if (sets.length <= 1) return prev
+      return { ...prev, [exerciseId]: sets.filter(s => s.id !== setId) }
+    })
   }
 
   function removeDraftExercise(id: string) { setDraftExercises(prev => prev.filter(e => e.id !== id)) }
@@ -354,7 +380,40 @@ export default function FisicoPage() {
     const exercises = activeWorkout.exercises.map(e => ({ ...e, sets: workoutSets[e.id] || e.sets }))
     const volume = exercises.reduce((a, e) =>
       a + e.sets.filter(s => s.completed).reduce((b, s) => b + s.reps * s.weight, 0), 0)
-    addWorkoutSession({ routineId: activeWorkout.id, routineName: activeWorkout.name, date: today(), duration: 60, exercises, volume })
+    const t = today()
+
+    // Today's existing volume (in case multiple sessions in a day)
+    const todayPriorVolume = workoutSessions
+      .filter(s => s.date === t)
+      .reduce((a, s) => a + s.volume, 0)
+
+    // Most recent previous training day (any day before today with a session)
+    const prevDayVolume = (() => {
+      const byDate = new Map<string, number>()
+      workoutSessions.forEach(s => {
+        if (s.date >= t) return
+        byDate.set(s.date, (byDate.get(s.date) || 0) + s.volume)
+      })
+      const dates = Array.from(byDate.keys()).sort()
+      if (dates.length === 0) return 0
+      return byDate.get(dates[dates.length - 1]) || 0
+    })()
+
+    addWorkoutSession({ routineId: activeWorkout.id, routineName: activeWorkout.name, date: t, duration: 60, exercises, volume })
+
+    const todayTotal = todayPriorVolume + volume
+    if (prevDayVolume > 0 && todayTotal > prevDayVolume) {
+      const deltaKg = todayTotal - prevDayVolume
+      const xpBonus = Math.min(200, 50 + Math.round(deltaKg / 50))
+      addXP(xpBonus)
+      setRecordCelebration({
+        todayT: +(todayTotal / 1000).toFixed(1),
+        prevT: +(prevDayVolume / 1000).toFixed(1),
+        deltaT: +(deltaKg / 1000).toFixed(2),
+        xpBonus,
+      })
+    }
+
     setActiveWorkout(null); setWorkoutSets({})
   }
 
@@ -629,10 +688,23 @@ export default function FisicoPage() {
                               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-3)' }}>
                                 Série {idx + 1}
                               </span>
-                              <button className={`mark-btn ${s.completed ? 'done' : ''}`} onClick={() => toggleSet(exercise.id, s.id)}>
-                                <Check size={11} />
-                                {s.completed ? 'Marcado' : 'Marcar'}
-                              </button>
+                              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                <button className={`mark-btn ${s.completed ? 'done' : ''}`} onClick={() => toggleSet(exercise.id, s.id)}>
+                                  <Check size={11} />
+                                  {s.completed ? 'Marcado' : 'Marcar'}
+                                </button>
+                                {sets.length > 1 && (
+                                  <button
+                                    className="icon-btn danger"
+                                    style={{ width: 26, height: 26 }}
+                                    onClick={() => removeSetFromExercise(exercise.id, s.id)}
+                                    aria-label="Remover série"
+                                    title="Remover série"
+                                  >
+                                    <X size={11} />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                               <NumberDrum
@@ -650,11 +722,56 @@ export default function FisicoPage() {
                             </div>
                           </div>
                         ))}
+                        <button
+                          onClick={() => addSetToExercise(exercise.id)}
+                          className="add-set-btn"
+                          style={{ ['--c' as any]: color }}
+                        >
+                          <Plus size={13} /> Adicionar série
+                        </button>
                       </div>
                     </div>
                   )
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TONNAGE RECORD CELEBRATION ────────────────────────── */}
+        {recordCelebration && (
+          <div className="record-overlay" onClick={() => setRecordCelebration(null)}>
+            <div className="record-burst" aria-hidden>
+              {Array.from({ length: 24 }).map((_, i) => (
+                <span key={i} className="confetti" style={{ ['--i' as any]: i }} />
+              ))}
+            </div>
+            <div className="record-card" onClick={e => e.stopPropagation()}>
+              <div className="record-trophy">
+                <Flame size={42} />
+              </div>
+              <div className="record-title">RECORDE QUEBRADO!</div>
+              <p className="record-sub">Você superou seu último treino 💪</p>
+              <div className="record-stats">
+                <div>
+                  <div className="rs-label">Hoje</div>
+                  <div className="rs-val rs-up">{recordCelebration.todayT}t</div>
+                </div>
+                <div className="rs-arrow">→</div>
+                <div>
+                  <div className="rs-label">Anterior</div>
+                  <div className="rs-val">{recordCelebration.prevT}t</div>
+                </div>
+              </div>
+              <div className="record-delta">
+                <TrendingUp size={14} /> +{recordCelebration.deltaT}t levantadas
+              </div>
+              <div className="record-xp">
+                <Zap size={16} /> +{recordCelebration.xpBonus} XP de boost!
+              </div>
+              <button className="record-close" onClick={() => setRecordCelebration(null)}>
+                Continuar a caçada
+              </button>
             </div>
           </div>
         )}
@@ -926,4 +1043,109 @@ const fisicoCSS = `
 .mark-btn { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,.07); border: 1px solid var(--border-h); color: var(--text-2); font-size: 11px; font-weight: 600; border-radius: 6px; padding: 5px 12px; cursor: pointer; transition: all .2s; }
 .mark-btn:hover { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.22); color: var(--green); }
 .mark-btn.done { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.3); color: var(--green); }
+
+/* Add set button */
+.add-set-btn { width: 100%; padding: 10px; border-radius: 9px; background: transparent; border: 1px dashed rgba(255,255,255,.14); color: var(--text-3); font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: border-color .2s, color .2s, background .2s; }
+.add-set-btn:hover { border-color: color-mix(in srgb, var(--c) 35%, transparent); color: var(--c); background: color-mix(in srgb, var(--c) 6%, transparent); }
+
+/* Tonnage record celebration */
+@keyframes recordIn {
+  0% { opacity: 0; transform: translateY(40px) scale(.8); }
+  60% { transform: translateY(-6px) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes trophyPulse {
+  0%, 100% { transform: scale(1) rotate(-4deg); filter: drop-shadow(0 0 16px rgba(234,179,8,.7)); }
+  50% { transform: scale(1.12) rotate(4deg); filter: drop-shadow(0 0 28px rgba(234,179,8,1)) drop-shadow(0 0 56px rgba(234,179,8,.5)); }
+}
+@keyframes confettiFall {
+  0% { opacity: 0; transform: translate(var(--xs, 0), -40vh) rotate(0deg); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--xe, 0), 60vh) rotate(720deg); }
+}
+@keyframes shimmerText {
+  0% { background-position: -200% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.record-overlay {
+  position: fixed; inset: 0; z-index: 80;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at center, rgba(34,197,94,.2), rgba(0,0,0,.85) 60%);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  animation: overlayInF .25s ease both;
+  cursor: pointer;
+}
+.record-burst { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.confetti {
+  position: absolute; top: 50%; left: 50%; width: 10px; height: 14px; border-radius: 2px;
+  --xs: calc((var(--i) - 12) * 6px);
+  --xe: calc((var(--i) - 12) * 22px);
+  background: hsl(calc(var(--i) * 30), 90%, 60%);
+  animation: confettiFall 1.6s cubic-bezier(.22,.68,0,1.2) calc(var(--i) * 0.04s) forwards;
+  box-shadow: 0 0 8px currentColor;
+}
+.record-card {
+  position: relative; cursor: default;
+  background: linear-gradient(140deg, rgba(34,197,94,.18), rgba(15,16,22,.96) 50%, rgba(234,179,8,.12));
+  border: 1px solid rgba(34,197,94,.4);
+  border-radius: 22px;
+  padding: 36px 30px 28px;
+  width: 420px; max-width: calc(100vw - 32px);
+  text-align: center;
+  box-shadow: 0 32px 80px rgba(0,0,0,.85), 0 0 64px rgba(34,197,94,.3), 0 0 120px rgba(234,179,8,.15);
+  animation: recordIn .55s cubic-bezier(.22,.68,0,1.2) both;
+}
+.record-trophy {
+  width: 78px; height: 78px; border-radius: 50%;
+  margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle, rgba(234,179,8,.35), rgba(234,179,8,.05) 70%);
+  border: 2px solid rgba(234,179,8,.55);
+  color: #facc15;
+  animation: trophyPulse 1.6s ease-in-out infinite;
+}
+.record-title {
+  font-size: 26px; font-weight: 900; letter-spacing: -.5px;
+  background: linear-gradient(90deg, #22c55e 0%, #facc15 50%, #22c55e 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: shimmerText 2.8s linear infinite;
+  margin-bottom: 6px;
+}
+.record-sub { font-size: 13px; color: var(--text-2); margin-bottom: 18px; }
+.record-stats {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  margin-bottom: 14px;
+  background: rgba(0,0,0,.3); border: 1px solid var(--border);
+  border-radius: 14px; padding: 12px 16px;
+}
+.rs-label { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-3); margin-bottom: 4px; }
+.rs-val { font-size: 22px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--text-2); line-height: 1; }
+.rs-val.rs-up { color: var(--green); text-shadow: 0 0 16px rgba(34,197,94,.6); }
+.rs-arrow { font-size: 22px; color: var(--green); font-weight: 700; }
+.record-delta {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: var(--green);
+  background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.3);
+  padding: 6px 14px; border-radius: 20px;
+  margin-bottom: 12px;
+}
+.record-xp {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 800; color: #facc15;
+  background: rgba(234,179,8,.12); border: 1px solid rgba(234,179,8,.4);
+  padding: 8px 16px; border-radius: 20px;
+  margin-bottom: 22px;
+  box-shadow: 0 0 24px rgba(234,179,8,.25);
+}
+.record-close {
+  width: 100%; padding: 12px;
+  background: var(--green); border: none; color: #000;
+  font-size: 14px; font-weight: 800; border-radius: 10px;
+  cursor: pointer; transition: filter .15s, transform .1s;
+  box-shadow: 0 0 28px rgba(34,197,94,.45);
+}
+.record-close:hover { filter: brightness(1.1); }
+.record-close:active { transform: scale(.97); }
 `

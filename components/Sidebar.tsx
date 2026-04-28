@@ -48,8 +48,14 @@ export function Sidebar() {
         onMouseLeave={e => ((e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-glow-sm)')}
       >
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-          <path d="M8 1L13 13H10.5L8 7.5L5.5 13H3Z" fill="var(--color-primary)" />
-          <path d="M4.5 10H11.5" stroke="var(--color-primary)" strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M5 2.2 V12 H11.4"
+            stroke="var(--color-primary)"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
         </svg>
       </Link>
 
@@ -62,6 +68,7 @@ export function Sidebar() {
               key={href}
               href={href}
               title={label}
+              onClick={e => (e.currentTarget as HTMLElement).blur()}
               className="w-full h-10 rounded-xl flex items-center justify-center relative group transition-all duration-250"
               style={{
                 animationDelay: `${idx * 40}ms`,

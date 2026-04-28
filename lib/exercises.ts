@@ -34,6 +34,11 @@ export const EXERCISE_DB: ExerciseTemplate[] = [
   { id: 'pe13', name: 'Pullover com Haltere', muscle: 'peito', equipment: 'Halteres', difficulty: 'intermediário', defaultSets: 3, defaultReps: 12, defaultWeight: 20 },
   { id: 'pe14', name: 'Press na Máquina', muscle: 'peito', equipment: 'Máquina', difficulty: 'iniciante', defaultSets: 3, defaultReps: 12, defaultWeight: 50 },
   { id: 'pe15', name: 'Supino com Pegada Fechada', muscle: 'peito', equipment: 'Barra', difficulty: 'avançado', defaultSets: 3, defaultReps: 10, defaultWeight: 50 },
+  { id: 'pe16', name: 'Supino Máquina', muscle: 'peito', equipment: 'Máquina', difficulty: 'iniciante', defaultSets: 3, defaultReps: 12, defaultWeight: 50 },
+  { id: 'pe17', name: 'Supino Inclinado Máquina', muscle: 'peito', equipment: 'Máquina', difficulty: 'iniciante', defaultSets: 3, defaultReps: 12, defaultWeight: 45 },
+  { id: 'pe18', name: 'Voador na Máquina', muscle: 'peito', equipment: 'Máquina', difficulty: 'iniciante', defaultSets: 3, defaultReps: 15, defaultWeight: 35 },
+  { id: 'pe19', name: 'Crucifixo Inclinado com Halteres', muscle: 'peito', equipment: 'Halteres', difficulty: 'intermediário', defaultSets: 3, defaultReps: 12, defaultWeight: 12 },
+  { id: 'pe20', name: 'Crossover Médio na Polia', muscle: 'peito', equipment: 'Polia', difficulty: 'intermediário', defaultSets: 3, defaultReps: 15, defaultWeight: 18 },
 
   // ─── COSTAS ───────────────────────────────────────────────────────────────
   { id: 'co01', name: 'Puxada Frontal na Polia', muscle: 'costas', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 4, defaultReps: 12, defaultWeight: 50 },
@@ -51,6 +56,10 @@ export const EXERCISE_DB: ExerciseTemplate[] = [
   { id: 'co13', name: 'Puxada Alta Aberta', muscle: 'costas', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 3, defaultReps: 12, defaultWeight: 45 },
   { id: 'co14', name: 'Good Morning', muscle: 'costas', equipment: 'Barra', difficulty: 'intermediário', defaultSets: 3, defaultReps: 10, defaultWeight: 30 },
   { id: 'co15', name: 'Hiperextensão Lombar', muscle: 'costas', equipment: 'Peso corporal', difficulty: 'iniciante', defaultSets: 3, defaultReps: 15, defaultWeight: 0 },
+  { id: 'co16', name: 'Pulldown na Máquina', muscle: 'costas', equipment: 'Máquina', difficulty: 'iniciante', defaultSets: 3, defaultReps: 12, defaultWeight: 45 },
+  { id: 'co17', name: 'Remada Baixa Sentada', muscle: 'costas', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 3, defaultReps: 12, defaultWeight: 45 },
+  { id: 'co18', name: 'Puxada Neutra (Pegada Paralela)', muscle: 'costas', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 3, defaultReps: 12, defaultWeight: 50 },
+  { id: 'co19', name: 'Remada T-Bar', muscle: 'costas', equipment: 'Máquina', difficulty: 'intermediário', defaultSets: 3, defaultReps: 10, defaultWeight: 60 },
 
   // ─── PERNAS ───────────────────────────────────────────────────────────────
   { id: 'le01', name: 'Agachamento Livre com Barra', muscle: 'pernas', equipment: 'Barra', difficulty: 'avançado', defaultSets: 4, defaultReps: 8, defaultWeight: 60 },
@@ -87,6 +96,9 @@ export const EXERCISE_DB: ExerciseTemplate[] = [
   { id: 'om13', name: 'Encolhimento com Barra', muscle: 'ombros', equipment: 'Barra', difficulty: 'iniciante', defaultSets: 3, defaultReps: 15, defaultWeight: 60 },
   { id: 'om14', name: 'Encolhimento com Halteres', muscle: 'ombros', equipment: 'Halteres', difficulty: 'iniciante', defaultSets: 3, defaultReps: 15, defaultWeight: 24 },
   { id: 'om15', name: 'Press Militar em Pé', muscle: 'ombros', equipment: 'Barra', difficulty: 'avançado', defaultSets: 4, defaultReps: 8, defaultWeight: 40 },
+  { id: 'om16', name: 'Crucifixo Invertido na Máquina', muscle: 'ombros', equipment: 'Máquina', difficulty: 'iniciante', defaultSets: 3, defaultReps: 15, defaultWeight: 25 },
+  { id: 'om17', name: 'Crucifixo Invertido com Halteres', muscle: 'ombros', equipment: 'Halteres', difficulty: 'intermediário', defaultSets: 3, defaultReps: 15, defaultWeight: 8 },
+  { id: 'om18', name: 'Elevação Lateral Inclinada', muscle: 'ombros', equipment: 'Halteres', difficulty: 'intermediário', defaultSets: 3, defaultReps: 15, defaultWeight: 6 },
 
   // ─── BÍCEPS ───────────────────────────────────────────────────────────────
   { id: 'bi01', name: 'Rosca Direta com Barra', muscle: 'biceps', equipment: 'Barra', difficulty: 'iniciante', defaultSets: 4, defaultReps: 12, defaultWeight: 30 },
@@ -104,6 +116,9 @@ export const EXERCISE_DB: ExerciseTemplate[] = [
   { id: 'bi13', name: 'Barra Fixa Supinada', muscle: 'biceps', equipment: 'Peso corporal', difficulty: 'avançado', defaultSets: 4, defaultReps: 8, defaultWeight: 0 },
   { id: 'bi14', name: 'Spider Curl', muscle: 'biceps', equipment: 'Barra', difficulty: 'intermediário', defaultSets: 3, defaultReps: 12, defaultWeight: 20 },
   { id: 'bi15', name: 'Rosca no Scott com Haltere', muscle: 'biceps', equipment: 'Halteres', difficulty: 'intermediário', defaultSets: 3, defaultReps: 12, defaultWeight: 10 },
+  { id: 'bi16', name: 'Rosca Bayesian (Polia)', muscle: 'biceps', equipment: 'Polia', difficulty: 'intermediário', defaultSets: 3, defaultReps: 12, defaultWeight: 15 },
+  { id: 'bi17', name: 'Rosca Inclinada com Halteres', muscle: 'biceps', equipment: 'Halteres', difficulty: 'intermediário', defaultSets: 3, defaultReps: 12, defaultWeight: 12 },
+  { id: 'bi18', name: 'Rosca Martelo na Polia', muscle: 'biceps', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 3, defaultReps: 12, defaultWeight: 18 },
 
   // ─── TRÍCEPS ──────────────────────────────────────────────────────────────
   { id: 'tr01', name: 'Tríceps Corda na Polia', muscle: 'triceps', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 4, defaultReps: 15, defaultWeight: 25 },
@@ -121,6 +136,9 @@ export const EXERCISE_DB: ExerciseTemplate[] = [
   { id: 'tr13', name: 'Tríceps Corda Overhead', muscle: 'triceps', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 3, defaultReps: 15, defaultWeight: 20 },
   { id: 'tr14', name: 'Pushdown em Pé', muscle: 'triceps', equipment: 'Cabo', difficulty: 'iniciante', defaultSets: 3, defaultReps: 15, defaultWeight: 20 },
   { id: 'tr15', name: 'Tríceps Barra V', muscle: 'triceps', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 3, defaultReps: 15, defaultWeight: 25 },
+  { id: 'tr16', name: 'Tríceps Coice na Polia', muscle: 'triceps', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 3, defaultReps: 15, defaultWeight: 12 },
+  { id: 'tr17', name: 'Tríceps Unilateral na Polia', muscle: 'triceps', equipment: 'Polia', difficulty: 'iniciante', defaultSets: 3, defaultReps: 12, defaultWeight: 12 },
+  { id: 'tr18', name: 'Tríceps Banco com Peso', muscle: 'triceps', equipment: 'Peso corporal', difficulty: 'intermediário', defaultSets: 3, defaultReps: 12, defaultWeight: 10 },
 
   // ─── ABDÔMEN ──────────────────────────────────────────────────────────────
   { id: 'ab01', name: 'Abdominal Crunch', muscle: 'abdomen', equipment: 'Peso corporal', difficulty: 'iniciante', defaultSets: 3, defaultReps: 20, defaultWeight: 0 },
