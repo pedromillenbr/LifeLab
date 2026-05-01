@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { today } from '@/lib/utils'
 import { BIBLE_PLANS, getTodayReading, getPlanProgress } from '@/lib/bibleData'
+import Link from 'next/link'
 
 type Quality = 'distracted' | 'neutral' | 'deep'
 type ActionState = 'idle' | 'in-progress' | 'completed'
@@ -248,7 +249,7 @@ export default function EspiritualPage() {
 
   function handleReadingClick() {
     if (!todayReading) return
-    if (readingState === 'idle') { completeBibleReading(today(), activePlanId, todayReading.passage, ''); setReadingModal(true) }
+    if (readingState === 'idle') { completeBibleReading(today(), activePlanId, todayReading.label, ''); setReadingModal(true) }
     else if (readingState === 'in-progress') setReadingModal(true)
   }
 
@@ -411,15 +412,22 @@ export default function EspiritualPage() {
               <div className="flex-1 min-w-0">
                 <div className="text-base font-bold tracking-tight mb-0.5 truncate">{currentPlan?.name}</div>
                 <div className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
-                  {todayReading ? `Dia ${todayReading.day} · ${todayReading.book}` : '—'}
+                  {todayReading ? `Dia ${todayReading.day} · ${todayReading.label}` : '—'}
                 </div>
                 <div className="h-1 rounded-sm overflow-hidden mb-1.5" style={{ background: 'rgba(255,255,255,.07)' }}>
                   <div className="h-full rounded-sm transition-all duration-700"
                     style={{ width: `${progress}%`, background: GOLD, boxShadow: '0 0 8px rgba(234,179,8,.6)' }} />
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>{completedDates.length} / {currentPlan?.totalDays} dias concluídos</span>
-                  <span className="text-[11px] font-mono" style={{ color: 'var(--color-text-subtle)' }}>{(currentPlan?.totalDays || 0) - completedDates.length} restantes</span>
+                  <span className="text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>{completedDates.length} / {currentPlan?.duration} dias concluídos</span>
+                  <span className="text-[11px] font-mono" style={{ color: 'var(--color-text-subtle)' }}>{(currentPlan?.duration || 0) - completedDates.length} restantes</span>
+                </div>
+                <div className="mt-3">
+                  <Link href="/espiritual/planos"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md hover:opacity-90"
+                    style={{ background: 'rgba(34,197,94,.12)', color: 'var(--color-primary)', border: '1px solid rgba(34,197,94,.25)' }}>
+                    <BookOpen size={11} /> Ver todos os planos
+                  </Link>
                 </div>
               </div>
             </div>
@@ -519,7 +527,7 @@ export default function EspiritualPage() {
                     style={{ width: `${progress}%`, background: GOLD, boxShadow: '0 0 8px rgba(234,179,8,.6)' }} />
                 </div>
                 <div className="text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
-                  {completedDates.length} / {currentPlan?.totalDays} dias concluídos
+                  {completedDates.length} / {currentPlan?.duration} dias concluídos
                 </div>
               </div>
               <div className="border-t pt-3.5" style={{ borderColor: 'rgba(255,255,255,.09)' }}>
