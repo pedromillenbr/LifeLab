@@ -4,8 +4,9 @@ import { persist } from 'zustand/middleware'
 import {
   Habit, Mission, WeightEntry, Transaction,
   BibleReading, PrayerEntry, WorkoutRoutine, WorkoutSession,
-  CalendarEvent, UserProfile, PillarScores, Pillar
+  CalendarEvent, UserProfile, PillarScores, Pillar, BiblePlanProgress,
 } from './types'
+import { getBiblePlan, readingsLabel } from '@/lib/bibleData'
 
 function generateId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -74,6 +75,13 @@ interface AuraStore {
   recordAccess: () => void
   getAccessStreak: () => number
 
+  // Bible reading plans (multi-plan progress)
+  biblePlansProgress: Record<string, BiblePlanProgress>
+  startBiblePlan: (planId: string) => void
+  markBiblePlanDayRead: (planId: string, day: number) => void
+  resetBiblePlan: (planId: string) => void
+  isBiblePlanDayCompleted: (planId: string, day: number) => boolean
+
   // Workout
   routines: WorkoutRoutine[]
   addRoutine: (r: Omit<WorkoutRoutine, 'id' | 'createdAt'>) => void
@@ -130,6 +138,7 @@ export const useStore = create<AuraStore>()(
       routines: defaultRoutines,
       workoutSessions: [],
       calendarEvents: [],
+      biblePlansProgress: {},
 
       updateProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
 
@@ -246,6 +255,77 @@ export const useStore = create<AuraStore>()(
         return streak
       },
 
+      startBiblePlan: (planId) => set((s) => {
+        const plan = getBiblePlan(planId)
+        if (!plan) return {}
+        if (s.biblePlansProgress[planId]) return {} // already started — no-op
+        const now = new Date().toISOString()
+        return {
+          biblePlansProgress: {
+            ...s.biblePlansProgress,
+            [planId]: {
+              planId, currentDay: 1, completedDays: [],
+              startedAt: now, updatedAt: now,
+            },
+          },
+          activePlanId: planId,
+        }
+      }),
+
+      markBiblePlanDayRead: (planId, day) => set((s) => {
+        const plan = getBiblePlan(planId)
+        if (!plan) return {}
+        const existing = s.biblePlansProgress[planId]
+        const now = new Date().toISOString()
+        const base: BiblePlanProgress = existing || {
+          planId, currentDay: 1, completedDays: [],
+          startedAt: now, updatedAt: now,
+        }
+        if (base.completedDays.includes(day)) return {} // already done — block double-credit
+        if (day < 1 || day > plan.duration) return {}
+
+        const completedDays = [...base.completedDays, day].sort((a, b) => a - b)
+        const currentDay = Math.min(plan.duration, Math.max(base.currentDay, day + 1))
+
+        // Side-effects: spiritual habit (existing system) + XP
+        const t = today()
+        const dayDef = plan.days.find(d => d.day === day)
+        const passage = dayDef ? readingsLabel(dayDef.readings) : `Dia ${day}`
+        const alreadyToday = s.bibleReadings.some(r => r.date === t && r.planId === planId && r.completed)
+
+        let bibleReadings = s.bibleReadings
+        let profile = s.profile
+        if (!alreadyToday) {
+          bibleReadings = [
+            ...s.bibleReadings,
+            { id: generateId(), date: t, planId, passage, completed: true },
+          ]
+          const newXP = s.profile.xp + 15
+          const { level, xpToNext } = getLevelFromXP(newXP)
+          profile = { ...s.profile, xp: newXP, level, xpToNextLevel: xpToNext }
+        }
+
+        return {
+          biblePlansProgress: {
+            ...s.biblePlansProgress,
+            [planId]: { ...base, completedDays, currentDay, updatedAt: now },
+          },
+          bibleReadings,
+          profile,
+        }
+      }),
+
+      resetBiblePlan: (planId) => set((s) => {
+        const next = { ...s.biblePlansProgress }
+        delete next[planId]
+        return { biblePlansProgress: next }
+      }),
+
+      isBiblePlanDayCompleted: (planId, day) => {
+        const p = get().biblePlansProgress[planId]
+        return !!p && p.completedDays.includes(day)
+      },
+
       addRoutine: (r) => set((s) => ({
         routines: [...s.routines, { ...r, id: generateId(), createdAt: today() }]
       })),
@@ -353,6 +433,7 @@ export const useStore = create<AuraStore>()(
         routines:       state.routines,
         workoutSessions: state.workoutSessions,
         calendarEvents: state.calendarEvents,
+        biblePlansProgress: state.biblePlansProgress,
       }),
     }
   )

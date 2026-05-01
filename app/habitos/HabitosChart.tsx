@@ -16,36 +16,35 @@ export default function HabitosChart({ progressData, completionPct }: Props) {
         animationDelay: '180ms' 
       }}>
       {/* Barra de Progresso Premium Contínua */}
-      <div className="mb-5">
-        <div className="flex items-center justify-between mb-2">
+      <div className="mb-6">
+        <div className="flex items-baseline justify-between mb-4">
           <div className="flex items-center gap-2">
             <span style={{ color: '#facc15', fontSize: 16 }}>✦</span>
-            <h3 style={{ color: 'var(--color-text-main)', fontWeight: 600, fontSize: 14 }}>Progresso Contínuo</h3>
+            <h3 style={{ color: 'var(--color-text-main)', fontWeight: 600, fontSize: 13 }}>Progresso Contínuo</h3>
           </div>
-          <span className="score-num" style={{ fontSize: 36, fontWeight: 800, color: '#facc15', textShadow: '0 0 20px rgba(234,179,8,0.5)' }}>
+          <span style={{ fontSize: 42, fontWeight: 800, color: '#facc15', textShadow: '0 0 20px rgba(234,179,8,0.4)' }}>
             {completionPct}%
           </span>
         </div>
         {/* Barra de progresso com segmento dourado */}
-        <div className="h-2 rounded-full bg-[var(--color-bg-4)] overflow-hidden relative">
+        <div className="w-full h-3 rounded-full bg-[var(--color-bg-4)] overflow-hidden relative border border-white/5">
           <div 
             className="h-full rounded-full transition-all duration-1000 ease-out"
             style={{ 
               width: `${completionPct}%`,
-              background: 'linear-gradient(90deg, #22c55e 0%, #4ade80 50%, #facc15 100%)',
-              boxShadow: '0 0 12px 2px rgba(234,179,8,0.4), 0 0 8px rgba(34,197,94,0.5)',
-              animation: 'progressFill 1.5s ease-out'
+              background: 'linear-gradient(90deg, #22c55e 0%, #4ade80 40%, #facc15 100%)',
+              boxShadow: '0 0 16px rgba(234,179,8,0.5), inset 0 0 8px rgba(255,255,255,0.1)'
             }}
           />
           {/* Marcadores de segmento semanal */}
-          <div className="absolute inset-0 flex">
+          <div className="absolute inset-0 flex pointer-events-none">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex-1 border-r border-white/10 last:border-r-0" />
+              <div key={i} className="flex-1 border-r border-white/5 last:border-r-0" />
             ))}
           </div>
         </div>
-        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>
-          Progresso desde o onboarding • Segmentado por semana
+        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8, fontWeight: 500 }}>
+          Desde onboarding • Segmentado por semana
         </p>
       </div>
 

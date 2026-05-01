@@ -52,12 +52,12 @@ export interface BibleReading {
   reflection?: string
 }
 
-export interface BiblePlan {
-  id: string
-  name: string
-  description: string
-  totalDays: number
-  readings: { day: number; passage: string; book: string }[]
+export interface BiblePlanProgress {
+  planId: string
+  currentDay: number
+  completedDays: number[]
+  startedAt: string
+  updatedAt: string
 }
 
 export interface WorkoutRoutine {

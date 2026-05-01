@@ -132,68 +132,66 @@ export default function HabitosPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-sm">
               <thead>
-                <tr>
-                  <th className="text-left py-1.5 pr-4 w-32" style={{ fontSize: 10, color: TT, fontWeight: 400 }}>Hábito</th>
-                  {weekDates.map((date, i) => (
-                    <th key={date} className="text-center py-1.5 px-1" style={{ fontSize: 10, color: TT, fontWeight: 400 }}>
-                      {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][i]}
-                    </th>
-                  ))}
-                  <th className="text-right py-1.5 pl-4" style={{ fontSize: 10, color: TT, fontWeight: 400 }}>Streak</th>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <th className="text-left py-3 pr-4" style={{ fontSize: 11, color: TT, fontWeight: 500, width: '140px' }}>Hábito</th>
+                  {weekDates.map((date, i) => {
+                    const d = new Date(date);
+                    const dayNum = d.getDate();
+                    return (
+                      <th key={date} className="text-center py-3 px-2" style={{ fontSize: 11, color: TT, fontWeight: 500 }}>
+                        <div style={{ fontWeight: 600, fontSize: 10 }}>{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][i]}</div>
+                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{dayNum}</div>
+                      </th>
+                    );
+                  })}
+                  <th className="text-right py-3 pl-4" style={{ fontSize: 11, color: TT, fontWeight: 500 }}>Streak</th>
                 </tr>
               </thead>
               <tbody>
                 {habits.map(habit => {
                   const pillarColor = PILLAR_COLORS[habit.pillar];
                   return (
-                    <tr key={habit.id} className="group">
-                      <td className="py-1 pr-4">
+                    <tr key={habit.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }} className="hover:bg-white/[0.03] transition-colors">
+                      <td className="py-3 pr-4">
                         <div className="flex items-center gap-2">
-                          <span style={{ fontSize: 13 }}>{habit.icon || '★'}</span>
-                          <span style={{ fontSize: 11, color: '#9ca3af' }} className="truncate max-w-[72px]">{habit.name}</span>
+                          <span style={{ fontSize: 14 }}>{habit.icon || '★'}</span>
+                          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }} className="truncate max-w-[100px]">{habit.name}</span>
                         </div>
                       </td>
                       {weekDates.map(date => {
                         const done    = habit.completions.includes(date);
                         const isToday = date === today();
                         return (
-                          <td key={date} className="py-1 px-0.5">
+                          <td key={date} className="py-3 px-2 text-center">
                             <button
                               onClick={() => toggleHabitCompletion(habit.id, date)}
-                              className={cn(
-                                "w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300",
-                                done ? "bg-gradient-to-br from-green-400 to-emerald-600 shadow-lg" : "bg-transparent",
-                                isToday && !done ? "ring-2 ring-emerald-400/60" : ""
-                              )}
+                              className="mx-auto block w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
                               style={{
-                                border: done ? '2px solid gold' : `1px solid ${isToday ? pillarColor : BORDER}`,
-                                boxShadow: done ? '0 0 12px 2px gold, 0 0 10px #10b981' : 'none',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                color: done ? '#fff' : pillarColor,
-                                fontWeight: 700,
-                                fontSize: 13,
-                                transition: 'all 0.3s cubic-bezier(.4,0,.2,1)'
+                                background: done ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : 'transparent',
+                                border: done ? '2px solid rgba(250,204,21,0.7)' : isToday ? `2px solid ${pillarColor}` : `1px solid rgba(255,255,255,0.1)`,
+                                boxShadow: done ? '0 0 12px rgba(234,179,8,0.5), 0 0 8px rgba(34,197,94,0.4)' : isToday ? `0 0 8px ${pillarColor}40` : 'none',
+                                color: done ? '#fff' : 'rgba(255,255,255,0.4)',
+                                fontWeight: 800,
+                                fontSize: '16px',
+                                cursor: 'pointer'
                               }}
                               title={date}
                             >
                               {done ? (
-                                <span className="animate-glow-in">
-                                  ✓
-                                </span>
+                                <span className="animate-check-pop">✓</span>
                               ) : (
-                                <span className="opacity-60">●</span>
+                                <span>●</span>
                               )}
                             </button>
                           </td>
                         );
                       })}
-                      <td className="py-1 pl-4 text-right">
+                      <td className="py-3 pl-4 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Flame size={11} style={{ color: P }} />
-                          <span style={{ fontSize: 11, color: TM, fontWeight: 700 }}>{getHabitStreak(habit.id)}</span>
+                          <Flame size={13} style={{ color: P }} />
+                          <span style={{ fontSize: 12, color: TM, fontWeight: 700 }}>{getHabitStreak(habit.id)}</span>
                         </div>
                       </td>
                     </tr>
@@ -202,7 +200,7 @@ export default function HabitosPage() {
               </tbody>
             </table>
           </div>
-        )}
+        )}}
       </div>
 
       {/* Cards de hábitos */}
