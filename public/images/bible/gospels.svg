@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <radialGradient id="gBg" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#0a1410"/>
+      <stop offset="100%" stop-color="#000"/>
+    </radialGradient>
+    <radialGradient id="gGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#facc15" stop-opacity="0.55"/>
+      <stop offset="50%" stop-color="#22c55e" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#gBg)"/>
+  <circle cx="200" cy="200" r="180" fill="url(#gGlow)"/>
+  <!-- light rays -->
+  <g stroke="#22c55e" stroke-width="1" stroke-opacity="0.45" stroke-linecap="round">
+    <line x1="200" y1="40" x2="200" y2="90"/>
+    <line x1="200" y1="310" x2="200" y2="360"/>
+    <line x1="40" y1="200" x2="90" y2="200"/>
+    <line x1="310" y1="200" x2="360" y2="200"/>
+    <line x1="80" y1="80" x2="120" y2="120"/>
+    <line x1="280" y1="280" x2="320" y2="320"/>
+    <line x1="320" y1="80" x2="280" y2="120"/>
+    <line x1="80" y1="320" x2="120" y2="280"/>
+  </g>
+  <!-- cross -->
+  <g transform="translate(200 200)">
+    <rect x="-12" y="-90" width="24" height="180" rx="4" fill="#facc15"/>
+    <rect x="-60" y="-30" width="120" height="24" rx="4" fill="#facc15"/>
+    <rect x="-12" y="-90" width="24" height="180" rx="4" fill="none" stroke="#22c55e" stroke-width="1" stroke-opacity="0.6"/>
+    <rect x="-60" y="-30" width="120" height="24" rx="4" fill="none" stroke="#22c55e" stroke-width="1" stroke-opacity="0.6"/>
+    <!-- inner highlight -->
+    <rect x="-8" y="-86" width="16" height="172" rx="2" fill="#fff" opacity="0.18"/>
+  </g>
+</svg>
