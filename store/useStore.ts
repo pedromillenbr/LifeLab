@@ -117,6 +117,7 @@ const defaultProfile: UserProfile = {
   notifications: true,
   currency: 'BRL',
   language: 'pt',
+  createdAt: today(),
 }
 
 const defaultHabits: Habit[] = []

@@ -111,6 +111,7 @@ export interface UserProfile {
   notifications: boolean
   currency: string
   language: string
+  createdAt: string
 }
 
 export interface PillarScores {

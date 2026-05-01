@@ -200,7 +200,7 @@ export default function HabitosPage() {
               </tbody>
             </table>
           </div>
-        )}}
+        )}
       </div>
 
       {/* Cards de hábitos */}

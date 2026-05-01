@@ -233,7 +233,7 @@ export default function DashboardPage() {
             <div className="bible-card-left">
               <div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.5px' }}>{todayReading?.passage ?? '—'}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.5px' }}>{todayReading?.label ?? '—'}</div>
                   {todayReading && (
                     <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--mono)' }}>Dia {todayReading.day}</div>
                   )}
@@ -255,7 +255,7 @@ export default function DashboardPage() {
                 disabled={todayBibleDone}
                 onClick={(e) => {
                   e.stopPropagation()
-                  if (todayReading && !todayBibleDone) completeBibleReading(today(), activePlanId, todayReading.passage)
+                  if (todayReading && !todayBibleDone) completeBibleReading(today(), activePlanId, todayReading.label)
                 }}
               >
                 <BookMarked size={14} />{todayBibleDone ? 'Leitura Concluída' : 'Marcar como lido'}
