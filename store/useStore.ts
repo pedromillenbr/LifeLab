@@ -75,9 +75,11 @@ interface AuraStore {
   recordAccess: () => void
   getAccessStreak: () => number
 
-  // Bible reading plans (multi-plan progress)
+  // Bible reading plans (multi-plan progress, single-active)
   biblePlansProgress: Record<string, BiblePlanProgress>
   startBiblePlan: (planId: string) => void
+  pauseBiblePlan: (planId: string) => void
+  resumeBiblePlan: (planId: string) => void
   markBiblePlanDayRead: (planId: string, day: number) => void
   resetBiblePlan: (planId: string) => void
   isBiblePlanDayCompleted: (planId: string, day: number) => boolean
@@ -259,8 +261,18 @@ export const useStore = create<AuraStore>()(
       startBiblePlan: (planId) => set((s) => {
         const plan = getBiblePlan(planId)
         if (!plan) return {}
-        if (s.biblePlansProgress[planId]) return {} // already started — no-op
         const now = new Date().toISOString()
+        const existing = s.biblePlansProgress[planId]
+        if (existing) {
+          // already has progress — just make this the active one (resume)
+          return {
+            activePlanId: planId,
+            biblePlansProgress: {
+              ...s.biblePlansProgress,
+              [planId]: { ...existing, updatedAt: now },
+            },
+          }
+        }
         return {
           biblePlansProgress: {
             ...s.biblePlansProgress,
@@ -271,6 +283,16 @@ export const useStore = create<AuraStore>()(
           },
           activePlanId: planId,
         }
+      }),
+
+      pauseBiblePlan: (planId) => set((s) => {
+        if (s.activePlanId !== planId) return {}
+        return { activePlanId: '' }
+      }),
+
+      resumeBiblePlan: (planId) => set((s) => {
+        if (!s.biblePlansProgress[planId]) return {}
+        return { activePlanId: planId }
       }),
 
       markBiblePlanDayRead: (planId, day) => set((s) => {
@@ -319,7 +341,9 @@ export const useStore = create<AuraStore>()(
       resetBiblePlan: (planId) => set((s) => {
         const next = { ...s.biblePlansProgress }
         delete next[planId]
-        return { biblePlansProgress: next }
+        const patch: Partial<AuraStore> = { biblePlansProgress: next }
+        if (s.activePlanId === planId) patch.activePlanId = ''
+        return patch
       }),
 
       isBiblePlanDayCompleted: (planId, day) => {
