@@ -74,6 +74,25 @@ export default function HabitosPage() {
 
   const ICONS = ['★', '◆', '●', '▲', '■', '◉', '✦', '✚', '▣', '◈', '⬡', '✸']
 
+  // Sugestões pré-definidas (apenas para novos usuários — sem hábitos)
+  const HABIT_SUGGESTIONS: { name: string; icon: string; pillar: Pillar }[] = [
+    { name: 'Academia',     icon: '🏋️', pillar: 'fisico' },
+    { name: 'Acordar cedo', icon: '🌅', pillar: 'disciplina' },
+    { name: 'Estudar',      icon: '📚', pillar: 'produtividade' },
+    { name: 'Ler',          icon: '📖', pillar: 'mental' },
+    { name: 'Meditar',      icon: '🧘', pillar: 'mental' },
+    { name: 'Corrida',      icon: '🏃', pillar: 'fisico' },
+    { name: 'Futebol',      icon: '⚽', pillar: 'fisico' },
+    { name: 'Beber água',   icon: '💧', pillar: 'fisico' },
+    { name: 'Dormir bem',   icon: '😴', pillar: 'disciplina' },
+    { name: 'Orar',         icon: '🙏', pillar: 'espiritual' },
+  ]
+  const isOnboarding = habits.length === 0
+
+  function handleAddSuggestion(s: { name: string; icon: string; pillar: Pillar }) {
+    addHabit({ name: s.name, pillar: s.pillar, frequency: 'daily', xpReward: 15, icon: s.icon })
+  }
+
   return (
     <div className="p-4 md:p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
       {/* Header */}
@@ -308,6 +327,49 @@ export default function HabitosPage() {
       {/* Modal */}
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Novo Hábito">
         <div className="space-y-4">
+          {isOnboarding && (
+            <div>
+              <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 8 }}>
+                Sugestões rápidas
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {HABIT_SUGGESTIONS.map(s => (
+                  <button
+                    key={s.name}
+                    onClick={() => handleAddSuggestion(s)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-full transition-all duration-200 hover:scale-105"
+                    style={{
+                      background: BG3,
+                      border: `1px solid ${PB}`,
+                      color: TM,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget
+                      el.style.background = PM
+                      el.style.borderColor = P
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget
+                      el.style.background = BG3
+                      el.style.borderColor = PB
+                    }}
+                  >
+                    <span style={{ fontSize: 14 }}>{s.icon}</span>
+                    <span>{s.name}</span>
+                    <Plus size={11} style={{ color: P }} />
+                  </button>
+                ))}
+              </div>
+              <p style={{ fontSize: 11, color: TT, marginTop: 8 }}>
+                Toque para adicionar ou crie um personalizado abaixo.
+              </p>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '14px 0 4px' }} />
+            </div>
+          )}
+
           <div>
             <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 6 }}>Ícone</label>
             <div className="flex flex-wrap gap-2">

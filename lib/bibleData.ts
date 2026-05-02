@@ -414,3 +414,19 @@ export function getPlanProgress(planId: string, completedDays: number[] | string
   if (!plan) return 0
   return Math.round((completedDays.length / plan.duration) * 100)
 }
+
+/**
+ * Returns the reading for a specific day in the plan (1-indexed),
+ * clamped to the plan's duration. Used to surface a user's actual
+ * progression instead of a calendar-based day index.
+ */
+export function getReadingForDay(
+  planId: string,
+  day: number,
+): { day: number; readings: string[]; label: string } | null {
+  const plan = getBiblePlan(planId)
+  if (!plan) return null
+  const safeDay = Math.max(1, Math.min(plan.duration, Math.floor(day)))
+  const reading = plan.days.find(d => d.day === safeDay) || plan.days[0]
+  return { day: safeDay, readings: reading.readings, label: readingsLabel(reading.readings) }
+}

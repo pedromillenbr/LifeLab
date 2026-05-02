@@ -7,6 +7,7 @@ type Props = {
 }
 
 export default function HabitosChart({ progressData, completionPct }: Props) {
+  const pct = Math.max(0, Math.min(100, Number.isFinite(completionPct) ? completionPct : 0))
   return (
     <div className="rounded-lg p-5 mb-5 animate-fade-in"
       style={{ 
@@ -23,25 +24,42 @@ export default function HabitosChart({ progressData, completionPct }: Props) {
             <h3 style={{ color: 'var(--color-text-main)', fontWeight: 600, fontSize: 13 }}>Progresso Contínuo</h3>
           </div>
           <span style={{ fontSize: 42, fontWeight: 800, color: '#facc15', textShadow: '0 0 20px rgba(234,179,8,0.4)' }}>
-            {completionPct}%
+            {pct}%
           </span>
         </div>
         {/* Barra de progresso com segmento dourado */}
-        <div className="w-full h-3 rounded-full bg-[var(--color-bg-4)] overflow-hidden relative border border-white/5">
-          <div 
-            className="h-full rounded-full transition-all duration-1000 ease-out"
-            style={{ 
-              width: `${completionPct}%`,
-              background: 'linear-gradient(90deg, #22c55e 0%, #4ade80 40%, #facc15 100%)',
-              boxShadow: '0 0 16px rgba(234,179,8,0.5), inset 0 0 8px rgba(255,255,255,0.1)'
-            }}
-          />
-          {/* Marcadores de segmento semanal */}
-          <div className="absolute inset-0 flex pointer-events-none">
+        <div
+          className="w-full rounded-full overflow-hidden relative"
+          style={{
+            height: 10,
+            background: 'var(--color-bg-4)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxSizing: 'border-box',
+          }}
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          {/* Marcadores de segmento semanal (atrás do fill) */}
+          <div className="absolute inset-0 flex pointer-events-none" aria-hidden="true">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="flex-1 border-r border-white/5 last:border-r-0" />
             ))}
           </div>
+          {pct > 0 && (
+            <div
+              className="rounded-full transition-all duration-700 ease-out"
+              style={{
+                width: `${pct}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #22c55e 0%, #4ade80 40%, #facc15 100%)',
+                boxShadow: '0 0 12px rgba(234,179,8,0.45), inset 0 0 6px rgba(255,255,255,0.08)',
+                position: 'relative',
+                zIndex: 1,
+              }}
+            />
+          )}
         </div>
         <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8, fontWeight: 500 }}>
           Desde onboarding • Segmentado por semana

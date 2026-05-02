@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Dumbbell, CheckSquare, Target,
-  DollarSign, Calendar, BookOpen, Sparkles, Settings
+  DollarSign, Calendar, BookOpen, Sparkles, Settings, Timer
 } from 'lucide-react'
 import { useStore } from '@/store/useStore'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,7 @@ const NAV = [
   { href: '/fisico',     icon: Dumbbell,        label: 'Físico' },
   { href: '/habitos',    icon: CheckSquare,     label: 'Hábitos' },
   { href: '/missoes',    icon: Target,          label: 'Missões' },
+  { href: '/foco',       icon: Timer,           label: 'Foco' },
   { href: '/financeiro', icon: DollarSign,      label: 'Financeiro' },
   { href: '/calendario', icon: Calendar,        label: 'Calendário' },
   { href: '/espiritual', icon: BookOpen,        label: 'Espiritual' },

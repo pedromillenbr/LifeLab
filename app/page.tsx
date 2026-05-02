@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { getGreeting, formatCurrency, today } from '@/lib/utils'
 import { Pillar } from '@/store/types'
-import { getTodayReading } from '@/lib/bibleData'
+import { getTodayReading, getReadingForDay, getBiblePlan } from '@/lib/bibleData'
 import { PEDRO, getTodayMotivation } from '@/lib/pedroProfile'
 
 export default function DashboardPage() {
@@ -55,9 +55,14 @@ export default function DashboardPage() {
   const todayMissionXP = todayMissions.filter(m => m.completed).reduce((a, m) => a + m.xpReward, 0)
 
   const bibleStreak = getBibleStreak()
-  const todayReading = getTodayReading(activePlanId)
-  const todayBibleDone = bibleReadings.some(r => r.date === today() && r.completed)
-  const yearProgress = todayReading ? Math.round((todayReading.day / 365) * 100) : 0
+  const todayBibleDone = bibleReadings.some(r => r.date === today() && r.completed && r.planId === activePlanId)
+  const userCompletedCount = bibleReadings.filter(r => r.planId === activePlanId && r.completed).length
+  const planDuration = getBiblePlan(activePlanId)?.duration ?? 365
+  // Day shown reflects the user's real progress: if today is already done,
+  // show the day they just completed; otherwise show the next day to read.
+  const userPlanDay = Math.max(1, Math.min(planDuration, todayBibleDone ? userCompletedCount : userCompletedCount + 1))
+  const todayReading = getReadingForDay(activePlanId, userPlanDay) ?? getTodayReading(activePlanId)
+  const yearProgress = Math.min(100, Math.round((userCompletedCount / planDuration) * 100))
 
   const todayHabitsDone = habits.filter(h => h.completions.includes(today())).length
   const mentalHabits = habits.filter(h => h.pillar === 'mental')
