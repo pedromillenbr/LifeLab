@@ -45,6 +45,18 @@ export function MobileNav() {
           borderBottom: '1px solid var(--color-primary-border)',
         }}
       >
+        <button
+          onClick={() => setOpen(o => !o)}
+          aria-label="Menu"
+          className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition-transform"
+          style={{
+            background: 'var(--color-bg-2)',
+            border: '1px solid var(--color-primary-border)',
+            color: 'var(--color-primary)',
+          }}
+        >
+          {open ? <X size={20} /> : <Menu size={20} />}
+        </button>
         <Link href="/" className="flex items-center gap-2">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -59,18 +71,8 @@ export function MobileNav() {
             LifeLab
           </span>
         </Link>
-        <button
-          onClick={() => setOpen(o => !o)}
-          aria-label="Menu"
-          className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition-transform"
-          style={{
-            background: 'var(--color-bg-2)',
-            border: '1px solid var(--color-primary-border)',
-            color: 'var(--color-primary)',
-          }}
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        {/* Spacer para manter o logo centralizado visualmente em relação ao botão */}
+        <div className="w-10 h-10" aria-hidden="true" />
       </div>
 
       {/* Drawer */}

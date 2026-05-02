@@ -283,7 +283,7 @@ export default function MissoesPage() {
           {/* By pillar */}
           {byPillar.length > 0 && (
             <div className="rounded-2xl p-5" style={{ background: 'var(--bg1)', backdropFilter: 'blur(var(--blur))', WebkitBackdropFilter: 'blur(var(--blur))', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <h3 className="text-white font-semibold mb-4">Por Pilar</h3>
+              <h3 className="text-white font-semibold mb-4">Por Evolução</h3>
               <div className="space-y-3">
                 {byPillar.map(({ key, label, total, done }) => {
                   const color = PILLAR_COLORS[key]
@@ -317,7 +317,7 @@ export default function MissoesPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">Pilar</label>
+              <label className="text-xs text-gray-400 mb-1.5 block">Evolução</label>
               <select className="input" value={form.pillar} onChange={e => setForm(p => ({ ...p, pillar: e.target.value as Pillar }))}>
                 {Object.entries(PILLAR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>

@@ -5,7 +5,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Badge, PillarBadge } from '@/components/ui/Badge'
 import dynamic from 'next/dynamic'
 import { Plus, CheckCircle2, Circle, Trash2, Flame, TrendingUp } from 'lucide-react'
-import { cn, PILLAR_LABELS, PILLAR_COLORS, today } from '@/lib/utils'
+import { cn, PILLAR_LABELS, PILLAR_COLORS, today, computeHabitXP } from '@/lib/utils'
 import { Pillar } from '@/store/types'
 
 const HabitosChart = dynamic(() => import('./HabitosChart'), {
@@ -28,7 +28,8 @@ const TT = 'var(--color-text-muted)'
 export default function HabitosPage() {
   const { habits, addHabit, removeHabit, toggleHabitCompletion, getHabitStreak } = useStore()
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState({ name: '', pillar: 'fisico' as Pillar, frequency: 'daily' as const, xpReward: 15, icon: '★' })
+  const [form, setForm] = useState({ name: '', pillar: 'fisico' as Pillar, frequency: 'daily' as const, icon: '★' })
+  const autoXP = computeHabitXP(form.name, form.pillar, form.frequency)
 
 
   // --- NOVA LÓGICA: datas relativas ao onboarding ---
@@ -76,30 +77,38 @@ export default function HabitosPage() {
 
   function handleAdd() {
     if (!form.name.trim()) return
-    addHabit({ name: form.name, pillar: form.pillar, frequency: form.frequency, xpReward: form.xpReward, icon: form.icon })
-    setForm({ name: '', pillar: 'fisico', frequency: 'daily', xpReward: 15, icon: '★' })
+    const xp = computeHabitXP(form.name, form.pillar, form.frequency)
+    addHabit({ name: form.name, pillar: form.pillar, frequency: form.frequency, xpReward: xp, icon: form.icon })
+    setForm({ name: '', pillar: 'fisico', frequency: 'daily', icon: '★' })
     setShowModal(false)
   }
 
-  const ICONS = ['★', '◆', '●', '▲', '■', '◉', '✦', '✚', '▣', '◈', '⬡', '✸']
-
-  // Sugestões pré-definidas (apenas para novos usuários — sem hábitos)
-  const HABIT_SUGGESTIONS: { name: string; icon: string; pillar: Pillar }[] = [
-    { name: 'Academia',     icon: '🏋️', pillar: 'fisico' },
-    { name: 'Acordar cedo', icon: '🌅', pillar: 'disciplina' },
-    { name: 'Estudar',      icon: '📚', pillar: 'produtividade' },
-    { name: 'Ler',          icon: '📖', pillar: 'mental' },
-    { name: 'Meditar',      icon: '🧘', pillar: 'mental' },
-    { name: 'Corrida',      icon: '🏃', pillar: 'fisico' },
-    { name: 'Futebol',      icon: '⚽', pillar: 'fisico' },
-    { name: 'Beber água',   icon: '💧', pillar: 'fisico' },
-    { name: 'Dormir bem',   icon: '😴', pillar: 'disciplina' },
-    { name: 'Orar',         icon: '🙏', pillar: 'espiritual' },
+  // Sugestões pré-definidas (apenas para novos usuários — sem hábitos).
+  // Usa imagens Apple (emoji-datasource-apple via jsdelivr) para evitar
+  // o pacote de emojis do Windows (Segoe UI Emoji).
+  const HABIT_SUGGESTIONS: { name: string; emoji: string; pillar: Pillar }[] = [
+    { name: 'Academia',     emoji: '🏋️', pillar: 'fisico' },
+    { name: 'Acordar cedo', emoji: '🌅', pillar: 'disciplina' },
+    { name: 'Estudar',      emoji: '📚', pillar: 'produtividade' },
+    { name: 'Ler',          emoji: '📖', pillar: 'mental' },
+    { name: 'Meditar',      emoji: '🧘', pillar: 'mental' },
+    { name: 'Corrida',      emoji: '🏃', pillar: 'fisico' },
+    { name: 'Futebol',      emoji: '⚽', pillar: 'fisico' },
+    { name: 'Beber água',   emoji: '💧', pillar: 'fisico' },
+    { name: 'Dormir bem',   emoji: '😴', pillar: 'disciplina' },
+    { name: 'Orar',         emoji: '🙏', pillar: 'espiritual' },
   ]
   const isOnboarding = habits.length === 0
 
-  function handleAddSuggestion(s: { name: string; icon: string; pillar: Pillar }) {
-    addHabit({ name: s.name, pillar: s.pillar, frequency: 'daily', xpReward: 15, icon: s.icon })
+  function appleEmojiUrl(emoji: string) {
+    const codes: string[] = []
+    for (const ch of emoji) codes.push(ch.codePointAt(0)!.toString(16))
+    return `https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.1.2/img/apple/64/${codes.join('-')}.png`
+  }
+
+  function handleAddSuggestion(s: { name: string; emoji: string; pillar: Pillar }) {
+    const xp = computeHabitXP(s.name, s.pillar, 'daily')
+    addHabit({ name: s.name, pillar: s.pillar, frequency: 'daily', xpReward: xp, icon: '★' })
   }
 
   return (
@@ -366,7 +375,13 @@ export default function HabitosPage() {
                       el.style.borderColor = PB
                     }}
                   >
-                    <span style={{ fontSize: 14 }}>{s.icon}</span>
+                    <img
+                      src={appleEmojiUrl(s.emoji)}
+                      alt=""
+                      width={16}
+                      height={16}
+                      style={{ display: 'inline-block', verticalAlign: 'middle' }}
+                    />
                     <span>{s.name}</span>
                     <Plus size={11} style={{ color: P }} />
                   </button>
@@ -380,37 +395,36 @@ export default function HabitosPage() {
           )}
 
           <div>
-            <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 6 }}>Ícone</label>
-            <div className="flex flex-wrap gap-2">
-              {ICONS.map(ic => (
-                <button key={ic} onClick={() => setForm(p => ({ ...p, icon: ic }))}
-                  className="w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
-                  style={form.icon === ic
-                    ? { background: P, boxShadow: '0 0 12px var(--color-primary-glow)', transform: 'scale(1.12)' }
-                    : { background: BG3, border: `1px solid ${BORDER}` }
-                  }
-                >{ic}</button>
-              ))}
-            </div>
-          </div>
-
-          <div>
             <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 6 }}>Nome</label>
             <input className="input" placeholder="Ex: Meditação 10 min" value={form.name}
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 6 }}>Pilar</label>
-              <select className="input" value={form.pillar} onChange={e => setForm(p => ({ ...p, pillar: e.target.value as Pillar }))}>
-                {Object.entries(PILLAR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+          <div>
+            <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 6 }}>Evolução</label>
+            <select className="input" value={form.pillar} onChange={e => setForm(p => ({ ...p, pillar: e.target.value as Pillar }))}>
+              {Object.entries(PILLAR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+
+          <div
+            className="flex items-center justify-between rounded-lg px-3 py-2.5"
+            style={{
+              background: BG3,
+              border: `1px solid ${BORDER}`,
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <TrendingUp size={13} style={{ color: P }} />
+              <span style={{ fontSize: 12, color: TT }}>XP automático</span>
             </div>
-            <div>
-              <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 6 }}>XP por dia</label>
-              <input type="number" className="input" value={form.xpReward}
-                onChange={e => setForm(p => ({ ...p, xpReward: parseInt(e.target.value) || 10 }))} />
+            <div className="flex items-center gap-1">
+              <span style={{ fontSize: 13, fontWeight: 700, color: P, fontFamily: 'var(--font-jetbrains)' }}>
+                +{autoXP}
+              </span>
+              <span style={{ fontSize: 10, color: TT, fontFamily: 'var(--font-jetbrains)' }}>
+                XP / {form.frequency === 'daily' ? 'dia' : form.frequency === 'weekly' ? 'sem' : 'mês'}
+              </span>
             </div>
           </div>
 

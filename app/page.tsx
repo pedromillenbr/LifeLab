@@ -135,10 +135,10 @@ export default function DashboardPage() {
 
       {/* ROW 1 — KPIs */}
       <div className="grid-3">
-        {/* Pilar Físico */}
+        {/* Evolução do Físico */}
         <SpotCard className="green-glow-card fade-up" style={{ animationDelay: '.08s' }} onClick={() => router.push('/fisico')}>
           <div className="card-header">
-            <div className="card-title"><Dumbbell size={13} />Pilar Físico</div>
+            <div className="card-title"><Dumbbell size={13} />Evolução do Físico</div>
             <button className="card-action" onClick={(e) => { e.stopPropagation(); router.push('/fisico') }}><ArrowUpRight size={13} /></button>
           </div>
           <div className="big-num">{scores.fisico}<span className="unit">/100</span></div>
@@ -392,7 +392,7 @@ export default function DashboardPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">Pilar</label>
+              <label className="text-xs text-gray-400 mb-1.5 block">Evolução</label>
               <select className="input" value={newMission.pillar}
                 onChange={e => setNewMission(p => ({ ...p, pillar: e.target.value as Pillar }))}>
                 <option value="fisico">Físico</option>

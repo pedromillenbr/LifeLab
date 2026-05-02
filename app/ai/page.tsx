@@ -35,7 +35,7 @@ function generateResponse(prompt: string, context: { balance: number; receita: n
     const s = context.scores
     const best = Object.entries(s).sort((a, b) => b[1] - a[1])[0][0]
     const worst = Object.entries(s).sort((a, b) => a[1] - b[1])[0][0]
-    return `**Seus Pilares de Performance**\n\nFísico: ${s.fisico}/100\nMental: ${s.mental}/100\nFinanceiro: ${s.financeiro}/100\nProdutividade: ${s.produtividade}/100\nDisciplina: ${s.disciplina}/100\nEspiritual: ${s.espiritual}/100\n\n**Pilar mais forte:** ${best}\n**Foco recomendado:** ${worst}`
+    return `**Suas Evoluções de Performance**\n\nFísico: ${s.fisico}/100\nMental: ${s.mental}/100\nFinanceiro: ${s.financeiro}/100\nProdutividade: ${s.produtividade}/100\nDisciplina: ${s.disciplina}/100\nEspiritual: ${s.espiritual}/100\n\n**Evolução mais forte:** ${best}\n**Foco recomendado:** ${worst}`
   }
   if (p.includes('olá') || p.includes('oi') || p.includes('hello')) {
     return `Olá, ${context.name}!\n\nPosso ajudar com:\n• Análise financeira\n• Planejamento de treinos\n• Hábitos e metas\n• Módulo espiritual\n\nO que você precisa hoje?`

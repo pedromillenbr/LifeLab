@@ -18,7 +18,7 @@ function genId() { return Math.random().toString(36).slice(2) + Date.now().toStr
 const WEIGHT_VALUES = Array.from({ length: 201 }, (_, i) => i)
 const REPS_VALUES = Array.from({ length: 51 }, (_, i) => i)
 
-type Tab = 'dashboard' | 'rotinas' | 'estatisticas'
+type Tab = 'dashboard' | 'treinos' | 'estatisticas'
 
 /* ───── count-up hook ───── */
 function useCountUp(target: number, duration = 900, delay = 0) {
@@ -79,7 +79,7 @@ function ScoreRing({ score, target, weekCount }: { score: number; target: number
         <div className="score-num">{display}<span className="score-denom">/100</span></div>
         <div className="score-week">{weekCount} treinos esta semana</div>
         <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-          <div className="goal-label">Meta do Pilar</div>
+          <div className="goal-label">Meta da Evolução</div>
           <div className="prog-wrap" style={{ marginBottom: 4 }}>
             <div className="prog-fill" style={{ width: `${targetPct}%` }} />
           </div>
@@ -225,7 +225,7 @@ export default function FisicoPage() {
   const [tab, setTab] = useState<Tab>('dashboard')
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0 })
   const tabsRef = useRef<HTMLDivElement>(null)
-  const tabKeys: Tab[] = ['dashboard', 'rotinas', 'estatisticas']
+  const tabKeys: Tab[] = ['dashboard', 'treinos', 'estatisticas']
 
   const [showWeightModal, setShowWeightModal] = useState(false)
   const [newWeight, setNewWeight] = useState('')
@@ -431,9 +431,9 @@ export default function FisicoPage() {
         {/* ── HEADER ────────────────────────────────────────────── */}
         <div className="page-header fade-up">
           <div>
-            <div className="pillar-label">Pilar</div>
+            <div className="pillar-label">Evolução</div>
             <div className="pillar-title">
-              <span className="pillar-title-text">Pilar Físico</span>
+              <span className="pillar-title-text">Evolução do Físico</span>
               {weightToGoal !== 0 && (
                 <span className="pillar-badge">
                   {weightToGoal > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
@@ -509,7 +509,7 @@ export default function FisicoPage() {
         {/* ── TABS ──────────────────────────────────────────────── */}
         <div ref={tabsRef} className="tabs-track fade-up" style={{ animationDelay: '.24s' }}>
           <div className="tab-pill" style={{ left: pillStyle.left, width: pillStyle.width }} />
-          {(['Dashboard', 'Rotinas', 'Estatísticas'] as const).map((t, i) => (
+          {(['Dashboard', 'Treinos', 'Estatísticas'] as const).map((t, i) => (
             <button key={t} className={`tab-btn ${tab === tabKeys[i] ? 'active' : ''}`}
               onClick={() => setTab(tabKeys[i])}>{t}</button>
           ))}
@@ -550,12 +550,12 @@ export default function FisicoPage() {
           </div>
         )}
 
-        {/* ── ROTINAS TAB ───────────────────────────────────────── */}
-        {tab === 'rotinas' && (
+        {/* ── TREINOS TAB ───────────────────────────────────────── */}
+        {tab === 'treinos' && (
           <div className="tab-content">
             {routines.length === 0 && (
               <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-                Você ainda não tem rotinas. Crie a primeira abaixo.
+                Você ainda não tem treinos. Crie o primeiro abaixo.
               </div>
             )}
             {routines.map((r, i) => {
@@ -588,7 +588,7 @@ export default function FisicoPage() {
               )
             })}
             <button className="new-routine" onClick={() => setShowRoutineModal(true)}>
-              <Plus size={14} /> Nova Rotina
+              <Plus size={14} /> Novo Treino
             </button>
           </div>
         )}
@@ -783,7 +783,7 @@ export default function FisicoPage() {
               <button className="modal-close" onClick={() => setShowWeightModal(false)}><X size={16} /></button>
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 4 }}>
-                  Pilar Físico
+                  Evolução do Físico
                 </div>
                 <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-.5px' }}>Registrar Peso</div>
                 <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 3 }}>
@@ -830,9 +830,9 @@ export default function FisicoPage() {
 
         {/* ── NEW ROUTINE MODAL ─────────────────────────────────── */}
         <Modal open={showRoutineModal} onClose={() => { setShowRoutineModal(false); setDraftExercises([]) }}
-          title="Nova Rotina" className="max-w-lg">
+          title="Novo Treino" className="max-w-lg">
           <div className="space-y-4">
-            <input className="input" placeholder="Nome da rotina (ex: Push, Pull, Legs...)"
+            <input className="input" placeholder="Nome do treino (ex: Push, Pull, Legs...)"
               value={newRoutineName} onChange={e => setNewRoutineName(e.target.value)} />
             {draftExercises.length > 0 && (
               <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -861,7 +861,7 @@ export default function FisicoPage() {
               <Plus size={16} /> Adicionar Exercício
             </button>
             <button className="primary-btn" disabled={!newRoutineName.trim()} onClick={handleAddRoutine}>
-              Criar Rotina ({draftExercises.length} exercícios)
+              Criar Treino ({draftExercises.length} exercícios)
             </button>
           </div>
         </Modal>
