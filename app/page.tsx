@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
 import { CyberInput } from '@/components/ui/CyberInput'
 import { FuturisticButton } from '@/components/ui/FuturisticButton'
 import { SpotCard } from '@/components/dashboard/SpotCard'
@@ -105,7 +106,7 @@ export default function DashboardPage() {
   // Mental arc full background (the rotating arc shows progress visually)
 
   return (
-    <div className="dash-root" style={{ padding: '24px 28px 32px', maxWidth: 1500, margin: '0 auto' }}>
+    <div className="dash-root" style={{ maxWidth: 1500, margin: '0 auto' }}>
       {/* HEADER */}
       <header className="fade-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
         <div className="greeting-v2">
@@ -383,25 +384,29 @@ export default function DashboardPage() {
             onKeyDown={e => e.key === 'Enter' && handleAddMission()}
             autoFocus
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-400 mb-1.5 block">XP Reward</label>
-              <select className="input" value={newMission.xpReward}
-                onChange={e => setNewMission(p => ({ ...p, xpReward: parseInt(e.target.value) }))}>
-                {[5, 10, 15, 20, 25, 30, 50].map(v => <option key={v} value={v}>+{v} XP</option>)}
-              </select>
+              <Select
+                value={String(newMission.xpReward)}
+                onChange={(v) => setNewMission(p => ({ ...p, xpReward: parseInt(v) }))}
+                options={[5, 10, 15, 20, 25, 30, 50].map(v => ({ value: String(v), label: `+${v} XP` }))}
+              />
             </div>
             <div>
               <label className="text-xs text-gray-400 mb-1.5 block">Evolução</label>
-              <select className="input" value={newMission.pillar}
-                onChange={e => setNewMission(p => ({ ...p, pillar: e.target.value as Pillar }))}>
-                <option value="fisico">Físico</option>
-                <option value="mental">Mental</option>
-                <option value="financeiro">Financeiro</option>
-                <option value="produtividade">Produtividade</option>
-                <option value="disciplina">Disciplina</option>
-                <option value="espiritual">Espiritual</option>
-              </select>
+              <Select
+                value={newMission.pillar}
+                onChange={(v) => setNewMission(p => ({ ...p, pillar: v as Pillar }))}
+                options={[
+                  { value: 'fisico',        label: 'Físico' },
+                  { value: 'mental',        label: 'Mental' },
+                  { value: 'financeiro',    label: 'Financeiro' },
+                  { value: 'produtividade', label: 'Produtividade' },
+                  { value: 'disciplina',    label: 'Disciplina' },
+                  { value: 'espiritual',    label: 'Espiritual' },
+                ]}
+              />
             </div>
           </div>
           <FuturisticButton variant="primary" fullWidth onClick={handleAddMission}>

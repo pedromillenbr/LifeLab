@@ -1,10 +1,18 @@
 'use client'
-import { useState, useRef, useCallback, type ReactNode, type CSSProperties } from 'react'
+import { useEffect, useState, useRef, useCallback, type ReactNode, type CSSProperties } from 'react'
 import { useStore } from '@/store/useStore'
 import { Toggle } from '@/components/ui/Toggle'
-import { Camera, Shield, Bell, Moon, Palette, Save, DollarSign, Settings } from 'lucide-react'
+import { Select } from '@/components/ui/Select'
+import { Camera, Shield, Bell, Palette, Save, DollarSign, Settings, Send, Check } from 'lucide-react'
 import { PEDRO } from '@/lib/pedroProfile'
 import { motion } from 'framer-motion'
+import { THEMES, applyTheme, DEFAULT_THEME_KEY } from '@/lib/themes'
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  sendNotification,
+  type PermissionStatus,
+} from '@/lib/notifications'
 
 /* ───── 3D tilt + spotlight wrapper ───── */
 function TiltCard({ children, className, style }: {
@@ -78,14 +86,6 @@ const BORDER = 'var(--color-border)'
 const TM = 'var(--color-text-main)'
 const TT = 'var(--color-text-muted)'
 
-const COLORS = [
-  { color: '#10b981', label: 'Verde'    },
-  { color: 'var(--color-primary)', label: 'Azul'     },
-  { color: '#a855f7', label: 'Roxo'     },
-  { color: 'var(--color-primary)', label: 'Laranja'  },
-  { color: 'var(--color-primary)', label: 'Vermelho' },
-]
-
 export default function ConfiguracoesPage() {
   const { profile, updateProfile } = useStore()
   const [tab, setTab]             = useState<Tab>('perfil')
@@ -98,6 +98,41 @@ export default function ConfiguracoesPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [pwError, setPwError]     = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Tema atual + status de permissão de notificação
+  const activeThemeKey = profile.primaryColor || DEFAULT_THEME_KEY
+  const [permission, setPermission] = useState<PermissionStatus>('default')
+  useEffect(() => { setPermission(getNotificationPermission()) }, [])
+
+  function handleSelectTheme(key: string) {
+    applyTheme(key)
+    updateProfile({ primaryColor: key })
+  }
+
+  async function handleToggleNotifications(checked: boolean) {
+    if (!checked) {
+      updateProfile({ notifications: false })
+      return
+    }
+    const result = await requestNotificationPermission()
+    setPermission(result)
+    if (result === 'granted') {
+      updateProfile({ notifications: true })
+      sendNotification('LifeLab ativado', {
+        body: 'Notificações ativas — você receberá lembretes diários.',
+        tag: 'lifelab-welcome',
+      })
+    } else {
+      updateProfile({ notifications: false })
+    }
+  }
+
+  function handleTestNotification() {
+    sendNotification('LifeLab — teste', {
+      body: 'Notificações estão funcionando perfeitamente.',
+      tag: 'lifelab-test',
+    })
+  }
 
   function getXpStart(level: number) {
     const levels = [0, 100, 250, 520, 1000, 2000, 4000, 8000]
@@ -245,9 +280,11 @@ export default function ConfiguracoesPage() {
             <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 6 }} className="flex items-center gap-2">
               <DollarSign size={12} /> Moeda de Exibição
             </label>
-            <select className="input" value={profile.currency} onChange={e => updateProfile({ currency: e.target.value })}>
-              <option value="BRL">R$ — Real Brasileiro</option>
-            </select>
+            <Select
+              value={profile.currency}
+              onChange={(v) => updateProfile({ currency: v })}
+              options={[{ value: 'BRL', label: 'R$ — Real Brasileiro' }]}
+            />
           </div>
 
           <button onClick={handleSaveProfile}
@@ -268,29 +305,51 @@ export default function ConfiguracoesPage() {
       {/* ── PREFERÊNCIAS ───────────────────────────────────────────── */}
       {tab === 'preferencias' && (
         <div className="space-y-3 animate-fade-in" style={{ animationDelay: '180ms' }}>
-          {[
-            { icon: Moon, label: 'Tema Escuro',   sub: 'Modo escuro ativo',          prop: 'darkMode'       as const },
-            { icon: Bell, label: 'Notificações',  sub: 'Receber lembretes diários',   prop: 'notifications'  as const },
-          ].map(({ icon: Icon, label, sub, prop }) => (
-            <TiltCard key={prop} className="rounded-lg p-5"
-              style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                    style={{ background: PM, border: `1px solid ${PB}` }}>
-                    <Icon size={16} style={{ color: P }} />
-                  </div>
-                  <div>
-                    <p style={{ color: TM, fontWeight: 500, fontSize: 14 }}>{label}</p>
-                    <p style={{ fontSize: 11, color: TT }}>{sub}</p>
-                  </div>
+          {/* Notificações */}
+          <TiltCard className="rounded-lg p-5"
+            style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: PM, border: `1px solid ${PB}` }}>
+                  <Bell size={16} style={{ color: P }} />
                 </div>
-                <Toggle checked={!!(profile as any)[prop]} onChange={v => updateProfile({ [prop]: v })} />
+                <div className="min-w-0">
+                  <p style={{ color: TM, fontWeight: 500, fontSize: 14 }}>Notificações</p>
+                  <p style={{ fontSize: 11, color: TT }}>
+                    {permission === 'unsupported'
+                      ? 'Não suportado neste navegador'
+                      : permission === 'denied'
+                        ? 'Permissão negada — ajuste nas configurações do navegador'
+                        : profile.notifications && permission === 'granted'
+                          ? 'Lembretes diários ativados'
+                          : 'Receber lembretes diários'}
+                  </p>
+                </div>
               </div>
-            </TiltCard>
-          ))}
+              <Toggle
+                checked={!!profile.notifications && permission === 'granted'}
+                onChange={handleToggleNotifications}
+              />
+            </div>
 
-          {/* Seletor de cor */}
+            {profile.notifications && permission === 'granted' && (
+              <button
+                onClick={handleTestNotification}
+                className="mt-4 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all"
+                style={{
+                  background: PM,
+                  border: `1px solid ${PB}`,
+                  color: P,
+                }}
+              >
+                <Send size={12} />
+                Enviar notificação teste
+              </button>
+            )}
+          </TiltCard>
+
+          {/* Seletor de tema */}
           <TiltCard className="rounded-lg p-5"
             style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center gap-3 mb-4">
@@ -299,23 +358,54 @@ export default function ConfiguracoesPage() {
                 <Palette size={16} style={{ color: P }} />
               </div>
               <div>
-                <p style={{ color: TM, fontWeight: 500, fontSize: 14 }}>Cor Principal</p>
-                <p style={{ fontSize: 11, color: TT }}>Personalize o destaque do app</p>
+                <p style={{ color: TM, fontWeight: 500, fontSize: 14 }}>Esquema de Cores</p>
+                <p style={{ fontSize: 11, color: TT }}>Escolha a paleta principal do app</p>
               </div>
             </div>
-            <div className="flex gap-3">
-              {COLORS.map(({ color, label }) => (
-                <button key={color} onClick={() => updateProfile({ primaryColor: color })} title={label}
-                  className="w-10 h-10 rounded-full transition-all duration-200 hover:scale-110"
-                  style={{
-                    backgroundColor: color,
-                    boxShadow: profile.primaryColor === color
-                      ? `0 0 0 2px var(--color-bg-1), 0 0 0 4px ${color}, 0 0 12px ${color}60`
-                      : 'none',
-                    transform: profile.primaryColor === color ? 'scale(1.15)' : '',
-                  }}
-                />
-              ))}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {THEMES.map(t => {
+                const isActive = activeThemeKey === t.key
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => handleSelectTheme(t.key)}
+                    className="text-left rounded-lg p-3 transition-all duration-200"
+                    style={{
+                      background: isActive ? `rgba(${t.primaryRgb}, 0.10)` : BG3,
+                      border: `1.5px solid ${isActive ? t.primary : BORDER}`,
+                      boxShadow: isActive
+                        ? `0 0 0 1px ${t.primary}, 0 0 16px rgba(${t.primaryRgb}, 0.25)`
+                        : 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="w-5 h-5 rounded-full"
+                          style={{
+                            background: t.primary,
+                            boxShadow: `0 0 8px rgba(${t.primaryRgb}, 0.5)`,
+                          }}
+                        />
+                        <span
+                          className="w-5 h-5 rounded-full"
+                          style={{
+                            background: t.accent,
+                            boxShadow: `0 0 8px rgba(${t.accentRgb}, 0.5)`,
+                            marginLeft: -8,
+                            border: '2px solid var(--color-bg-2)',
+                          }}
+                        />
+                      </div>
+                      {isActive && <Check size={14} style={{ color: t.primary }} />}
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: TM }}>{t.name}</div>
+                    <div style={{ fontSize: 11, color: TT, marginTop: 2 }}>{t.description}</div>
+                  </button>
+                )
+              })}
             </div>
           </TiltCard>
         </div>

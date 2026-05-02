@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { CheckCircle2, Circle, Plus, Trash2, Zap, Target, ChevronLeft, ChevronRight, Flame, Trophy } from 'lucide-react'
@@ -315,12 +316,14 @@ export default function MissoesPage() {
               onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
               onKeyDown={e => e.key === 'Enter' && handleAdd()} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-400 mb-1.5 block">Evolução</label>
-              <select className="input" value={form.pillar} onChange={e => setForm(p => ({ ...p, pillar: e.target.value as Pillar }))}>
-                {Object.entries(PILLAR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              <Select
+                value={form.pillar}
+                onChange={(v) => setForm(p => ({ ...p, pillar: v as Pillar }))}
+                options={Object.entries(PILLAR_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+              />
             </div>
             <div>
               <label className="text-xs text-gray-400 mb-1.5 block">XP Reward</label>

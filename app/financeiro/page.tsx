@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import dynamic from 'next/dynamic'
@@ -285,14 +286,18 @@ export default function FinanceiroPage() {
           {form.type === 'despesa' && (
             <div>
               <label className="text-xs text-gray-400 mb-1.5 block">Categoria</label>
-              <select className="input" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value as Transaction['category'] }))}>
-                <option value="alimentacao">Alimentacao</option>
-                <option value="transporte">Transporte</option>
-                <option value="lazer">Lazer</option>
-                <option value="saude">Saude</option>
-                <option value="educacao">Educacao</option>
-                <option value="outros">Outros</option>
-              </select>
+              <Select
+                value={form.category}
+                onChange={(v) => setForm(p => ({ ...p, category: v as Transaction['category'] }))}
+                options={[
+                  { value: 'alimentacao', label: 'Alimentação' },
+                  { value: 'transporte',  label: 'Transporte' },
+                  { value: 'lazer',       label: 'Lazer' },
+                  { value: 'saude',       label: 'Saúde' },
+                  { value: 'educacao',    label: 'Educação' },
+                  { value: 'outros',      label: 'Outros' },
+                ]}
+              />
             </div>
           )}
           {(() => {

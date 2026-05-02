@@ -11,6 +11,8 @@
   --color-primary:        #22c55e;
   --color-primary-light:  #4ade80;
   --color-primary-dark:   #16a34a;
+  --color-primary-rgb:    34, 197, 94;
+  --color-accent-rgb:     234, 178, 8;
   --color-primary-muted:  rgba(34, 197, 94, 0.12);
   --color-primary-border: rgba(34, 197, 94, 0.30);
   --color-primary-glow:   rgba(34, 197, 94, 0.30);
@@ -166,6 +168,43 @@ a:focus-visible { outline: none; }
   background: rgba(34,197,94,0.25);
   color: var(--color-text-main);
 }
+
+/* ─── Native <select> fallback (caso algum reste sem o componente custom) ─── */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px !important;
+}
+select option {
+  background: #0f1116 !important;
+  color: #fff !important;
+}
+select option:checked,
+select option:hover {
+  background: rgba(34,197,94,0.18) !important;
+  color: #fff !important;
+}
+
+/* ─── Mobile: previne zoom automático em iOS (precisa font-size >= 16px) ─── */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea,
+  .input {
+    font-size: 16px !important;
+  }
+  /* Toques mais confortáveis em telas pequenas */
+  .input { min-height: 44px; }
+  /* Modais ocupando tela inteira em mobile */
+  body { -webkit-text-size-adjust: 100%; }
+}
+
+/* Evita rolagem horizontal acidental em qualquer breakpoint */
+html, body { max-width: 100vw; overflow-x: hidden; }
 
 /* ═══════════════════════════════════════════════════════════════════
    LASER BORDER (anel rotativo)
@@ -1114,7 +1153,17 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   .grid-3 { grid-template-columns: repeat(3,1fr); }
 }
 
-.dash-root { position: relative; z-index: 2; }
+.dash-root {
+  position: relative;
+  z-index: 2;
+  padding: 16px 14px 28px;
+}
+@media (min-width: 640px) {
+  .dash-root { padding: 20px 22px 30px; }
+}
+@media (min-width: 1024px) {
+  .dash-root { padding: 24px 28px 32px; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    RESPONSIVE OVERRIDES — mobile-first

@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
 import { Badge, PillarBadge } from '@/components/ui/Badge'
 import dynamic from 'next/dynamic'
 import { Plus, CheckCircle2, Circle, Trash2, Flame, TrendingUp } from 'lucide-react'
@@ -402,9 +403,11 @@ export default function HabitosPage() {
 
           <div>
             <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 6 }}>Evolução</label>
-            <select className="input" value={form.pillar} onChange={e => setForm(p => ({ ...p, pillar: e.target.value as Pillar }))}>
-              {Object.entries(PILLAR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
+            <Select
+              value={form.pillar}
+              onChange={(v) => setForm(p => ({ ...p, pillar: v as Pillar }))}
+              options={Object.entries(PILLAR_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+            />
           </div>
 
           <div
