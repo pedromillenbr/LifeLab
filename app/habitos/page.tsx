@@ -37,15 +37,24 @@ export default function HabitosPage() {
   const todayDate = new Date();
   const daysSinceOnboarding = Math.max(0, Math.floor((todayDate.getTime() - onboarding.getTime()) / (1000 * 60 * 60 * 24)));
 
-  // Gera lista de datas desde o onboarding até hoje (máx 30 dias)
+  // Gera lista de datas desde o onboarding até hoje (máx 30 dias) — usada nos cards "este mês"
   const lastNDays = Array.from({ length: Math.min(daysSinceOnboarding + 1, 30) }, (_, i) => {
     const d = new Date(onboarding);
     d.setDate(onboarding.getDate() + i);
     return d.toISOString().split('T')[0];
   });
 
-  // Progresso geral
-  const progressData = lastNDays.map((date, idx) => ({
+  // Janela fixa de 30 dias para o gráfico — garante que as ondas
+  // sempre rendam mesmo quando o onboarding é recente.
+  const CHART_WINDOW = 30;
+  const chartDates = Array.from({ length: CHART_WINDOW }, (_, i) => {
+    const d = new Date(todayDate);
+    d.setDate(todayDate.getDate() - (CHART_WINDOW - 1 - i));
+    return d.toISOString().split('T')[0];
+  });
+
+  // Progresso geral (sempre 30 pontos)
+  const progressData = chartDates.map((date, idx) => ({
     day: idx + 1,
     pct: habits.length > 0
       ? Math.round((habits.filter(h => h.completions.includes(date)).length / habits.length) * 100)
