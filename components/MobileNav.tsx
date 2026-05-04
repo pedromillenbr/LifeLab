@@ -61,6 +61,12 @@ export function MobileNav() {
           paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
           display: 'flex',
           transition: 'opacity 0.3s ease, visibility 0.3s ease',
+          /* Impede que seja movida ou arrastada */
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          pointerEvents: 'auto',
         }}
       >
         {/* Logo/Perfil — esquerda */}

@@ -1043,6 +1043,40 @@ textarea {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   MOBILE NAV — Impede movimento ou drag
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  [data-testid="mobile-nav"] {
+    /* Posição fixa absoluta na parte inferior */
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    
+    /* Impede qualquer tipo de movimento */
+    touch-action: none !important;
+    -webkit-touch-callout: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    
+    /* Remove qualquer transformação aplicada */
+    transform: none !important;
+    transition: opacity 0.3s ease, visibility 0.3s ease !important;
+    
+    /* Garante que não pode ser arrasteado ou selecionado */
+    cursor: default !important;
+    pointer-events: auto !important;
+  }
+
+  /* Impede gestos de toque que possam mover a barra */
+  [data-testid="mobile-nav"] * {
+    touch-action: auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    POMODORO FULLSCREEN MODE
    ═══════════════════════════════════════════════════════════════════ */
 html.pomodoro-fullscreen,
