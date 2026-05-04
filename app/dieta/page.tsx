@@ -7,12 +7,11 @@ import { Select } from '@/components/ui/Select'
 import { today } from '@/lib/utils'
 import { FoodEntry } from '@/store/types'
 import { FOOD_DB, FoodDBItem, searchFoods } from '@/lib/foodDatabase'
-import { MEAL_ICONS, ICON_OPTIONS } from '@/lib/dieta/constants'
+import { MEAL_ICONS, ICON_OPTIONS } from '@/lib/mealIcons'
 import {
-  UtensilsCrossed, Plus, Trash2, Sun, Soup, Moon,
+  UtensilsCrossed, Plus, Trash2,
   Flame, Target, Edit3, Check, Droplets, ChevronDown, ChevronUp,
-  TrendingUp, Search, X, Coffee, Apple, Zap, Pizza, Star, Heart,
-  Settings2,
+  TrendingUp, Search, X, Settings2,
 } from 'lucide-react'
 
 // ── Design tokens ────────────────────────────────────────────────────

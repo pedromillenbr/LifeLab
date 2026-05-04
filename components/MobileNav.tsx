@@ -51,7 +51,7 @@ export function MobileNav() {
     <>
       {/* Barra de navegação horizontal - mobile only - BOTTOM */}
       <div
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 h-20 flex items-center px-3 gap-2 pb-2 md:pb-0"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 h-20 flex items-center px-3 gap-2 pb-2"
         data-testid="mobile-nav"
         style={{
           background: 'rgba(11,12,16,0.98)',
@@ -59,13 +59,11 @@ export function MobileNav() {
           WebkitBackdropFilter: 'blur(20px)',
           borderTop: '1px solid var(--color-primary-border)',
           paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
-          display: 'flex',
-          transition: 'opacity 0.3s ease, visibility 0.3s ease',
-          /* Impede que seja movida ou arrastada */
           touchAction: 'none',
           userSelect: 'none',
           WebkitUserSelect: 'none',
-          WebkitTouchCallout: 'none',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          WebkitTouchCallout: 'none' as any,
           pointerEvents: 'auto',
         }}
       >
