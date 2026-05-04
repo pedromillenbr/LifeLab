@@ -7,11 +7,12 @@ import { Select } from '@/components/ui/Select'
 import { today } from '@/lib/utils'
 import { FoodEntry } from '@/store/types'
 import { FOOD_DB, FoodDBItem, searchFoods } from '@/lib/foodDatabase'
+import { MEAL_ICONS, ICON_OPTIONS } from '@/lib/dieta/constants'
 import {
-  UtensilsCrossed, Plus, Trash2, Sun, Soup, Moon, Cookie,
+  UtensilsCrossed, Plus, Trash2, Sun, Soup, Moon,
   Flame, Target, Edit3, Check, Droplets, ChevronDown, ChevronUp,
   TrendingUp, Search, X, Coffee, Apple, Zap, Pizza, Star, Heart,
-  Settings2, LucideIcon,
+  Settings2,
 } from 'lucide-react'
 
 // ── Design tokens ────────────────────────────────────────────────────
@@ -33,22 +34,6 @@ const MC = {
 } as const
 
 // ── Icon map for meal icons ───────────────────────────────────────────
-export const MEAL_ICONS: Record<string, LucideIcon> = {
-  sun:      Sun,
-  soup:     Soup,
-  moon:     Moon,
-  cookie:   Cookie,
-  coffee:   Coffee,
-  apple:    Apple,
-  zap:      Zap,
-  pizza:    Pizza,
-  star:     Star,
-  heart:    Heart,
-  utensils: UtensilsCrossed,
-  flame:    Flame,
-}
-
-const ICON_OPTIONS = Object.keys(MEAL_ICONS)
 
 // Quick suggestions shown when no search active
 const QUICK: Pick<FoodDBItem, 'id' | 'name' | 'cal' | 'p' | 'c' | 'f' | 'serving'>[] = [
