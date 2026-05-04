@@ -28,8 +28,8 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
           background: 'rgba(255,255,255,0.05)',
           backdropFilter: 'blur(32px)',
           WebkitBackdropFilter: 'blur(32px)',
-          border: '1px solid rgba(34,197,94,0.20)',
-          boxShadow: '0 12px 48px rgba(0,0,0,0.65), 0 0 32px rgba(34,197,94,0.12)',
+          border: '1px solid rgba(var(--color-primary-rgb), 0.20)',
+          boxShadow: '0 12px 48px rgba(0,0,0,0.65), 0 0 32px rgba(var(--color-primary-rgb), 0.12)',
           animation: 'scaleIn 0.25s var(--ease-out) both',
         }}
       >

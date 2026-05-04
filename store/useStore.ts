@@ -5,6 +5,7 @@ import {
   Habit, Mission, WeightEntry, Transaction,
   BibleReading, PrayerEntry, WorkoutRoutine, WorkoutSession,
   CalendarEvent, UserProfile, PillarScores, Pillar, BiblePlanProgress,
+  FoodEntry, DietGoals,
 } from './types'
 import { getBiblePlan, readingsLabel } from '@/lib/bibleData'
 
@@ -97,6 +98,13 @@ interface AuraStore {
   addCalendarEvent: (e: Omit<CalendarEvent, 'id'>) => void
   removeCalendarEvent: (id: string) => void
 
+  // Diet & Calories
+  foodEntries: FoodEntry[]
+  dietGoals: DietGoals
+  addFoodEntry: (f: Omit<FoodEntry, 'id' | 'createdAt'>) => void
+  removeFoodEntry: (id: string) => void
+  updateDietGoals: (g: Partial<DietGoals>) => void
+
   // Computed
   getPillarScores: () => PillarScores
   getOverallScore: () => number
@@ -142,6 +150,8 @@ export const useStore = create<AuraStore>()(
       workoutSessions: [],
       calendarEvents: [],
       biblePlansProgress: {},
+      foodEntries: [],
+      dietGoals: { calories: 2000, protein: 120 },
 
       updateProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
 
@@ -367,6 +377,16 @@ export const useStore = create<AuraStore>()(
       })),
       removeCalendarEvent: (id) => set((s) => ({
         calendarEvents: s.calendarEvents.filter((e) => e.id !== id)
+      })),
+
+      addFoodEntry: (f) => set((s) => ({
+        foodEntries: [...s.foodEntries, { ...f, id: generateId(), createdAt: new Date().toISOString() }]
+      })),
+      removeFoodEntry: (id) => set((s) => ({
+        foodEntries: s.foodEntries.filter((f) => f.id !== id)
+      })),
+      updateDietGoals: (g) => set((s) => ({
+        dietGoals: { ...s.dietGoals, ...g }
       })),
 
       getPillarScores: () => {

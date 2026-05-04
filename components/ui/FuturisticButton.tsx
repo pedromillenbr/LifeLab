@@ -22,15 +22,15 @@ const variantConfig: Record<
   { bg: string; border: string; color: string; hoverBg: string; shadow: string; hoverShadow: string }
 > = {
   primary: {
-    bg: '#22c55e', border: 'transparent', color: '#000000',
-    hoverBg: '#4ade80',
-    shadow: '0 0 24px rgba(34,197,94,0.30), 0 0 48px rgba(34,197,94,0.15)',
-    hoverShadow: '0 0 32px rgba(34,197,94,0.55), 0 0 64px rgba(34,197,94,0.20)',
+    bg: 'var(--color-primary)', border: 'transparent', color: '#000000',
+    hoverBg: 'var(--color-primary-light)',
+    shadow: '0 0 24px rgba(var(--color-primary-rgb), 0.30), 0 0 48px rgba(var(--color-primary-rgb), 0.15)',
+    hoverShadow: '0 0 32px rgba(var(--color-primary-rgb), 0.55), 0 0 64px rgba(var(--color-primary-rgb), 0.20)',
   },
   secondary: {
-    bg: 'rgba(34,197,94,0.10)', border: 'rgba(34,197,94,0.28)', color: '#22c55e',
-    hoverBg: 'rgba(34,197,94,0.18)', shadow: 'none',
-    hoverShadow: '0 0 20px rgba(34,197,94,0.22)',
+    bg: 'rgba(var(--color-primary-rgb), 0.10)', border: 'rgba(var(--color-primary-rgb), 0.28)', color: 'var(--color-primary)',
+    hoverBg: 'rgba(var(--color-primary-rgb), 0.18)', shadow: 'none',
+    hoverShadow: '0 0 20px rgba(var(--color-primary-rgb), 0.22)',
   },
   ghost: {
     bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.70)',
@@ -43,9 +43,9 @@ const variantConfig: Record<
     hoverShadow: '0 0 20px rgba(248,113,113,0.28)',
   },
   gold: {
-    bg: 'rgba(234,179,8,0.10)', border: 'rgba(234,179,8,0.28)', color: '#eab308',
-    hoverBg: 'rgba(234,179,8,0.18)', shadow: 'none',
-    hoverShadow: '0 0 20px rgba(234,179,8,0.30)',
+    bg: 'rgba(var(--color-accent-rgb), 0.10)', border: 'rgba(var(--color-accent-rgb), 0.28)', color: 'var(--gold)',
+    hoverBg: 'rgba(var(--color-accent-rgb), 0.18)', shadow: 'none',
+    hoverShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.30)',
   },
 };
 

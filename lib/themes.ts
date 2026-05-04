@@ -66,6 +66,8 @@ export function applyTheme(key: string) {
   r.setProperty('--color-primary', t.primary)
   r.setProperty('--color-primary-light', t.primaryLight)
   r.setProperty('--color-primary-dark', t.primaryDark)
+  r.setProperty('--color-primary-rgb', t.primaryRgb)
+  r.setProperty('--color-accent-rgb', t.accentRgb)
   r.setProperty('--color-primary-muted', `rgba(${t.primaryRgb}, 0.12)`)
   r.setProperty('--color-primary-border', `rgba(${t.primaryRgb}, 0.30)`)
   r.setProperty('--color-primary-glow', `rgba(${t.primaryRgb}, 0.30)`)

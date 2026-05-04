@@ -153,8 +153,8 @@ export function Select({
               background: 'rgba(15,17,22,0.96)',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
-              border: '1px solid rgba(34,197,94,0.28)',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 24px rgba(34,197,94,0.12)',
+              border: '1px solid rgba(var(--color-primary-rgb), 0.28)',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 24px rgba(var(--color-primary-rgb), 0.12)',
               animation: 'fadeIn 0.14s ease both',
             }}
           >
@@ -175,7 +175,7 @@ export function Select({
                     minHeight: 40,
                     padding: '8px 12px',
                     borderRadius: 8,
-                    background: isSel ? 'rgba(34,197,94,0.14)' : 'transparent',
+                    background: isSel ? 'rgba(var(--color-primary-rgb), 0.14)' : 'transparent',
                     color: isSel ? 'var(--color-primary)' : 'var(--color-text-main)',
                     fontSize: 13,
                     fontWeight: isSel ? 600 : 500,

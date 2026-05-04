@@ -27,7 +27,7 @@ export function SpotCard({ children, className, style, id, onClick }: SpotCardPr
     el.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.015)`
     const glowEl = el.querySelector('.card-cursor-glow') as HTMLElement | null
     if (glowEl) {
-      glowEl.style.background = `radial-gradient(280px circle at ${(x * 100).toFixed(1)}% ${(y * 100).toFixed(1)}%, rgba(34,197,94,0.09) 0%, transparent 70%)`
+      glowEl.style.background = `radial-gradient(280px circle at ${(x * 100).toFixed(1)}% ${(y * 100).toFixed(1)}%, rgba(var(--color-primary-rgb), 0.09) 0%, transparent 70%)`
       glowEl.style.opacity = '1'
     }
   }, [])

@@ -34,8 +34,8 @@ export function MissionToggle({
       style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '9px 12px', borderRadius: 10,
-        background: checked ? 'rgba(34,197,94,0.07)' : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${checked ? 'rgba(34,197,94,0.18)' : 'transparent'}`,
+        background: checked ? 'rgba(var(--color-primary-rgb), 0.07)' : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${checked ? 'rgba(var(--color-primary-rgb), 0.18)' : 'transparent'}`,
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         transition: 'background 0.2s, border-color 0.2s',
@@ -44,7 +44,7 @@ export function MissionToggle({
     >
       {icon && (
         <motion.span
-          animate={{ color: checked ? '#22c55e' : 'rgba(255,255,255,0.35)' }}
+          animate={{ color: checked ? 'var(--color-primary)' : 'rgba(255,255,255,0.35)' }}
           transition={{ duration: 0.2 }}
           style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}
         >
@@ -84,7 +84,7 @@ export function MissionToggle({
         <motion.span
           animate={{
             opacity: checked ? 1 : 0.5,
-            color: checked ? '#eab308' : 'rgba(255,255,255,0.30)',
+            color: checked ? 'var(--gold)' : 'rgba(255,255,255,0.30)',
           }}
           transition={{ duration: 0.2 }}
           style={{
@@ -98,10 +98,10 @@ export function MissionToggle({
 
       <motion.div
         animate={{
-          background: checked ? '#22c55e' : 'rgba(255,255,255,0.10)',
-          borderColor: checked ? '#22c55e' : 'rgba(255,255,255,0.15)',
+          background: checked ? 'var(--color-primary)' : 'rgba(255,255,255,0.10)',
+          borderColor: checked ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)',
           boxShadow: checked
-            ? '0 0 10px rgba(34,197,94,0.50), 0 0 20px rgba(34,197,94,0.20)'
+            ? '0 0 10px rgba(var(--color-primary-rgb), 0.50), 0 0 20px rgba(var(--color-primary-rgb), 0.20)'
             : 'none',
         }}
         transition={{ duration: 0.2 }}

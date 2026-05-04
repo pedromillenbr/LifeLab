@@ -12,8 +12,8 @@ const LEVEL_LABEL: Record<BiblePlanLevel, string> = {
   intenso: 'Intenso',
 }
 const LEVEL_COLOR: Record<BiblePlanLevel, string> = {
-  iniciante: '#22c55e',
-  medio: '#eab308',
+  iniciante: 'var(--color-primary)',
+  medio: 'var(--gold)',
   intenso: '#f97316',
 }
 
@@ -76,9 +76,9 @@ export default function PlanosPage() {
             <div key={plan.id} className="rounded-2xl p-5 flex flex-col"
               style={{
                 background: 'rgba(255,255,255,.04)',
-                border: `1px solid ${isActive ? 'rgba(34,197,94,.3)' : 'rgba(255,255,255,.09)'}`,
+                border: `1px solid ${isActive ? 'rgba(var(--color-primary-rgb), .3)' : 'rgba(255,255,255,.09)'}`,
                 backdropFilter: 'blur(20px)',
-                boxShadow: isActive ? '0 0 24px rgba(34,197,94,.1)' : 'none',
+                boxShadow: isActive ? '0 0 24px rgba(var(--color-primary-rgb), .1)' : 'none',
               }}>
 
               {/* Card header — clickable area for navigation when started */}
@@ -92,9 +92,9 @@ export default function PlanosPage() {
                       {isActive && (
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full"
                           style={{
-                            background: 'rgba(34,197,94,.12)',
+                            background: 'rgba(var(--color-primary-rgb), .12)',
                             color: 'var(--color-primary)',
-                            border: '1px solid rgba(34,197,94,.3)',
+                            border: '1px solid rgba(var(--color-primary-rgb), .3)',
                           }}>
                           Ativo
                         </span>
@@ -161,7 +161,7 @@ export default function PlanosPage() {
                     style={{
                       width: `${pct}%`,
                       background: 'var(--color-primary)',
-                      boxShadow: '0 0 6px rgba(34,197,94,.5)',
+                      boxShadow: '0 0 6px rgba(var(--color-primary-rgb), .5)',
                       transition: 'width .5s ease',
                     }} />
                 </div>
@@ -175,7 +175,7 @@ export default function PlanosPage() {
                   style={{
                     background: 'var(--color-primary)',
                     color: '#000',
-                    boxShadow: '0 0 18px rgba(34,197,94,.3)',
+                    boxShadow: '0 0 18px rgba(var(--color-primary-rgb), .3)',
                   }}>
                   <Play size={13} /> Iniciar plano
                 </button>
@@ -185,9 +185,9 @@ export default function PlanosPage() {
                 <Link href={`/espiritual/planos/${plan.id}`}
                   className="w-full py-2.5 rounded-md text-sm font-bold flex items-center justify-center gap-1.5"
                   style={{
-                    background: 'rgba(34,197,94,.15)',
+                    background: 'rgba(var(--color-primary-rgb), .15)',
                     color: 'var(--color-primary)',
-                    border: '1px solid rgba(34,197,94,.3)',
+                    border: '1px solid rgba(var(--color-primary-rgb), .3)',
                   }}>
                   <CheckCircle size={13} /> Concluído · Ver
                 </Link>
@@ -213,7 +213,7 @@ export default function PlanosPage() {
                       style={{
                         background: 'var(--color-primary)',
                         color: '#000',
-                        boxShadow: '0 0 18px rgba(34,197,94,.3)',
+                        boxShadow: '0 0 18px rgba(var(--color-primary-rgb), .3)',
                       }}>
                       <RotateCcw size={12} /> Retomar
                     </button>

@@ -13,8 +13,8 @@ import Link from 'next/link'
 type Quality = 'distracted' | 'neutral' | 'deep'
 type ActionState = 'idle' | 'in-progress' | 'completed'
 
-const GOLD = '#eab308'
-const GOLD_HI = '#facc15'
+const GOLD = 'var(--gold)'
+const GOLD_HI = 'var(--gold)'
 const ORANGE = '#f97316'
 const XP_LEVELS = [0, 100, 250, 520, 1000, 2000, 4000, 8000, 16000, 32000]
 
@@ -28,7 +28,7 @@ function parseReflection(text?: string): { quality: Quality | null; note: string
 function MiniSparkline({ values, color = 'green' }: { values: number[]; color?: 'green' | 'gold' }) {
   const max = Math.max(...values, 1)
   const fill = color === 'gold' ? GOLD : 'var(--color-primary)'
-  const glow = color === 'gold' ? 'rgba(234,179,8,.5)' : 'rgba(34,197,94,.4)'
+  const glow = color === 'gold' ? 'rgba(var(--color-accent-rgb), .5)' : 'rgba(var(--color-primary-rgb), .4)'
   return (
     <div className="flex items-end gap-[2.5px] mt-3.5">
       {values.map((v, i) => (
@@ -50,7 +50,7 @@ function CircularArc({ percent }: { percent: number }) {
       <circle cx="36" cy="36" r={r} fill="none" stroke={GOLD} strokeWidth="5"
         strokeLinecap="round" strokeDasharray={`${c * p} ${c * (1 - p)}`}
         transform="rotate(-90 36 36)"
-        style={{ filter: 'drop-shadow(0 0 6px rgba(234,179,8,.6))', transition: 'stroke-dasharray .8s ease' }} />
+        style={{ filter: 'drop-shadow(0 0 6px rgba(var(--color-accent-rgb), .6))', transition: 'stroke-dasharray .8s ease' }} />
       <text x="36" y="40" textAnchor="middle" fontSize="13" fontWeight="700" fill="white" fontFamily="JetBrains Mono,monospace">{percent}%</text>
     </svg>
   )
@@ -59,7 +59,7 @@ function CircularArc({ percent }: { percent: number }) {
 function QualityBadge({ quality }: { quality: Quality | null }) {
   if (!quality) return null
   const s = {
-    deep:       { label: 'Profundo',  bg: 'rgba(34,197,94,.12)',   fg: 'var(--color-primary)',    border: 'rgba(34,197,94,.20)' },
+    deep:       { label: 'Profundo',  bg: 'rgba(var(--color-primary-rgb), .12)',   fg: 'var(--color-primary)',    border: 'rgba(var(--color-primary-rgb), .20)' },
     neutral:    { label: 'Neutro',    bg: 'rgba(255,255,255,.05)', fg: 'var(--color-text-subtle)', border: 'rgba(255,255,255,.08)' },
     distracted: { label: 'Distraído', bg: 'rgba(248,113,113,.10)', fg: '#f87171',                  border: 'rgba(248,113,113,.20)' },
   }[quality]
@@ -71,10 +71,10 @@ function PracticeCard({ type, state, title, subtitle, onClick }: {
 }) {
   const Icon = type === 'ler' ? BookOpen : Sunrise
   const iconColor = state === 'completed' ? 'var(--color-primary)' : state === 'in-progress' ? GOLD : 'var(--color-text-muted)'
-  const iconBg    = state === 'completed' ? 'rgba(34,197,94,.15)' : state === 'in-progress' ? 'rgba(234,179,8,.15)' : 'rgba(255,255,255,.07)'
-  const iconBorder = state === 'completed' ? 'rgba(34,197,94,.30)' : state === 'in-progress' ? 'rgba(234,179,8,.35)' : 'rgba(255,255,255,.12)'
-  const cardBg    = state === 'completed' ? 'rgba(34,197,94,.05)' : state === 'in-progress' ? 'rgba(234,179,8,.03)' : 'rgba(255,255,255,.04)'
-  const cardBorder = state === 'completed' ? 'rgba(34,197,94,.20)' : state === 'in-progress' ? 'rgba(234,179,8,.28)' : 'rgba(255,255,255,.09)'
+  const iconBg    = state === 'completed' ? 'rgba(var(--color-primary-rgb), .15)' : state === 'in-progress' ? 'rgba(var(--color-accent-rgb), .15)' : 'rgba(255,255,255,.07)'
+  const iconBorder = state === 'completed' ? 'rgba(var(--color-primary-rgb), .30)' : state === 'in-progress' ? 'rgba(var(--color-accent-rgb), .35)' : 'rgba(255,255,255,.12)'
+  const cardBg    = state === 'completed' ? 'rgba(var(--color-primary-rgb), .05)' : state === 'in-progress' ? 'rgba(var(--color-accent-rgb), .03)' : 'rgba(255,255,255,.04)'
+  const cardBorder = state === 'completed' ? 'rgba(var(--color-primary-rgb), .20)' : state === 'in-progress' ? 'rgba(var(--color-accent-rgb), .28)' : 'rgba(255,255,255,.09)'
 
   return (
     <div onClick={onClick} className="relative rounded-2xl p-6 cursor-pointer select-none overflow-hidden transition-all"
@@ -82,7 +82,7 @@ function PracticeCard({ type, state, title, subtitle, onClick }: {
 
       {state === 'completed' && (
         <div className="absolute top-3.5 right-3.5 w-6 h-6 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(34,197,94,.20)', border: '1.5px solid var(--color-primary)' }}>
+          style={{ background: 'rgba(var(--color-primary-rgb), .20)', border: '1.5px solid var(--color-primary)' }}>
           <Check size={11} style={{ color: 'var(--color-primary)' }} />
         </div>
       )}
@@ -90,7 +90,7 @@ function PracticeCard({ type, state, title, subtitle, onClick }: {
       <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5 transition-all"
         style={{
           background: iconBg, border: `1.5px solid ${iconBorder}`,
-          boxShadow: state === 'in-progress' ? `0 0 20px ${type === 'ler' ? 'rgba(234,179,8,.3)' : 'rgba(34,197,94,.25)'}` : 'none',
+          boxShadow: state === 'in-progress' ? `0 0 20px ${type === 'ler' ? 'rgba(var(--color-accent-rgb), .3)' : 'rgba(var(--color-primary-rgb), .25)'}` : 'none',
         }}>
         <Icon size={26} style={{ color: iconColor }} />
       </div>
@@ -101,7 +101,7 @@ function PracticeCard({ type, state, title, subtitle, onClick }: {
       {state === 'in-progress' && (
         <div className="mb-3">
           <div className="h-[3px] rounded-sm overflow-hidden mb-1" style={{ background: 'rgba(255,255,255,.07)' }}>
-            <div className="h-full rounded-sm" style={{ width: '55%', background: `linear-gradient(90deg,${GOLD},${GOLD_HI})`, boxShadow: '0 0 6px rgba(234,179,8,.5)' }} />
+            <div className="h-full rounded-sm" style={{ width: '55%', background: `linear-gradient(90deg,${GOLD},${GOLD_HI})`, boxShadow: '0 0 6px rgba(var(--color-accent-rgb), .5)' }} />
           </div>
           <div className="text-[10px] font-mono" style={{ color: 'var(--color-text-subtle)' }}>Em andamento…</div>
         </div>
@@ -109,8 +109,8 @@ function PracticeCard({ type, state, title, subtitle, onClick }: {
 
       <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full" style={
         state === 'idle'        ? { background: 'rgba(255,255,255,.06)', color: 'var(--color-text-subtle)', border: '1px solid transparent' }
-        : state === 'in-progress' ? { background: 'rgba(234,179,8,.12)', color: GOLD, border: '1px solid rgba(234,179,8,.20)' }
-        :                           { background: 'rgba(34,197,94,.12)', color: 'var(--color-primary)', border: '1px solid rgba(34,197,94,.22)' }
+        : state === 'in-progress' ? { background: 'rgba(var(--color-accent-rgb), .12)', color: GOLD, border: '1px solid rgba(var(--color-accent-rgb), .20)' }
+        :                           { background: 'rgba(var(--color-primary-rgb), .12)', color: 'var(--color-primary)', border: '1px solid rgba(var(--color-primary-rgb), .22)' }
       }>
         {state === 'idle'         && <><Circle size={9} /> Iniciar</>}
         {state === 'in-progress'  && <><Clock size={9} /> Em andamento</>}
@@ -132,8 +132,8 @@ function FeedbackModal({ type, onClose, onSave }: {
   ]
   const title    = type === 'ler' ? 'Ler concluído' : 'Orar concluído'
   const Icon     = type === 'ler' ? BookOpen : Sunrise
-  const iconBg   = type === 'ler' ? 'rgba(234,179,8,.15)' : 'rgba(34,197,94,.12)'
-  const iconBorder = type === 'ler' ? 'rgba(234,179,8,.35)' : 'rgba(34,197,94,.25)'
+  const iconBg   = type === 'ler' ? 'rgba(var(--color-accent-rgb), .15)' : 'rgba(var(--color-primary-rgb), .12)'
+  const iconBorder = type === 'ler' ? 'rgba(var(--color-accent-rgb), .35)' : 'rgba(var(--color-primary-rgb), .25)'
   const iconColor  = type === 'ler' ? GOLD : 'var(--color-primary)'
 
   return (
@@ -146,7 +146,7 @@ function FeedbackModal({ type, onClose, onSave }: {
 
         <div className="flex flex-col items-center gap-3 mb-6 text-center">
           <div className="w-14 h-14 rounded-full flex items-center justify-center"
-            style={{ background: iconBg, border: `2px solid ${iconBorder}`, boxShadow: `0 0 18px ${type === 'ler' ? 'rgba(234,179,8,.3)' : 'rgba(34,197,94,.2)'}` }}>
+            style={{ background: iconBg, border: `2px solid ${iconBorder}`, boxShadow: `0 0 18px ${type === 'ler' ? 'rgba(var(--color-accent-rgb), .3)' : 'rgba(var(--color-primary-rgb), .2)'}` }}>
             <Icon size={24} style={{ color: iconColor }} />
           </div>
           <div>
@@ -163,7 +163,7 @@ function FeedbackModal({ type, onClose, onSave }: {
               <button key={q.key} onClick={() => setQuality(q.key)}
                 className="px-2 py-3.5 rounded-md text-center transition-all"
                 style={{
-                  background: sel ? (isDeep ? 'rgba(234,179,8,.10)' : 'rgba(34,197,94,.12)') : 'rgba(255,255,255,.05)',
+                  background: sel ? (isDeep ? 'rgba(var(--color-accent-rgb), .10)' : 'rgba(var(--color-primary-rgb), .12)') : 'rgba(255,255,255,.05)',
                   border: `1.5px solid ${sel ? (isDeep ? GOLD : 'var(--color-primary)') : 'rgba(255,255,255,.09)'}`,
                   color: sel ? (isDeep ? GOLD : 'var(--color-primary)') : 'var(--color-text-muted)',
                 }}>
@@ -181,7 +181,7 @@ function FeedbackModal({ type, onClose, onSave }: {
         />
         <button disabled={!quality} onClick={() => quality && onSave(quality, note)}
           className="w-full py-3 rounded-md font-bold text-sm flex items-center justify-center gap-1.5 transition-all"
-          style={{ background: 'var(--color-primary)', color: '#000', opacity: quality ? 1 : 0.35, cursor: quality ? 'pointer' : 'not-allowed', boxShadow: quality ? '0 0 24px rgba(34,197,94,.30)' : 'none' }}>
+          style={{ background: 'var(--color-primary)', color: '#000', opacity: quality ? 1 : 0.35, cursor: quality ? 'pointer' : 'not-allowed', boxShadow: quality ? '0 0 24px rgba(var(--color-primary-rgb), .30)' : 'none' }}>
           <Check size={15} /> Salvar reflexão
         </button>
       </div>
@@ -278,8 +278,8 @@ export default function EspiritualPage() {
   }
 
   const greetingTitle = readingState === 'completed' && prayerState === 'completed'
-    ? <>Dia completo, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(34,197,94,.5)' }}>{profile.name}</span> ✦</>
-    : <>Bom dia, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(34,197,94,.5)' }}>{profile.name}</span></>
+    ? <>Dia completo, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(var(--color-primary-rgb), .5)' }}>{profile.name}</span> ✦</>
+    : <>Bom dia, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(var(--color-primary-rgb), .5)' }}>{profile.name}</span></>
 
   return (
     <div className="p-4 md:p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
@@ -299,7 +299,7 @@ export default function EspiritualPage() {
         <div className="flex items-center gap-2.5">
           {/* Streak badge */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full"
-            style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(234,179,8,.25)', color: GOLD, backdropFilter: 'blur(12px)' }}>
+            style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(var(--color-accent-rgb), .25)', color: GOLD, backdropFilter: 'blur(12px)' }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: GOLD }} />
             <Flame size={12} style={{ color: ORANGE }} />
             {streak} dias
@@ -311,10 +311,10 @@ export default function EspiritualPage() {
             <span className="font-mono font-bold" style={{ color: 'var(--color-text-main)' }}>{profile.xp}</span>
             <span style={{ color: 'var(--color-text-subtle)' }}>XP</span>
             <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,.1)' }}>
-              <div className="h-full rounded-full" style={{ width: `${levelPct}%`, background: 'var(--color-primary)', boxShadow: '0 0 6px rgba(34,197,94,.6)' }} />
+              <div className="h-full rounded-full" style={{ width: `${levelPct}%`, background: 'var(--color-primary)', boxShadow: '0 0 6px rgba(var(--color-primary-rgb), .6)' }} />
             </div>
             <div className="px-1.5 py-0.5 rounded-md text-[10px] font-bold"
-              style={{ background: 'rgba(34,197,94,.15)', color: 'var(--color-primary)', border: '1px solid rgba(34,197,94,.25)' }}>
+              style={{ background: 'rgba(var(--color-primary-rgb), .15)', color: 'var(--color-primary)', border: '1px solid rgba(var(--color-primary-rgb), .25)' }}>
               Lv.{profile.level}
             </div>
           </div>
@@ -330,7 +330,7 @@ export default function EspiritualPage() {
             <span className="ml-auto text-[10px] font-mono" style={{ color: 'var(--color-text-subtle)' }}>7 DIAS</span>
           </div>
           <div className="flex items-baseline">
-            <span className="font-bold font-mono leading-none" style={{ fontSize: 36, color: 'var(--color-primary)', textShadow: '0 0 16px rgba(34,197,94,.4)' }}>{consistency7}</span>
+            <span className="font-bold font-mono leading-none" style={{ fontSize: 36, color: 'var(--color-primary)', textShadow: '0 0 16px rgba(var(--color-primary-rgb), .4)' }}>{consistency7}</span>
             <span className="ml-1 text-lg" style={{ color: 'var(--color-text-muted)' }}>%</span>
           </div>
           <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-subtle)' }}>dos dias com prática</p>
@@ -344,7 +344,7 @@ export default function EspiritualPage() {
             <span className="ml-auto text-[10px] font-mono" style={{ color: 'var(--color-text-subtle)' }}>MÉDIA</span>
           </div>
           <div className="flex items-baseline">
-            <span className="font-bold font-mono leading-none" style={{ fontSize: 36, color: GOLD, textShadow: '0 0 16px rgba(234,179,8,.5)' }}>{depthScore.toFixed(1)}</span>
+            <span className="font-bold font-mono leading-none" style={{ fontSize: 36, color: GOLD, textShadow: '0 0 16px rgba(var(--color-accent-rgb), .5)' }}>{depthScore.toFixed(1)}</span>
             <span className="ml-1 text-lg" style={{ color: 'var(--color-text-muted)' }}>/5</span>
           </div>
           <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-subtle)' }}>qualidade de reflexão</p>
@@ -358,7 +358,7 @@ export default function EspiritualPage() {
             <span className="ml-auto text-[10px] font-mono" style={{ color: 'var(--color-text-subtle)' }}>SESSÕES</span>
           </div>
           <div className="flex items-baseline">
-            <span className="font-bold font-mono leading-none" style={{ fontSize: 36, color: 'var(--color-primary)', textShadow: '0 0 16px rgba(34,197,94,.4)' }}>{freqThisMonth}</span>
+            <span className="font-bold font-mono leading-none" style={{ fontSize: 36, color: 'var(--color-primary)', textShadow: '0 0 16px rgba(var(--color-primary-rgb), .4)' }}>{freqThisMonth}</span>
           </div>
           <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-subtle)' }}>este mês</p>
           <MiniSparkline values={freqBars} color="green" />
@@ -371,7 +371,7 @@ export default function EspiritualPage() {
           <button key={key} onClick={() => setTab(key)}
             className="px-4 py-1.5 text-xs font-medium rounded-[4px] transition-all"
             style={tab === key
-              ? { background: 'rgba(34,197,94,.15)', color: 'var(--color-primary)' }
+              ? { background: 'rgba(var(--color-primary-rgb), .15)', color: 'var(--color-primary)' }
               : { color: 'var(--color-text-muted)', background: 'transparent' }}>
             {label}
           </button>
@@ -384,7 +384,7 @@ export default function EspiritualPage() {
           {/* Motivational banner */}
           {consistency7 < 40 && (
             <div className="flex items-center gap-2.5 mb-4 px-4 py-3 rounded-md text-[13px]"
-              style={{ background: 'rgba(234,179,8,.07)', border: '1px solid rgba(234,179,8,.18)', color: 'var(--color-text-muted)' }}>
+              style={{ background: 'rgba(var(--color-accent-rgb), .07)', border: '1px solid rgba(var(--color-accent-rgb), .18)', color: 'var(--color-text-muted)' }}>
               <Sparkles size={14} style={{ color: GOLD, flexShrink: 0 }} />
               Comece com apenas <strong style={{ color: 'var(--color-text-main)', margin: '0 3px' }}>uma prática</strong> hoje. Consistência supera intensidade.
             </div>
@@ -416,7 +416,7 @@ export default function EspiritualPage() {
                 </div>
                 <div className="h-1 rounded-sm overflow-hidden mb-1.5" style={{ background: 'rgba(255,255,255,.07)' }}>
                   <div className="h-full rounded-sm transition-all duration-700"
-                    style={{ width: `${progress}%`, background: GOLD, boxShadow: '0 0 8px rgba(234,179,8,.6)' }} />
+                    style={{ width: `${progress}%`, background: GOLD, boxShadow: '0 0 8px rgba(var(--color-accent-rgb), .6)' }} />
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>{completedDates.length} / {currentPlan?.duration} dias concluídos</span>
@@ -425,7 +425,7 @@ export default function EspiritualPage() {
                 <div className="mt-3">
                   <Link href="/espiritual/planos"
                     className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md hover:opacity-90"
-                    style={{ background: 'rgba(34,197,94,.12)', color: 'var(--color-primary)', border: '1px solid rgba(34,197,94,.25)' }}>
+                    style={{ background: 'rgba(var(--color-primary-rgb), .12)', color: 'var(--color-primary)', border: '1px solid rgba(var(--color-primary-rgb), .25)' }}>
                     <BookOpen size={11} /> Ver todos os planos
                   </Link>
                 </div>
@@ -453,7 +453,7 @@ export default function EspiritualPage() {
               return (
                 <div key={r.id} className="flex items-start gap-3 px-3.5 py-3 mb-2 rounded-md"
                   style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.09)' }}>
-                  <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: dotColor, boxShadow: p.quality === 'deep' ? '0 0 8px rgba(34,197,94,.5)' : 'none' }} />
+                  <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: dotColor, boxShadow: p.quality === 'deep' ? '0 0 8px rgba(var(--color-primary-rgb), .5)' : 'none' }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1 text-[11px] font-semibold" style={{ color: 'var(--color-text-subtle)' }}>
                       {typeLabel} <QualityBadge quality={p.quality} />
@@ -489,9 +489,9 @@ export default function EspiritualPage() {
                   return (
                     <div key={date} title={date} className="rounded-md" style={{
                       width: 22, height: 22,
-                      background: done ? 'var(--color-primary)' : isToday ? 'rgba(234,179,8,.10)' : 'rgba(255,255,255,.05)',
+                      background: done ? 'var(--color-primary)' : isToday ? 'rgba(var(--color-accent-rgb), .10)' : 'rgba(255,255,255,.05)',
                       border: `1px solid ${done ? 'var(--color-primary)' : isToday ? GOLD : 'rgba(255,255,255,.07)'}`,
-                      boxShadow: done ? '0 0 6px rgba(34,197,94,.4)' : isToday ? '0 0 8px rgba(234,179,8,.4)' : 'none',
+                      boxShadow: done ? '0 0 6px rgba(var(--color-primary-rgb), .4)' : isToday ? '0 0 8px rgba(var(--color-accent-rgb), .4)' : 'none',
                     }} />
                   )
                 })}
@@ -499,7 +499,7 @@ export default function EspiritualPage() {
               <div className="flex items-center gap-4 mt-3.5">
                 {[
                   { bg: 'var(--color-primary)',                                      label: 'Concluído' },
-                  { bg: 'rgba(234,179,8,.2)', border: `1px solid ${GOLD}`,           label: 'Hoje' },
+                  { bg: 'rgba(var(--color-accent-rgb), .2)', border: `1px solid ${GOLD}`,           label: 'Hoje' },
                   { bg: 'rgba(255,255,255,.05)',                                      label: 'Sem atividade' },
                 ].map(({ bg, border, label }) => (
                   <div key={label} className="flex items-center gap-1.5 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
@@ -524,7 +524,7 @@ export default function EspiritualPage() {
                 </div>
                 <div className="h-1 rounded-sm overflow-hidden mb-1.5" style={{ background: 'rgba(255,255,255,.07)' }}>
                   <div className="h-full rounded-sm transition-all duration-700"
-                    style={{ width: `${progress}%`, background: GOLD, boxShadow: '0 0 8px rgba(234,179,8,.6)' }} />
+                    style={{ width: `${progress}%`, background: GOLD, boxShadow: '0 0 8px rgba(var(--color-accent-rgb), .6)' }} />
                 </div>
                 <div className="text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
                   {completedDates.length} / {currentPlan?.duration} dias concluídos
@@ -569,11 +569,11 @@ export default function EspiritualPage() {
               return (
                 <div key={r.id} className="flex items-start gap-3 px-3.5 py-3 mb-2 rounded-md hover:bg-white/[0.03] transition-colors"
                   style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.09)', opacity: r.completed ? 1 : 0.5 }}>
-                  <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: dotColor, boxShadow: p.quality === 'deep' ? '0 0 8px rgba(34,197,94,.5)' : 'none' }} />
+                  <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: dotColor, boxShadow: p.quality === 'deep' ? '0 0 8px rgba(var(--color-primary-rgb), .5)' : 'none' }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1 text-[11px] font-semibold" style={{ color: 'var(--color-text-subtle)' }}>
                       Leitura <QualityBadge quality={p.quality} />
-                      {r.completed && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(34,197,94,.12)', color: 'var(--color-primary)' }}>+15 XP</span>}
+                      {r.completed && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(var(--color-primary-rgb), .12)', color: 'var(--color-primary)' }}>+15 XP</span>}
                     </div>
                     {editingId === r.id && editType === 'reading' ? (
                       <div className="mt-1.5">
@@ -615,11 +615,11 @@ export default function EspiritualPage() {
               return (
                 <div key={p.id} className="flex items-start gap-3 px-3.5 py-3 mb-2 rounded-md hover:bg-white/[0.03] transition-colors"
                   style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.09)' }}>
-                  <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: dotColor, boxShadow: parsed.quality === 'deep' ? '0 0 8px rgba(34,197,94,.5)' : 'none' }} />
+                  <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: dotColor, boxShadow: parsed.quality === 'deep' ? '0 0 8px rgba(var(--color-primary-rgb), .5)' : 'none' }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1 text-[11px] font-semibold" style={{ color: 'var(--color-text-subtle)' }}>
                       Oração <QualityBadge quality={parsed.quality} />
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(34,197,94,.12)', color: 'var(--color-primary)' }}>+10 XP</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(var(--color-primary-rgb), .12)', color: 'var(--color-primary)' }}>+10 XP</span>
                     </div>
                     {editingId === p.id && editType === 'prayer' ? (
                       <div className="mt-1.5">

@@ -43,7 +43,7 @@ export function CursorEffects() {
         if (p.x > W + 4) p.x = -4
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(34,197,94,${p.a * 0.35})`
+        ctx.fillStyle = `rgba(var(--color-primary-rgb), ${p.a * 0.35})`
         ctx.fill()
       })
       raf = requestAnimationFrame(draw)

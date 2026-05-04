@@ -26,13 +26,13 @@ export const CyberInput = forwardRef<HTMLInputElement, CyberInputProps>(
     const hasError = Boolean(error);
     const borderColor = hasError
       ? 'rgba(248,113,113,0.55)'
-      : focused ? 'rgba(34,197,94,0.55)' : 'rgba(255,255,255,0.09)';
+      : focused ? 'rgba(var(--color-primary-rgb), 0.55)' : 'rgba(255,255,255,0.09)';
 
     const ringColor = hasError
       ? 'rgba(248,113,113,0.12)'
-      : focused ? 'rgba(34,197,94,0.12)' : 'transparent';
+      : focused ? 'rgba(var(--color-primary-rgb), 0.12)' : 'transparent';
 
-    const labelColor = hasError ? '#f87171' : focused ? '#22c55e' : 'rgba(255,255,255,0.55)';
+    const labelColor = hasError ? '#f87171' : focused ? 'var(--color-primary)' : 'rgba(255,255,255,0.55)';
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, ...(style as any) }}>
@@ -68,7 +68,7 @@ export const CyberInput = forwardRef<HTMLInputElement, CyberInputProps>(
         >
           {leftIcon && (
             <motion.span
-              animate={{ color: focused ? '#22c55e' : 'rgba(255,255,255,0.35)' }}
+              animate={{ color: focused ? 'var(--color-primary)' : 'rgba(255,255,255,0.35)' }}
               transition={{ duration: 0.2 }}
               style={{
                 position: 'absolute', left: 12, display: 'inline-flex',
@@ -91,7 +91,7 @@ export const CyberInput = forwardRef<HTMLInputElement, CyberInputProps>(
               color: 'rgba(255,255,255,0.93)', fontSize: '14px',
               fontFamily: variant === 'mono' ? "'JetBrains Mono', monospace" : "'Inter', sans-serif",
               fontWeight: variant === 'mono' ? 600 : 400,
-              lineHeight: 1.5, caretColor: '#22c55e',
+              lineHeight: 1.5, caretColor: 'var(--color-primary)',
             }}
             {...props}
           />
@@ -122,7 +122,7 @@ export const CyberInput = forwardRef<HTMLInputElement, CyberInputProps>(
                   height: 2,
                   background: hasError
                     ? 'linear-gradient(90deg, transparent, #f87171 40%, #fca5a5 60%, transparent)'
-                    : 'linear-gradient(90deg, transparent, #22c55e 40%, #4ade80 60%, transparent)',
+                    : 'linear-gradient(90deg, transparent, var(--color-primary) 40%, var(--color-primary-light) 60%, transparent)',
                   borderRadius: '0 0 9px 9px', transformOrigin: 'left',
                   pointerEvents: 'none',
                 }}

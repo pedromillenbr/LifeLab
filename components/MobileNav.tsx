@@ -6,12 +6,13 @@ import { usePathname } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import {
   LayoutDashboard, Dumbbell, CheckSquare, Target,
-  DollarSign, Calendar, BookOpen, Sparkles, Settings, Menu, X, Timer,
+  DollarSign, Calendar, BookOpen, Sparkles, Settings, Menu, X, Timer, UtensilsCrossed,
 } from 'lucide-react'
 
 const NAV = [
   { href: '/',           icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/fisico',     icon: Dumbbell,        label: 'Físico' },
+  { href: '/dieta',      icon: UtensilsCrossed, label: 'Dieta' },
   { href: '/habitos',    icon: CheckSquare,     label: 'Hábitos' },
   { href: '/missoes',    icon: Target,          label: 'Missões' },
   { href: '/foco',       icon: Timer,           label: 'Foco' },

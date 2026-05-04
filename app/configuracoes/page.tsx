@@ -51,12 +51,12 @@ const tiltCSS = `
   overflow: hidden;
 }
 .tilt-card:hover {
-  box-shadow: 0 14px 44px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.18), 0 0 32px rgba(34,197,94,.10) !important;
-  border-color: rgba(34,197,94,.32) !important;
+  box-shadow: 0 14px 44px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.18), 0 0 32px rgba(var(--color-primary-rgb), .10) !important;
+  border-color: rgba(var(--color-primary-rgb), .32) !important;
 }
 .tilt-laser {
   position: absolute; inset: -1px; border-radius: inherit;
-  background: conic-gradient(from var(--laser-angle), transparent 0deg, #22c55e 12deg, #4ade80 22deg, transparent 38deg);
+  background: conic-gradient(from var(--laser-angle), transparent 0deg, var(--color-primary) 12deg, var(--color-primary-light) 22deg, transparent 38deg);
   padding: 1px;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
@@ -67,7 +67,7 @@ const tiltCSS = `
 .tilt-card:hover .tilt-laser { opacity: 1; }
 .tilt-spot {
   position: absolute; inset: 0; border-radius: inherit;
-  background: radial-gradient(280px circle at var(--mx) var(--my), rgba(34,197,94,0.10) 0%, transparent 70%);
+  background: radial-gradient(280px circle at var(--mx) var(--my), rgba(var(--color-primary-rgb), 0.10) 0%, transparent 70%);
   opacity: 0; transition: opacity .25s;
   pointer-events: none; z-index: 1;
 }
@@ -470,7 +470,7 @@ export default function ConfiguracoesPage() {
 
       <div className="mt-8 pt-6" style={{ borderTop: `1px solid ${BORDER}` }}>
         <p style={{ textAlign: 'center', fontSize: 11, color: TT }}>
-          LifeLab v1.0.0 · <span style={{ color: P }}>Hunt or be hunted.</span>
+          LifeLab v1.0.0 · <span style={{ color: P }}>Laboratório de Evolução</span>
         </p>
       </div>
     </motion.div>

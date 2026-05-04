@@ -194,10 +194,10 @@ export default function LeituraPage({ params }: { params: { id: string; day: str
               disabled={alreadyDone || marking}
               className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
               style={{
-                background: alreadyDone ? 'rgba(34,197,94,.15)' : 'var(--color-primary)',
+                background: alreadyDone ? 'rgba(var(--color-primary-rgb), .15)' : 'var(--color-primary)',
                 color: alreadyDone ? 'var(--color-primary)' : '#000',
-                border: alreadyDone ? '1px solid rgba(34,197,94,.3)' : 'none',
-                boxShadow: alreadyDone ? 'none' : '0 0 28px rgba(34,197,94,.4)',
+                border: alreadyDone ? '1px solid rgba(var(--color-primary-rgb), .3)' : 'none',
+                boxShadow: alreadyDone ? 'none' : '0 0 28px rgba(var(--color-primary-rgb), .4)',
                 cursor: alreadyDone ? 'default' : 'pointer',
                 opacity: marking ? 0.7 : 1,
               }}>
@@ -238,7 +238,7 @@ export default function LeituraPage({ params }: { params: { id: string; day: str
                 style={{
                   border: '1px solid rgba(255,255,255,.09)',
                   background: 'rgba(255,255,255,.03)',
-                  boxShadow: '0 12px 40px rgba(0,0,0,.4), 0 0 24px rgba(34,197,94,.06)',
+                  boxShadow: '0 12px 40px rgba(0,0,0,.4), 0 0 24px rgba(var(--color-primary-rgb), .06)',
                 }}>
                 <div className="relative aspect-square">
                   <Image

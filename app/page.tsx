@@ -116,7 +116,7 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
             className="streak-pill"
-            title="Constância da Vitória"
+            title="Dias vencendo a si mesmo"
             style={{ cursor: 'help' }}
           >
             <div className="dot" />
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                 <BibleIllustration />
                 <div style={{
                   position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-                  background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.3)',
+                  background: 'rgba(var(--color-accent-rgb), 0.15)', border: '1px solid rgba(var(--color-accent-rgb), 0.3)',
                   borderRadius: 20, padding: '2px 10px', fontSize: 10, fontWeight: 600,
                   color: 'var(--gold)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4,
                 }}>

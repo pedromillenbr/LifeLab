@@ -207,9 +207,9 @@ export default function HabitosPage() {
                               onClick={() => toggleHabitCompletion(habit.id, date)}
                               className="mx-auto block w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
                               style={{
-                                background: done ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : 'transparent',
+                                background: done ? 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)' : 'transparent',
                                 border: done ? '2px solid rgba(250,204,21,0.7)' : isToday ? `2px solid ${pillarColor}` : `1px solid rgba(255,255,255,0.1)`,
-                                boxShadow: done ? '0 0 12px rgba(234,179,8,0.5), 0 0 8px rgba(34,197,94,0.4)' : isToday ? `0 0 8px ${pillarColor}40` : 'none',
+                                boxShadow: done ? '0 0 12px rgba(var(--color-accent-rgb), 0.5), 0 0 8px rgba(var(--color-primary-rgb), 0.4)' : isToday ? `0 0 8px ${pillarColor}40` : 'none',
                                 color: done ? '#fff' : 'rgba(255,255,255,0.4)',
                                 fontWeight: 800,
                                 fontSize: '16px',
@@ -253,8 +253,8 @@ export default function HabitosPage() {
               className="rounded-lg p-4 animate-fade-in card-hover transition-all duration-300"
               style={{
                 background: BG2,
-                border: `1px solid ${done ? 'rgba(234,179,8,0.4)' : BORDER}`,
-                boxShadow: done ? '0 0 20px rgba(234,179,8,0.2), var(--shadow-glow-sm)' : 'var(--shadow-card)',
+                border: `1px solid ${done ? 'rgba(var(--color-accent-rgb), 0.4)' : BORDER}`,
+                boxShadow: done ? '0 0 20px rgba(var(--color-accent-rgb), 0.2), var(--shadow-glow-sm)' : 'var(--shadow-card)',
                 animationDelay: `${i * 40}ms`,
               }}
             >
@@ -262,10 +262,10 @@ export default function HabitosPage() {
                 <div className="flex items-center gap-2.5">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"
                     style={{ 
-                      background: done ? 'rgba(234,179,8,0.15)' : PM, 
-                      border: `1px solid ${done ? 'rgba(234,179,8,0.5)' : PB}`, 
+                      background: done ? 'rgba(var(--color-accent-rgb), 0.15)' : PM, 
+                      border: `1px solid ${done ? 'rgba(var(--color-accent-rgb), 0.5)' : PB}`, 
                       fontSize: 18,
-                      boxShadow: done ? '0 0 12px rgba(234,179,8,0.3)' : 'none'
+                      boxShadow: done ? '0 0 12px rgba(var(--color-accent-rgb), 0.3)' : 'none'
                     }}>
                     {habit.icon || '★'}
                   </div>
@@ -279,9 +279,9 @@ export default function HabitosPage() {
                     <div
   className="w-6 h-6 flex items-center justify-center rounded-full transition-all duration-300"
   style={{
-    background: done ? 'rgba(234,179,8,0.2)' : 'transparent',
-    border: `1px solid ${done ? '#facc15' : TT}`,
-    boxShadow: done ? '0 0 12px 2px rgba(234,179,8,0.5), 0 0 8px #10b981' : 'none',
+    background: done ? 'rgba(var(--color-accent-rgb), 0.2)' : 'transparent',
+    border: `1px solid ${done ? 'var(--gold)' : TT}`,
+    boxShadow: done ? '0 0 12px 2px rgba(var(--color-accent-rgb), 0.5), 0 0 8px var(--color-primary)' : 'none',
   }}
 >
   {done && (
@@ -291,11 +291,11 @@ export default function HabitosPage() {
       viewBox="0 0 24 24"
       fill="none"
       className="animate-check-pop"
-      style={{ filter: 'drop-shadow(0 0 6px #facc15)' }}
+      style={{ filter: 'drop-shadow(0 0 6px var(--gold))' }}
     >
       <path
         d="M5 13l4 4L19 7"
-        stroke="#facc15"
+        stroke="var(--gold)"
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"

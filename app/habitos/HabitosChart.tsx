@@ -12,18 +12,18 @@ export default function HabitosChart({ progressData, completionPct }: Props) {
     <div className="rounded-lg p-5 mb-5 animate-fade-in"
       style={{ 
         background: 'var(--color-bg-2)', 
-        border: '1px solid rgba(234,179,8,0.25)', 
-        boxShadow: 'var(--shadow-card), 0 0 20px rgba(234,179,8,0.1)', 
+        border: '1px solid rgba(var(--color-accent-rgb), 0.25)', 
+        boxShadow: 'var(--shadow-card), 0 0 20px rgba(var(--color-accent-rgb), 0.1)', 
         animationDelay: '180ms' 
       }}>
       {/* Barra de Progresso Premium Contínua */}
       <div className="mb-6">
         <div className="flex items-baseline justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span style={{ color: '#facc15', fontSize: 16 }}>✦</span>
+            <span style={{ color: 'var(--gold)', fontSize: 16 }}>✦</span>
             <h3 style={{ color: 'var(--color-text-main)', fontWeight: 600, fontSize: 13 }}>Progresso Contínuo</h3>
           </div>
-          <span style={{ fontSize: 42, fontWeight: 800, color: '#facc15', textShadow: '0 0 20px rgba(234,179,8,0.4)' }}>
+          <span style={{ fontSize: 42, fontWeight: 800, color: 'var(--gold)', textShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.4)' }}>
             {pct}%
           </span>
         </div>
@@ -53,8 +53,8 @@ export default function HabitosChart({ progressData, completionPct }: Props) {
               style={{
                 width: `${pct}%`,
                 height: '100%',
-                background: 'linear-gradient(90deg, #22c55e 0%, #4ade80 40%, #facc15 100%)',
-                boxShadow: '0 0 12px rgba(234,179,8,0.45), inset 0 0 6px rgba(255,255,255,0.08)',
+                background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 40%, var(--gold) 100%)',
+                boxShadow: '0 0 12px rgba(var(--color-accent-rgb), 0.45), inset 0 0 6px rgba(255,255,255,0.08)',
                 position: 'relative',
                 zIndex: 1,
               }}
@@ -72,20 +72,20 @@ export default function HabitosChart({ progressData, completionPct }: Props) {
           <XAxis dataKey="day" tick={{ fill: '#4b5563', fontSize: 10 }} axisLine={false} tickLine={false} interval={4} />
           <YAxis domain={[0, 100]} tick={{ fill: '#4b5563', fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip
-            contentStyle={{ backgroundColor: 'var(--color-bg-2)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: 10, color: '#fff', fontSize: 12 }}
+            contentStyle={{ backgroundColor: 'var(--color-bg-2)', border: '1px solid rgba(var(--color-accent-rgb), 0.3)', borderRadius: 10, color: '#fff', fontSize: 12 }}
             formatter={(v: number) => [`${v}%`, 'Conclusão']}
           />
           <defs>
             <linearGradient id="habitGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor="#10b981" stopOpacity={0.28} />
-              <stop offset="95%" stopColor="#10b981" stopOpacity={0}    />
+              <stop offset="5%"  stopColor="var(--color-primary)" stopOpacity={0.28} />
+              <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}    />
             </linearGradient>
             <linearGradient id="goldAccent" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#facc15" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#facc15" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <Area type="monotone" dataKey="pct" stroke="#10b981" fill="url(#habitGrad)" strokeWidth={2} dot={false} />
+          <Area type="monotone" dataKey="pct" stroke="var(--color-primary)" fill="url(#habitGrad)" strokeWidth={2} dot={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

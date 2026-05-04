@@ -137,7 +137,7 @@ export default function FocoPage() {
                 background: 'transparent',
                 border: 'none',
                 color: 'var(--color-primary)',
-                textShadow: '0 0 24px rgba(34,197,94,0.4)',
+                textShadow: '0 0 24px rgba(var(--color-primary-rgb), 0.4)',
                 width: '100%',
               }}
             />
@@ -161,7 +161,7 @@ export default function FocoPage() {
                   onClick={() => setMinutes(p)}
                   className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
                   style={{
-                    background: sel ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+                    background: sel ? 'rgba(var(--color-primary-rgb), 0.15)' : 'rgba(255,255,255,0.04)',
                     border: `1px solid ${sel ? 'var(--color-primary)' : 'rgba(255,255,255,0.09)'}`,
                     color: sel ? 'var(--color-primary)' : 'var(--color-text-muted)',
                     cursor: 'pointer',
@@ -182,7 +182,7 @@ export default function FocoPage() {
               color: '#000',
               opacity: !minutes || minutes < 1 ? 0.4 : 1,
               cursor: !minutes || minutes < 1 ? 'not-allowed' : 'pointer',
-              boxShadow: !minutes || minutes < 1 ? 'none' : '0 0 24px rgba(34,197,94,0.35)',
+              boxShadow: !minutes || minutes < 1 ? 'none' : '0 0 24px rgba(var(--color-primary-rgb), 0.35)',
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
             }}
@@ -261,7 +261,7 @@ export default function FocoPage() {
           lineHeight: 1,
           color: finished ? 'var(--color-primary)' : '#ffffff',
           textShadow: finished
-            ? '0 0 60px rgba(34,197,94,0.5)'
+            ? '0 0 60px rgba(var(--color-primary-rgb), 0.5)'
             : '0 0 40px rgba(255,255,255,0.08)',
           fontVariantNumeric: 'tabular-nums',
           transition: 'color 0.4s, text-shadow 0.4s',
@@ -277,7 +277,7 @@ export default function FocoPage() {
           fontSize: 12,
           letterSpacing: '0.3em',
           color: paused
-            ? 'rgba(234,179,8,0.7)'
+            ? 'rgba(var(--color-accent-rgb), 0.7)'
             : finished
               ? 'var(--color-primary)'
               : 'rgba(255,255,255,0.25)',
@@ -355,7 +355,7 @@ export default function FocoPage() {
               fontSize: 13,
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 0 24px rgba(34,197,94,0.35)',
+              boxShadow: '0 0 24px rgba(var(--color-primary-rgb), 0.35)',
             }}
           >
             Concluir

@@ -60,7 +60,7 @@ export default function PlanoDetailPage({ params }: { params: { id: string } }) 
           style={{ background: 'rgba(255,255,255,.07)' }}>
           <div className="h-full" style={{
             width: `${pct}%`, background: 'var(--color-primary)',
-            boxShadow: '0 0 8px rgba(34,197,94,.5)', transition: 'width .6s ease',
+            boxShadow: '0 0 8px rgba(var(--color-primary-rgb), .5)', transition: 'width .6s ease',
           }} />
         </div>
         <div className="flex justify-between text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
@@ -72,20 +72,20 @@ export default function PlanoDetailPage({ params }: { params: { id: string } }) 
           {!progress && (
             <button onClick={() => { startBiblePlan(plan.id); router.push(`/espiritual/planos/${plan.id}/ler/1`) }}
               className="flex-1 py-2.5 rounded-md text-sm font-bold flex items-center justify-center gap-1.5"
-              style={{ background: 'var(--color-primary)', color: '#000', boxShadow: '0 0 18px rgba(34,197,94,.3)' }}>
+              style={{ background: 'var(--color-primary)', color: '#000', boxShadow: '0 0 18px rgba(var(--color-primary-rgb), .3)' }}>
               <Play size={13} /> Iniciar leitura
             </button>
           )}
           {progress && !finished && (
             <Link href={`/espiritual/planos/${plan.id}/ler/${nextDay}`}
               className="flex-1 py-2.5 rounded-md text-sm font-bold flex items-center justify-center gap-1.5"
-              style={{ background: 'var(--color-primary)', color: '#000', boxShadow: '0 0 18px rgba(34,197,94,.3)' }}>
+              style={{ background: 'var(--color-primary)', color: '#000', boxShadow: '0 0 18px rgba(var(--color-primary-rgb), .3)' }}>
               <Play size={13} /> Continuar leitura · Dia {nextDay}
             </Link>
           )}
           {finished && (
             <div className="flex-1 py-2.5 rounded-md text-sm font-bold flex items-center justify-center gap-1.5"
-              style={{ background: 'rgba(34,197,94,.15)', color: 'var(--color-primary)', border: '1px solid rgba(34,197,94,.3)' }}>
+              style={{ background: 'rgba(var(--color-primary-rgb), .15)', color: 'var(--color-primary)', border: '1px solid rgba(var(--color-primary-rgb), .3)' }}>
               <CheckCircle size={13} /> Plano concluído
             </div>
           )}
@@ -114,8 +114,8 @@ export default function PlanoDetailPage({ params }: { params: { id: string } }) 
               <Link key={d.day} href={`/espiritual/planos/${plan.id}/ler/${d.day}`}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors hover:bg-white/[.04]"
                 style={{
-                  background: isNext ? 'rgba(34,197,94,.06)' : 'rgba(255,255,255,.02)',
-                  border: `1px solid ${isNext ? 'rgba(34,197,94,.3)' : 'rgba(255,255,255,.06)'}`,
+                  background: isNext ? 'rgba(var(--color-primary-rgb), .06)' : 'rgba(255,255,255,.02)',
+                  border: `1px solid ${isNext ? 'rgba(var(--color-primary-rgb), .3)' : 'rgba(255,255,255,.06)'}`,
                 }}>
                 {done
                   ? <CheckCircle size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />

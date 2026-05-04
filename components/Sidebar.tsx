@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Dumbbell, CheckSquare, Target,
-  DollarSign, Calendar, BookOpen, Sparkles, Settings, Timer
+  DollarSign, Calendar, BookOpen, Sparkles, Settings, Timer, UtensilsCrossed
 } from 'lucide-react'
 import { useStore } from '@/store/useStore'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 const NAV = [
   { href: '/',           icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/fisico',     icon: Dumbbell,        label: 'Físico' },
+  { href: '/dieta',      icon: UtensilsCrossed, label: 'Dieta' },
   { href: '/habitos',    icon: CheckSquare,     label: 'Hábitos' },
   { href: '/missoes',    icon: Target,          label: 'Missões' },
   { href: '/foco',       icon: Timer,           label: 'Foco' },
@@ -33,7 +34,7 @@ export function Sidebar() {
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         borderRight: '1px solid var(--color-primary-border)',
-        boxShadow: '2px 0 16px rgba(0,0,0,0.35), 0 0 32px rgba(34,197,94,0.05)',
+        boxShadow: '2px 0 16px rgba(0,0,0,0.35), 0 0 32px rgba(var(--color-primary-rgb), 0.05)',
       }}
     >
       {/* Logo */}
@@ -78,7 +79,7 @@ export function Sidebar() {
                 boxShadow: active ? 'var(--shadow-glow-sm)' : 'none',
               }}
               onMouseEnter={e => {
-                if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.07)'
+                if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(var(--color-primary-rgb), 0.07)'
               }}
               onMouseLeave={e => {
                 if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'

@@ -122,3 +122,25 @@ export interface PillarScores {
   disciplina: number
   espiritual: number
 }
+
+export type Meal = 'cafe' | 'almoco' | 'jantar' | 'lanche'
+
+export interface FoodEntry {
+  id: string
+  name: string
+  quantity: string      // free-form: "100g", "1 unidade"
+  calories: number
+  protein?: number      // g
+  carbs?: number        // g
+  fat?: number          // g
+  meal: Meal
+  date: string          // YYYY-MM-DD
+  createdAt: string
+}
+
+export interface DietGoals {
+  calories: number      // kcal
+  protein?: number      // g
+  carbs?: number        // g
+  fat?: number          // g
+}
