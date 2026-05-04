@@ -25,6 +25,20 @@ export default function FocoPage() {
     if (mode === 'running') {
       document.documentElement.classList.add('pomodoro-fullscreen')
       document.body.classList.add('pomodoro-fullscreen')
+
+      // Reaplica a classe ao girar o telefone
+      const handleOrientationChange = () => {
+        document.documentElement.classList.add('pomodoro-fullscreen')
+        document.body.classList.add('pomodoro-fullscreen')
+      }
+
+      window.addEventListener('orientationchange', handleOrientationChange)
+      window.addEventListener('resize', handleOrientationChange)
+
+      return () => {
+        window.removeEventListener('orientationchange', handleOrientationChange)
+        window.removeEventListener('resize', handleOrientationChange)
+      }
     } else {
       document.documentElement.classList.remove('pomodoro-fullscreen')
       document.body.classList.remove('pomodoro-fullscreen')

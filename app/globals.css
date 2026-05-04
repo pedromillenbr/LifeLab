@@ -1091,11 +1091,41 @@ body.pomodoro-fullscreen {
     visibility: hidden !important;
     pointer-events: none !important;
     transition: opacity 0.3s ease, visibility 0.3s ease;
+    display: none !important;
   }
 
   /* Remove padding do main quando em fullscreen */
   body.pomodoro-fullscreen main {
     padding-bottom: 0 !important;
+  }
+
+  /* Garante fullscreen em landscape */
+  @media (orientation: landscape) and (max-width: 768px) {
+    body.pomodoro-fullscreen [data-testid="mobile-nav"] {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      display: none !important;
+    }
+
+    body.pomodoro-fullscreen main {
+      padding-bottom: 0 !important;
+      height: 100vh !important;
+    }
+  }
+
+  /* Garante fullscreen em portrait */
+  @media (orientation: portrait) and (max-width: 768px) {
+    body.pomodoro-fullscreen [data-testid="mobile-nav"] {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      display: none !important;
+    }
+
+    body.pomodoro-fullscreen main {
+      padding-bottom: 0 !important;
+    }
   }
 }
 .mental-num { font-size: 40px; font-weight: 700; letter-spacing: -2px; animation: countUp .5s ease both; font-family: var(--mono); text-shadow: 0 0 20px var(--g40); }
