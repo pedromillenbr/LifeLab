@@ -998,6 +998,49 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .arc-group { transform-origin: 35px 35px; animation: arcRotate 3s linear infinite; }
 .arc-wrap { position: relative; flex-shrink: 0; animation: arcGlow 2.5s ease-in-out infinite; }
 .arc-wrap svg { overflow: visible; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   iOS / MOBILE APP SUPPORT — Safe Area Insets
+   ═══════════════════════════════════════════════════════════════════ */
+@supports (padding: max(0px)) {
+  /* Suporte para safe-area-inset em iPhones com notch/home indicator */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Previne zoom em iOS quando touchar */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
+  font-size: 16px !important;
+}
+
+/* Melhorias UX para iOS */
+@media (max-width: 768px) {
+  body {
+    -webkit-user-select: text;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Scrollbar oculta em mobile */
+  ::-webkit-scrollbar { display: none; }
+  
+  /* Suporte para viewport-fit cover */
+  main {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* Scrolling smooth em iOS */
+  main {
+    -webkit-overflow-scrolling: touch;
+  }
+}
 .mental-num { font-size: 40px; font-weight: 700; letter-spacing: -2px; animation: countUp .5s ease both; font-family: var(--mono); text-shadow: 0 0 20px var(--g40); }
 .mental-num .unit { font-size: 15px; font-weight: 400; color: var(--text-2); font-family: 'Inter', sans-serif; }
 .habit-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }

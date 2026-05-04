@@ -49,14 +49,16 @@ export function MobileNav() {
 
   return (
     <>
-      {/* Barra de navegação horizontal - mobile only */}
+      {/* Barra de navegação horizontal - mobile only - BOTTOM */}
       <div
-        className="md:hidden fixed top-0 inset-x-0 z-40 h-16 flex items-center px-3 gap-2"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 h-20 flex items-center px-3 gap-2 pb-2 md:pb-0"
         style={{
-          background: 'rgba(11,12,16,0.95)',
+          background: 'rgba(11,12,16,0.98)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid var(--color-primary-border)',
+          borderTop: '1px solid var(--color-primary-border)',
+          paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
+          display: 'flex',
         }}
       >
         {/* Logo/Perfil — esquerda */}
@@ -106,7 +108,7 @@ export function MobileNav() {
 
                 {/* Tooltip ao passar o mouse */}
                 <div
-                  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                  className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                   style={{
                     background: 'var(--color-bg-3)',
                     color: 'var(--color-text-main)',
@@ -144,7 +146,7 @@ export function MobileNav() {
         </Link>
       </div>
 
-      {/* Perfil — modal deslizante (acessível via swipe ou outro modo) */}
+      {/* Estilos para scrollbar oculta */}
       <style>{`
         @media (max-width: 768px) {
           div[class*="scroll-smooth"]::-webkit-scrollbar {
@@ -153,6 +155,9 @@ export function MobileNav() {
           div[class*="scroll-smooth"] {
             -ms-overflow-style: none;
             scrollbar-width: none;
+          }
+          body {
+            padding-bottom: env(safe-area-inset-bottom);
           }
         }
       `}</style>
