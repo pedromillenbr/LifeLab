@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <MobileNav />
 
         <main
-          className="flex-1 min-h-screen overflow-x-hidden md:overflow-auto pt-14 md:pt-0 md:ml-[56px]"
+          className="flex-1 min-h-screen overflow-x-hidden md:overflow-auto pt-16 md:pt-0 md:ml-[56px]"
           style={{ position: 'relative', zIndex: 1 }}
         >
           {children}
