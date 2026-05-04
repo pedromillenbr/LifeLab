@@ -20,6 +20,21 @@ export default function FocoPage() {
   const [now, setNow] = useState<number>(() => Date.now())
   const rafRef = useRef<number | null>(null)
 
+  // Fullscreen mode - esconde navegação em mobile
+  useEffect(() => {
+    if (mode === 'running') {
+      document.documentElement.classList.add('pomodoro-fullscreen')
+      document.body.classList.add('pomodoro-fullscreen')
+    } else {
+      document.documentElement.classList.remove('pomodoro-fullscreen')
+      document.body.classList.remove('pomodoro-fullscreen')
+    }
+    return () => {
+      document.documentElement.classList.remove('pomodoro-fullscreen')
+      document.body.classList.remove('pomodoro-fullscreen')
+    }
+  }, [mode])
+
   // Tick driven by Date.now() to avoid drift; updated ~once per second.
   useEffect(() => {
     if (mode !== 'running' || endAt === null || pausedRemaining !== null) return

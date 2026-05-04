@@ -52,6 +52,7 @@ export function MobileNav() {
       {/* Barra de navegação horizontal - mobile only - BOTTOM */}
       <div
         className="md:hidden fixed bottom-0 inset-x-0 z-40 h-20 flex items-center px-3 gap-2 pb-2 md:pb-0"
+        data-testid="mobile-nav"
         style={{
           background: 'rgba(11,12,16,0.98)',
           backdropFilter: 'blur(20px)',
@@ -59,6 +60,7 @@ export function MobileNav() {
           borderTop: '1px solid var(--color-primary-border)',
           paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
           display: 'flex',
+          transition: 'opacity 0.3s ease, visibility 0.3s ease',
         }}
       >
         {/* Logo/Perfil — esquerda */}
