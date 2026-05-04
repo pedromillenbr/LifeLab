@@ -123,7 +123,13 @@ export interface PillarScores {
   espiritual: number
 }
 
-export type Meal = 'cafe' | 'almoco' | 'jantar' | 'lanche'
+export type Meal = string
+
+export interface CustomMeal {
+  id: string
+  label: string
+  icon: string  // chave do MEAL_ICONS map
+}
 
 export interface FoodEntry {
   id: string

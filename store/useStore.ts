@@ -5,7 +5,7 @@ import {
   Habit, Mission, WeightEntry, Transaction,
   BibleReading, PrayerEntry, WorkoutRoutine, WorkoutSession,
   CalendarEvent, UserProfile, PillarScores, Pillar, BiblePlanProgress,
-  FoodEntry, DietGoals,
+  FoodEntry, DietGoals, CustomMeal,
 } from './types'
 import { getBiblePlan, readingsLabel } from '@/lib/bibleData'
 
@@ -105,6 +105,12 @@ interface AuraStore {
   removeFoodEntry: (id: string) => void
   updateDietGoals: (g: Partial<DietGoals>) => void
 
+  // Custom Meals
+  customMeals: CustomMeal[]
+  addCustomMeal: (m: Omit<CustomMeal, 'id'>) => void
+  removeCustomMeal: (id: string) => void
+  updateCustomMeal: (id: string, updates: Partial<Omit<CustomMeal, 'id'>>) => void
+
   // Computed
   getPillarScores: () => PillarScores
   getOverallScore: () => number
@@ -152,6 +158,12 @@ export const useStore = create<AuraStore>()(
       biblePlansProgress: {},
       foodEntries: [],
       dietGoals: { calories: 2000, protein: 120 },
+      customMeals: [
+        { id: 'cafe',   label: 'Café da manhã', icon: 'sun'    },
+        { id: 'almoco', label: 'Almoço',        icon: 'soup'   },
+        { id: 'jantar', label: 'Jantar',        icon: 'moon'   },
+        { id: 'lanche', label: 'Lanches',       icon: 'cookie' },
+      ],
 
       updateProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
 
@@ -389,6 +401,16 @@ export const useStore = create<AuraStore>()(
         dietGoals: { ...s.dietGoals, ...g }
       })),
 
+      addCustomMeal: (m) => set((s) => ({
+        customMeals: [...s.customMeals, { ...m, id: generateId() }]
+      })),
+      removeCustomMeal: (id) => set((s) => ({
+        customMeals: s.customMeals.filter((m) => m.id !== id)
+      })),
+      updateCustomMeal: (id, updates) => set((s) => ({
+        customMeals: s.customMeals.map((m) => m.id === id ? { ...m, ...updates } : m)
+      })),
+
       getPillarScores: () => {
         const { habits, bibleReadings, workoutSessions } = get()
         const t = today()
@@ -479,6 +501,9 @@ export const useStore = create<AuraStore>()(
         workoutSessions: state.workoutSessions,
         calendarEvents: state.calendarEvents,
         biblePlansProgress: state.biblePlansProgress,
+        foodEntries:        state.foodEntries,
+        dietGoals:          state.dietGoals,
+        customMeals:        state.customMeals,
       }),
     }
   )
