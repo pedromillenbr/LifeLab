@@ -149,4 +149,10 @@ export interface DietGoals {
   protein?: number      // g
   carbs?: number        // g
   fat?: number          // g
+  waterGoal?: number    // litros/dia
+}
+
+export interface WaterLog {
+  date: string   // YYYY-MM-DD
+  ml: number     // total consumido no dia em ml
 }

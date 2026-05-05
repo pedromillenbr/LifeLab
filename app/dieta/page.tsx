@@ -67,17 +67,18 @@ export default function DietaPage() {
   const {
     foodEntries, dietGoals, addFoodEntry, removeFoodEntry, updateDietGoals,
     customMeals, addCustomMeal, removeCustomMeal,
+    addWater, resetWaterToday, getTodayWater,
   } = useStore()
 
   const [modalMeal,     setModalMeal]     = useState<string | null>(null)
   const [editingGoals,  setEditingGoals]  = useState(false)
   const [goalsDraft,    setGoalsDraft]    = useState({
-    calories: String(dietGoals.calories),
-    protein:  String(dietGoals.protein  ?? ''),
-    carbs:    String(dietGoals.carbs    ?? ''),
-    fat:      String(dietGoals.fat      ?? ''),
+    calories:  String(dietGoals.calories),
+    protein:   String(dietGoals.protein   ?? ''),
+    carbs:     String(dietGoals.carbs     ?? ''),
+    fat:       String(dietGoals.fat       ?? ''),
+    waterGoal: String(dietGoals.waterGoal ?? 2),
   })
-  const [water,          setWater]         = useState(0)
   const [managingMeals,  setManagingMeals] = useState(false)
   const [newMealLabel,   setNewMealLabel]  = useState('')
   const [newMealIcon,    setNewMealIcon]   = useState('sun')
@@ -121,16 +122,18 @@ export default function DietaPage() {
   const weekMax = Math.max(...weekTotals.map(d => d.calories), dietGoals.calories, 1)
 
   function handleSaveGoals() {
-    const cals  = parseInt(goalsDraft.calories, 10)
-    const prot  = goalsDraft.protein.trim() ? parseInt(goalsDraft.protein, 10) : undefined
-    const carbs = goalsDraft.carbs.trim()   ? parseInt(goalsDraft.carbs,   10) : undefined
-    const fat   = goalsDraft.fat.trim()     ? parseInt(goalsDraft.fat,     10) : undefined
+    const cals      = parseInt(goalsDraft.calories, 10)
+    const prot      = goalsDraft.protein.trim()   ? parseInt(goalsDraft.protein,   10)    : undefined
+    const carbs     = goalsDraft.carbs.trim()     ? parseInt(goalsDraft.carbs,     10)    : undefined
+    const fat       = goalsDraft.fat.trim()       ? parseInt(goalsDraft.fat,       10)    : undefined
+    const waterGoal = goalsDraft.waterGoal.trim() ? parseFloat(goalsDraft.waterGoal)      : 2
     if (Number.isFinite(cals) && cals > 0) {
       updateDietGoals({
-        calories: cals,
-        protein:  prot  && Number.isFinite(prot)  ? prot  : undefined,
-        carbs:    carbs && Number.isFinite(carbs)  ? carbs : undefined,
-        fat:      fat   && Number.isFinite(fat)    ? fat   : undefined,
+        calories:  cals,
+        protein:   prot  && Number.isFinite(prot)   ? prot   : undefined,
+        carbs:     carbs && Number.isFinite(carbs)   ? carbs  : undefined,
+        fat:       fat   && Number.isFinite(fat)     ? fat    : undefined,
+        waterGoal: Number.isFinite(waterGoal) && waterGoal > 0 ? waterGoal : 2,
       })
     }
     setEditingGoals(false)
@@ -186,10 +189,11 @@ export default function DietaPage() {
           <button
             onClick={() => {
               setGoalsDraft({
-                calories: String(dietGoals.calories),
-                protein:  String(dietGoals.protein  ?? ''),
-                carbs:    String(dietGoals.carbs    ?? ''),
-                fat:      String(dietGoals.fat      ?? ''),
+                calories:  String(dietGoals.calories),
+                protein:   String(dietGoals.protein   ?? ''),
+                carbs:     String(dietGoals.carbs     ?? ''),
+                fat:       String(dietGoals.fat       ?? ''),
+                waterGoal: String(dietGoals.waterGoal ?? 2),
               })
               setEditingGoals(v => !v)
             }}
@@ -278,19 +282,20 @@ export default function DietaPage() {
         {/* Edição de metas */}
         {editingGoals && (
           <div
-            className="mt-4 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 items-end"
+            className="mt-4 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-5 gap-3 items-end"
             style={{ background: BG3, border: `1px solid ${PB}` }}
           >
-            {[
-              { key: 'calories' as const, label: 'Calorias (kcal)', placeholder: '2000' },
-              { key: 'protein'  as const, label: 'Proteína (g)',     placeholder: '120'  },
-              { key: 'carbs'    as const, label: 'Carboidrato (g)',  placeholder: '250'  },
-              { key: 'fat'      as const, label: 'Gordura (g)',      placeholder: '60'   },
-            ].map(f => (
+            {([
+              { key: 'calories'  as const, label: 'Calorias (kcal)', placeholder: '2000', step: '1'   },
+              { key: 'protein'   as const, label: 'Proteína (g)',     placeholder: '120',  step: '1'   },
+              { key: 'carbs'     as const, label: 'Carboidrato (g)',  placeholder: '250',  step: '1'   },
+              { key: 'fat'       as const, label: 'Gordura (g)',      placeholder: '60',   step: '1'   },
+              { key: 'waterGoal' as const, label: 'Água (litros/dia)', placeholder: '2',   step: '0.1' },
+            ] as { key: keyof typeof goalsDraft; label: string; placeholder: string; step: string }[]).map(f => (
               <div key={f.key}>
-                <label style={{ fontSize: 11, color: TT, display: 'block', marginBottom: 4 }}>{f.label}</label>
+                <label style={{ fontSize: 11, color: f.key === 'waterGoal' ? '#38bdf8' : TT, display: 'block', marginBottom: 4 }}>{f.label}</label>
                 <input
-                  type="number" className="input"
+                  type="number" className="input" step={f.step}
                   value={goalsDraft[f.key]}
                   onChange={e => setGoalsDraft(d => ({ ...d, [f.key]: e.target.value }))}
                   placeholder={f.placeholder}
@@ -299,7 +304,7 @@ export default function DietaPage() {
             ))}
             <button
               onClick={handleSaveGoals}
-              className="col-span-2 sm:col-span-4 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-bold text-sm mt-1"
+              className="col-span-2 sm:col-span-5 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-bold text-sm mt-1"
               style={{ background: P, color: '#000', boxShadow: '0 0 18px var(--color-primary-glow)', cursor: 'pointer' }}
             >
               <Check size={14} /> Salvar metas
@@ -309,48 +314,12 @@ export default function DietaPage() {
       </section>
 
       {/* ── ÁGUA ─────────────────────────────────────────────── */}
-      <section
-        className="rounded-2xl p-4 mb-4 flex flex-wrap items-center gap-3"
-        style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}
-      >
-        <div className="flex items-center gap-2 flex-1 min-w-[120px]">
-          <Droplets size={14} style={{ color: '#38bdf8' }} />
-          <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: TT }}>Água</span>
-        </div>
-        <div className="flex items-baseline gap-1">
-          <span style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-jetbrains)', color: '#38bdf8' }}>
-            {(water / 1000).toFixed(2).replace('.', ',')}
-          </span>
-          <span style={{ fontSize: 12, color: TT }}>L / 2,00 L</span>
-        </div>
-        <div style={{ flex: '1 1 100%', height: 5, borderRadius: 3, background: BG3, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-          <div style={{
-            width: `${Math.min(100, (water / 2000) * 100)}%`, height: '100%',
-            background: 'linear-gradient(90deg, #0ea5e9, #38bdf8)',
-            boxShadow: '0 0 10px rgba(56,189,248,0.5)',
-            transition: 'width .3s ease',
-          }} />
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {[200, 300, 500].map(ml => (
-            <button
-              key={ml}
-              onClick={() => setWater(w => Math.min(3000, w + ml))}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-              style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8', cursor: 'pointer' }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(56,189,248,0.2)')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(56,189,248,0.1)')}
-            >+{ml}ml</button>
-          ))}
-          {water > 0 && (
-            <button
-              onClick={() => setWater(0)}
-              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-              style={{ background: BG3, border: `1px solid ${BORDER}`, color: TT, cursor: 'pointer' }}
-            >Reset</button>
-          )}
-        </div>
-      </section>
+      <WaterSection
+        waterMl={getTodayWater()}
+        goalL={dietGoals.waterGoal ?? 2}
+        onAdd={addWater}
+        onReset={resetWaterToday}
+      />
 
       {/* ── B) REFEIÇÕES ─────────────────────────────────────── */}
       <div className="mb-4">
@@ -621,6 +590,92 @@ export default function DietaPage() {
         />
       )}
     </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  WATER SECTION
+// ════════════════════════════════════════════════════════════════════
+function WaterSection({
+  waterMl, goalL, onAdd, onReset,
+}: { waterMl: number; goalL: number; onAdd: (ml: number) => void; onReset: () => void }) {
+  const goalMl  = goalL * 1000
+  const pct     = Math.min(100, (waterMl / Math.max(1, goalMl)) * 100)
+  const overGoal = waterMl > goalMl
+
+  const currentL  = (waterMl  / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const goalLabel = goalL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  return (
+    <section
+      className="rounded-2xl p-4 mb-4"
+      style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        {/* label */}
+        <div className="flex items-center gap-2 flex-1 min-w-[120px]">
+          <Droplets size={14} style={{ color: '#38bdf8' }} />
+          <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: TT }}>Água</span>
+        </div>
+
+        {/* contador */}
+        <div className="flex items-baseline gap-1">
+          <span style={{
+            fontSize: 22, fontWeight: 800,
+            fontFamily: 'var(--font-jetbrains)',
+            color: overGoal ? '#34d399' : '#38bdf8',
+            transition: 'color .2s',
+          }}>
+            {currentL}
+          </span>
+          <span style={{ fontSize: 12, color: TT }}>
+            L / {goalLabel} L
+          </span>
+        </div>
+
+        {/* barra */}
+        <div style={{ flex: '1 1 100%', height: 5, borderRadius: 3, background: BG3, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+          <div style={{
+            width: `${pct}%`, height: '100%',
+            background: overGoal
+              ? 'linear-gradient(90deg, #10b981, #34d399)'
+              : 'linear-gradient(90deg, #0ea5e9, #38bdf8)',
+            boxShadow: overGoal ? '0 0 10px rgba(52,211,153,0.5)' : '0 0 10px rgba(56,189,248,0.5)',
+            transition: 'width .3s ease',
+          }} />
+        </div>
+
+        {/* botões */}
+        <div className="flex gap-2 flex-wrap">
+          {[200, 300, 500].map(ml => (
+            <button
+              key={ml}
+              onClick={() => onAdd(ml)}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+              style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8', cursor: 'pointer' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(56,189,248,0.2)')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(56,189,248,0.1)')}
+            >+{ml}ml</button>
+          ))}
+          {waterMl > 0 && (
+            <button
+              onClick={onReset}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+              style={{ background: BG3, border: `1px solid ${BORDER}`, color: TT, cursor: 'pointer' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = TM)}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = TT)}
+            >Reset</button>
+          )}
+        </div>
+
+        {/* status */}
+        <div style={{ flex: '1 1 100%', fontSize: 11, color: TT }}>
+          {overGoal
+            ? <span style={{ color: '#34d399' }}>Meta atingida! +{((waterMl - goalMl) / 1000).toFixed(2).replace('.', ',')} L</span>
+            : `${((goalMl - waterMl) / 1000).toFixed(2).replace('.', ',')} L restantes`}
+        </div>
+      </div>
+    </section>
   )
 }
 

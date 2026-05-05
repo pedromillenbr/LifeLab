@@ -5,7 +5,7 @@ import {
   Habit, Mission, WeightEntry, Transaction,
   BibleReading, PrayerEntry, WorkoutRoutine, WorkoutSession,
   CalendarEvent, UserProfile, PillarScores, Pillar, BiblePlanProgress,
-  FoodEntry, DietGoals, CustomMeal,
+  FoodEntry, DietGoals, CustomMeal, WaterLog,
 } from './types'
 import { getBiblePlan, readingsLabel } from '@/lib/bibleData'
 
@@ -111,6 +111,12 @@ interface AuraStore {
   removeCustomMeal: (id: string) => void
   updateCustomMeal: (id: string, updates: Partial<Omit<CustomMeal, 'id'>>) => void
 
+  // Water tracking
+  waterLog: WaterLog[]
+  addWater: (ml: number) => void
+  resetWaterToday: () => void
+  getTodayWater: () => number  // retorna ml consumidos hoje
+
   // Computed
   getPillarScores: () => PillarScores
   getOverallScore: () => number
@@ -157,13 +163,14 @@ export const useStore = create<AuraStore>()(
       calendarEvents: [],
       biblePlansProgress: {},
       foodEntries: [],
-      dietGoals: { calories: 2000, protein: 120 },
+      dietGoals: { calories: 2000, protein: 120, waterGoal: 2 },
       customMeals: [
         { id: 'cafe',   label: 'Café da manhã', icon: 'sun'    },
         { id: 'almoco', label: 'Almoço',        icon: 'soup'   },
         { id: 'jantar', label: 'Jantar',        icon: 'moon'   },
         { id: 'lanche', label: 'Lanches',       icon: 'cookie' },
       ],
+      waterLog: [],
 
       updateProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
 
@@ -411,6 +418,28 @@ export const useStore = create<AuraStore>()(
         customMeals: s.customMeals.map((m) => m.id === id ? { ...m, ...updates } : m)
       })),
 
+      addWater: (ml) => set((s) => {
+        const t = today()
+        const existing = s.waterLog.find(w => w.date === t)
+        if (existing) {
+          return {
+            waterLog: s.waterLog.map(w =>
+              w.date === t ? { ...w, ml: w.ml + ml } : w
+            )
+          }
+        }
+        return { waterLog: [...s.waterLog, { date: t, ml }] }
+      }),
+
+      resetWaterToday: () => set((s) => ({
+        waterLog: s.waterLog.filter(w => w.date !== today())
+      })),
+
+      getTodayWater: () => {
+        const t = today()
+        return get().waterLog.find(w => w.date === t)?.ml ?? 0
+      },
+
       getPillarScores: () => {
         const { habits, bibleReadings, workoutSessions } = get()
         const t = today()
@@ -504,6 +533,7 @@ export const useStore = create<AuraStore>()(
         foodEntries:        state.foodEntries,
         dietGoals:          state.dietGoals,
         customMeals:        state.customMeals,
+        waterLog:           state.waterLog,
       }),
     }
   )
