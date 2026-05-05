@@ -35,9 +35,14 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
         return
       }
 
-      // First valid session: pull remote data, apply theme, start auto-sync
+      // First valid session: hydrate localStorage FIRST, then pull remote
       if (!initializedRef.current) {
         initializedRef.current = true
+
+        // Hydrate localStorage → Zustand before comparing with Supabase
+        const rehydrateResult = useStore.persist.rehydrate()
+        if (rehydrateResult instanceof Promise) await rehydrateResult
+
         await pullFromSupabase(s.user.id)
         const state = useStore.getState()
         applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
@@ -64,9 +69,13 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       }
 
       if (event === 'SIGNED_IN') {
-        // Fresh login (not token refresh) — pull remote data
+        // Fresh login (not token refresh) — hydrate localStorage then pull remote
         if (!initializedRef.current) {
           initializedRef.current = true
+
+          const rehydrateResult = useStore.persist.rehydrate()
+          if (rehydrateResult instanceof Promise) await rehydrateResult
+
           await pullFromSupabase(s.user.id)
           const state = useStore.getState()
           applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
