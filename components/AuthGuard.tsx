@@ -14,7 +14,9 @@ interface AuthGuardProps {
 }
 
 // Hard timeout — if Supabase doesn't respond within this window, treat as logged out
-const SESSION_TIMEOUT_MS = 5000
+const SESSION_TIMEOUT_MS = 4000
+// If splash is still visible after this long, auto-recover by clearing storage
+const AUTO_RECOVER_MS = 8000
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return new Promise((resolve) => {
@@ -156,51 +158,80 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Loading splash
+  // Loading splash with automatic self-recovery
   if (session === undefined) {
-    return (
-      <div style={{
-        position: 'fixed', inset: 0,
-        background: 'var(--color-bg-1)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexDirection: 'column', gap: 16,
-        zIndex: 9999,
-      }}>
-        <div style={{
-          width: 36, height: 36,
-          border: '2.5px solid var(--color-primary-border)',
-          borderTopColor: 'var(--color-primary)',
-          borderRadius: '50%',
-          animation: 'll-guard-spin 0.7s linear infinite',
-        }} />
-        <button
-          onClick={() => {
-            try {
-              localStorage.clear()
-              sessionStorage.clear()
-            } catch { /* ignore */ }
-            location.reload()
-          }}
-          style={{
-            background: 'transparent',
-            color: 'var(--color-text-muted)',
-            border: '1px solid var(--color-primary-border)',
-            borderRadius: 8,
-            padding: '6px 12px',
-            fontSize: 12,
-            cursor: 'pointer',
-            opacity: 0.5,
-          }}
-        >
-          Carregando há muito tempo? Limpar cache
-        </button>
-        <style>{`@keyframes ll-guard-spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
+    return <LoadingSplash />
   }
 
   if (isAuthPage)  return <>{children}</>
   if (!session)    return null
 
   return <>{shell}{children}</>
+}
+
+// ──────────────────────────────────────────────────────────────────────
+//  LoadingSplash — auto-recovers if the bootstrap takes too long.
+//  After AUTO_RECOVER_MS, silently wipes auth tokens and reloads.
+// ──────────────────────────────────────────────────────────────────────
+function LoadingSplash() {
+  useEffect(() => {
+    // Track recovery attempts in sessionStorage so we don't loop forever
+    const RECOVERY_KEY = 'lifelab-recovery-attempts'
+    const attempts = parseInt(sessionStorage.getItem(RECOVERY_KEY) || '0', 10)
+
+    // After 2 failed auto-recoveries, give up and just send to /auth
+    if (attempts >= 2) {
+      sessionStorage.removeItem(RECOVERY_KEY)
+      const timer = setTimeout(() => {
+        location.href = '/auth'
+      }, AUTO_RECOVER_MS)
+      return () => clearTimeout(timer)
+    }
+
+    const timer = setTimeout(() => {
+      try {
+        // Clear only auth-related keys to avoid losing sync data
+        const keysToRemove: string[] = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && (key.startsWith('sb-') || key === 'lifelab-auth')) {
+            keysToRemove.push(key)
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k))
+        sessionStorage.setItem(RECOVERY_KEY, String(attempts + 1))
+      } catch {
+        /* ignore storage errors */
+      }
+      location.reload()
+    }, AUTO_RECOVER_MS)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: 'var(--color-bg-1)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999,
+    }}>
+      <div style={{
+        width: 36, height: 36,
+        border: '2.5px solid var(--color-primary-border)',
+        borderTopColor: 'var(--color-primary)',
+        borderRadius: '50%',
+        animation: 'll-guard-spin 0.7s linear infinite',
+      }} />
+      <style>{`@keyframes ll-guard-spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
+// Clear the recovery counter once we successfully reach the app
+if (typeof window !== 'undefined') {
+  // After hydration with a real session, the counter resets naturally on next visit
+  setTimeout(() => {
+    try { sessionStorage.removeItem('lifelab-recovery-attempts') } catch { /* ignore */ }
+  }, 10000)
 }
