@@ -3,9 +3,12 @@ import { useEffect, useState, useRef, useCallback, type ReactNode, type CSSPrope
 import { useStore } from '@/store/useStore'
 import { Toggle } from '@/components/ui/Toggle'
 import { Select } from '@/components/ui/Select'
-import { Camera, Shield, Bell, Palette, Save, DollarSign, Settings, Send, Check } from 'lucide-react'
+import { Camera, Shield, Bell, Palette, Save, DollarSign, Settings, Send, Check, LogOut } from 'lucide-react'
 import { PEDRO } from '@/lib/pedroProfile'
 import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
+import { signOut } from '@/lib/auth'
+import { stopAutoSync } from '@/store/syncService'
 import { THEMES, applyTheme, DEFAULT_THEME_KEY } from '@/lib/themes'
 import {
   getNotificationPermission,
@@ -88,6 +91,7 @@ const TT = 'var(--color-text-muted)'
 
 export default function ConfiguracoesPage() {
   const { profile, updateProfile } = useStore()
+  const router                    = useRouter()
   const [tab, setTab]             = useState<Tab>('perfil')
   const [name, setName]           = useState(profile.name)
   const [bio, setBio]             = useState(profile.bio)
@@ -97,7 +101,17 @@ export default function ConfiguracoesPage() {
   const [showNew, setShowNew]     = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [pwError, setPwError]     = useState('')
+  const [logoutConfirm, setLogoutConfirm] = useState(false)
+  const [loggingOut,    setLoggingOut]    = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  async function handleLogout() {
+    if (!logoutConfirm) { setLogoutConfirm(true); return }
+    setLoggingOut(true)
+    stopAutoSync()
+    await signOut()
+    router.replace('/auth')
+  }
 
   // Tema atual + status de permissão de notificação
   const activeThemeKey = profile.primaryColor || DEFAULT_THEME_KEY
@@ -413,7 +427,9 @@ export default function ConfiguracoesPage() {
 
       {/* ── SEGURANÇA ──────────────────────────────────────────────── */}
       {tab === 'seguranca' && (
-        <div className="animate-fade-in" style={{ animationDelay: '180ms' }}>
+        <div className="space-y-3 animate-fade-in" style={{ animationDelay: '180ms' }}>
+
+          {/* Alterar senha */}
           <TiltCard className="rounded-lg p-5"
             style={{ background: BG2, border: `1px solid ${BORDER}`, boxShadow: 'var(--shadow-card)' }}>
             <div className="flex items-center gap-3 mb-5">
@@ -465,6 +481,61 @@ export default function ConfiguracoesPage() {
               </button>
             </div>
           </TiltCard>
+
+          {/* Sair da conta */}
+          <TiltCard className="rounded-lg p-5"
+            style={{ background: BG2, border: `1px solid ${logoutConfirm ? 'rgba(239,68,68,0.35)' : BORDER}`, boxShadow: 'var(--shadow-card)', transition: 'border-color .25s' }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: logoutConfirm ? 'rgba(239,68,68,0.12)' : BG3, border: `1px solid ${logoutConfirm ? 'rgba(239,68,68,0.35)' : BORDER}`, transition: 'background .25s, border-color .25s' }}>
+                <LogOut size={16} style={{ color: logoutConfirm ? '#f87171' : TT, transition: 'color .25s' }} />
+              </div>
+              <div>
+                <p style={{ color: TM, fontWeight: 600, fontSize: 14 }}>Sair da conta</p>
+                <p style={{ fontSize: 11, color: TT }}>Encerrar sessão neste dispositivo</p>
+              </div>
+            </div>
+
+            {logoutConfirm && (
+              <div className="rounded-lg px-3 py-2.5 mb-4 text-[12px]"
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5' }}>
+                Tem certeza? Você precisará fazer login novamente para acessar o app.
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {logoutConfirm && (
+                <button
+                  onClick={() => setLogoutConfirm(false)}
+                  disabled={loggingOut}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all"
+                  style={{ background: BG3, border: `1px solid ${BORDER}`, color: TT, cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+              )}
+              <button
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="flex-1 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                style={{
+                  background:  logoutConfirm ? '#ef4444' : BG3,
+                  border:      `1px solid ${logoutConfirm ? '#ef4444' : BORDER}`,
+                  color:       logoutConfirm ? '#fff' : TT,
+                  cursor:      loggingOut ? 'not-allowed' : 'pointer',
+                  opacity:     loggingOut ? 0.6 : 1,
+                  boxShadow:   logoutConfirm ? '0 0 18px rgba(239,68,68,0.35)' : 'none',
+                  transition:  'all .25s',
+                }}
+                onMouseEnter={e => { if (!logoutConfirm) (e.currentTarget as HTMLElement).style.color = '#f87171' }}
+                onMouseLeave={e => { if (!logoutConfirm) (e.currentTarget as HTMLElement).style.color = TT }}
+              >
+                <LogOut size={14} />
+                {loggingOut ? 'Saindo...' : logoutConfirm ? 'Confirmar saída' : 'Sair da conta'}
+              </button>
+            </div>
+          </TiltCard>
+
         </div>
       )}
 
