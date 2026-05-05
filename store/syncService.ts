@@ -28,95 +28,160 @@ function getPayload() {
   }
 }
 
-// Guards against the subscribe callback firing during setState (pull)
+function isLocalEmpty(): boolean {
+  const s = useStore.getState()
+  return (
+    s.weightLog.length === 0 &&
+    s.habits.length === 0 &&
+    s.workoutSessions.length === 0 &&
+    s.routines.length === 0 &&
+    s.foodEntries.length === 0 &&
+    s.transactions.length === 0 &&
+    s.missions.length === 0 &&
+    s.profile.xp === 0 &&
+    !s.profile.avatar
+  )
+}
+
+// Score-based comparison — count "real" data items (not defaults)
+function dataScore(payload: ReturnType<typeof getPayload>): number {
+  return (
+    (payload.weightLog?.length || 0) +
+    (payload.habits?.length || 0) +
+    (payload.workoutSessions?.length || 0) +
+    (payload.routines?.length || 0) +
+    (payload.foodEntries?.length || 0) +
+    (payload.transactions?.length || 0) +
+    (payload.missions?.length || 0) +
+    (payload.calendarEvents?.length || 0) +
+    (payload.bibleReadings?.length || 0) +
+    (payload.prayerLog?.length || 0) +
+    (payload.accessLog?.length || 0) +
+    (payload.profile?.avatar ? 5 : 0) +
+    (payload.profile?.xp || 0) / 100
+  )
+}
+
+// Guard: skip auto-push during pull-induced setState
 let _isPulling = false
 
-// Tracks current user for push operations
 let _currentUserId: string | null = null
 let _pushTimer: ReturnType<typeof setTimeout> | null = null
 let _unsubscribe: (() => void) | null = null
 
-// ── push: Zustand → Supabase (debounced) ─────────────────────────────
+// ── push ──────────────────────────────────────────────────────────────
 
-function schedulePush() {
-  if (!_currentUserId || _isPulling) return
-  if (_pushTimer) clearTimeout(_pushTimer)
-  _pushTimer = setTimeout(async () => {
-    if (!_currentUserId) return
+async function pushNow(userId: string): Promise<boolean> {
+  try {
     const { error } = await supabase
-      .from('user_data')
-      .upsert(
-        { id: _currentUserId, payload: getPayload(), updated_at: new Date().toISOString() },
-        { onConflict: 'id' }
-      )
-    if (error) console.error('[sync] push error:', error.message)
-    else console.log('[sync] pushed')
-  }, 1200)
-}
-
-// ── pull: Supabase → Zustand ──────────────────────────────────────────
-
-export async function pullFromSupabase(userId: string): Promise<'pulled' | 'pushed' | 'no-op'> {
-  const { data, error } = await supabase
-    .from('user_data')
-    .select('payload, updated_at')
-    .eq('id', userId)
-    .maybeSingle()
-
-  if (error) {
-    console.error('[sync] pull error:', error.message)
-    return 'no-op'
-  }
-
-  // No remote row → this account has never synced. Push local data now.
-  if (!data?.payload) {
-    console.log('[sync] no remote row — pushing local data')
-    const { error: pushErr } = await supabase
       .from('user_data')
       .upsert(
         { id: userId, payload: getPayload(), updated_at: new Date().toISOString() },
         { onConflict: 'id' }
       )
-    if (pushErr) console.error('[sync] initial push error:', pushErr.message)
+    if (error) {
+      console.error('[sync] push error:', error.message)
+      return false
+    }
+    console.log('[sync] pushed')
+    return true
+  } catch (err) {
+    console.error('[sync] push exception:', err)
+    return false
+  }
+}
+
+function schedulePush() {
+  if (!_currentUserId || _isPulling) return
+  if (_pushTimer) clearTimeout(_pushTimer)
+  _pushTimer = setTimeout(() => {
+    if (_currentUserId) pushNow(_currentUserId)
+  }, 1200)
+}
+
+// ── pull ──────────────────────────────────────────────────────────────
+
+export async function pullFromSupabase(userId: string): Promise<'pulled' | 'pushed' | 'merged' | 'no-op'> {
+  let data: { payload: unknown; updated_at: string } | null = null
+  try {
+    const result = await supabase
+      .from('user_data')
+      .select('payload, updated_at')
+      .eq('id', userId)
+      .maybeSingle()
+    if (result.error) {
+      console.error('[sync] pull error:', result.error.message)
+      // Don't push on error — could destroy remote data if remote query fails transiently
+      return 'no-op'
+    }
+    data = result.data
+  } catch (err) {
+    console.error('[sync] pull exception:', err)
+    return 'no-op'
+  }
+
+  // No remote row yet — only push if local has actual content
+  if (!data?.payload) {
+    if (isLocalEmpty()) {
+      console.log('[sync] no remote row, local empty — skipping push')
+      return 'no-op'
+    }
+    console.log('[sync] no remote row, local has data — pushing up')
+    await pushNow(userId)
     return 'pushed'
   }
 
-  // Remote row exists — apply it to the store.
-  // Block the subscribe handler so setState doesn't trigger a redundant push.
-  _isPulling = true
   const remote = data.payload as ReturnType<typeof getPayload>
-  useStore.setState({
-    profile:            remote.profile            ?? useStore.getState().profile,
-    habits:             remote.habits             ?? [],
-    missions:           remote.missions           ?? [],
-    weightLog:          remote.weightLog          ?? [],
-    transactions:       remote.transactions       ?? [],
-    bibleReadings:      remote.bibleReadings      ?? [],
-    activePlanId:       remote.activePlanId       ?? 'nt1year',
-    prayerLog:          remote.prayerLog          ?? [],
-    accessLog:          remote.accessLog          ?? [],
-    routines:           remote.routines           ?? [],
-    workoutSessions:    remote.workoutSessions    ?? [],
-    calendarEvents:     remote.calendarEvents     ?? [],
-    biblePlansProgress: remote.biblePlansProgress ?? {},
-    foodEntries:        remote.foodEntries        ?? [],
-    dietGoals:          remote.dietGoals          ?? { calories: 2000, protein: 120, waterGoal: 2 },
-    customMeals:        remote.customMeals        ?? useStore.getState().customMeals,
-    waterLog:           remote.waterLog           ?? [],
-  })
-  _isPulling = false
+  const local = getPayload()
+  const remoteScore = dataScore(remote)
+  const localScore  = dataScore(local)
 
-  console.log('[sync] pulled from supabase')
+  console.log(`[sync] scores — local: ${localScore.toFixed(1)}, remote: ${remoteScore.toFixed(1)}`)
+
+  // If local has more data than remote, push local up (don't lose data)
+  if (localScore > remoteScore + 0.5) {
+    console.log('[sync] local > remote — pushing local up')
+    await pushNow(userId)
+    return 'pushed'
+  }
+
+  // Otherwise apply remote to store
+  _isPulling = true
+  try {
+    useStore.setState({
+      profile:            remote.profile            ?? useStore.getState().profile,
+      habits:             remote.habits             ?? [],
+      missions:           remote.missions           ?? [],
+      weightLog:          remote.weightLog          ?? [],
+      transactions:       remote.transactions       ?? [],
+      bibleReadings:      remote.bibleReadings      ?? [],
+      activePlanId:       remote.activePlanId       ?? 'nt1year',
+      prayerLog:          remote.prayerLog          ?? [],
+      accessLog:          remote.accessLog          ?? [],
+      routines:           remote.routines           ?? [],
+      workoutSessions:    remote.workoutSessions    ?? [],
+      calendarEvents:     remote.calendarEvents     ?? [],
+      biblePlansProgress: remote.biblePlansProgress ?? {},
+      foodEntries:        remote.foodEntries        ?? [],
+      dietGoals:          remote.dietGoals          ?? { calories: 2000, protein: 120, waterGoal: 2 },
+      customMeals:        remote.customMeals        ?? useStore.getState().customMeals,
+      waterLog:           remote.waterLog           ?? [],
+    })
+  } finally {
+    // Always unset, even on error
+    setTimeout(() => { _isPulling = false }, 100)
+  }
+
+  console.log('[sync] pulled remote into store')
   return 'pulled'
 }
 
-// ── auto-sync: subscribe to store mutations ───────────────────────────
+// ── auto-sync ─────────────────────────────────────────────────────────
 
 export function startAutoSync(userId: string) {
-  // Prevent double-subscription if called twice for the same user
   if (_unsubscribe) {
-    if (_currentUserId === userId) return   // already running for this user
-    _unsubscribe()                          // switch user — tear down old subscription
+    if (_currentUserId === userId) return
+    _unsubscribe()
     _unsubscribe = null
   }
 
@@ -132,4 +197,10 @@ export function stopAutoSync() {
   if (_pushTimer) { clearTimeout(_pushTimer); _pushTimer = null }
   if (_unsubscribe) { _unsubscribe(); _unsubscribe = null }
   console.log('[sync] auto-sync stopped')
+}
+
+// Force an immediate push — useful before logout or critical actions
+export async function flushSync(): Promise<void> {
+  if (_pushTimer) { clearTimeout(_pushTimer); _pushTimer = null }
+  if (_currentUserId) await pushNow(_currentUserId)
 }

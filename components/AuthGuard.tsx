@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { pullFromSupabase, startAutoSync, stopAutoSync } from '@/store/syncService'
+import { pullFromSupabase, startAutoSync, stopAutoSync, flushSync } from '@/store/syncService'
 import { applyTheme, DEFAULT_THEME_KEY } from '@/lib/themes'
 import { useStore } from '@/store/useStore'
 import type { Session } from '@supabase/supabase-js'
@@ -59,12 +59,24 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
 
       if (!initializedRef.current) {
         initializedRef.current = true
+
+        // 1. Hydrate localStorage → Zustand FIRST so sync compares against
+        //    real local data, not empty defaults.
+        try {
+          const r = useStore.persist.rehydrate()
+          if (r instanceof Promise) await r
+        } catch (err) {
+          console.error('[auth] rehydrate failed:', err)
+        }
+
+        // 2. Pull from Supabase (which will compare local vs remote and
+        //    keep whichever has more data).
         try {
           await pullFromSupabase(s.user.id)
         } catch (err) {
           console.error('[auth] pull failed:', err)
-          // Don't block UI on sync failures — proceed with local data
         }
+
         try {
           const state = useStore.getState()
           applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
@@ -107,6 +119,10 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       if (event === 'SIGNED_IN') {
         if (!initializedRef.current) {
           initializedRef.current = true
+          try {
+            const r = useStore.persist.rehydrate()
+            if (r instanceof Promise) await r
+          } catch (err) { console.error('[auth] rehydrate failed:', err) }
           try { await pullFromSupabase(s.user.id) } catch (err) { console.error('[auth] pull failed:', err) }
           try {
             const state = useStore.getState()
@@ -126,9 +142,16 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       }
     })
 
+    // Flush pending sync before page unload (closing tab, navigating away)
+    const handleBeforeUnload = () => { flushSync() }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('pagehide', handleBeforeUnload)
+
     return () => {
       cancelled = true
       subscription.unsubscribe()
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('pagehide', handleBeforeUnload)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
