@@ -131,24 +131,38 @@ export default function AuthPage() {
 
     setBusy(true)
 
-    const result = mode === 'login'
-      ? await signIn(name, pass)
-      : await signUp(name, pass)
+    // Hard timeout: never let the button stay stuck on "Carregando..."
+    const timeoutId = setTimeout(() => {
+      setBusy(false)
+      setError('Tempo esgotado. Tente novamente.')
+    }, 10000)
 
-    setBusy(false)
+    try {
+      const result = mode === 'login'
+        ? await signIn(name, pass)
+        : await signUp(name, pass)
 
-    if (!result.ok) {
-      setError(result.error ?? 'Erro desconhecido')
-      return
+      clearTimeout(timeoutId)
+      setBusy(false)
+
+      if (!result.ok) {
+        setError(result.error ?? 'Erro desconhecido')
+        return
+      }
+
+      if (mode === 'register') {
+        setInfo('Conta criada! Entre agora.')
+        switchMode('login')
+        return
+      }
+
+      router.replace('/')
+    } catch (err) {
+      clearTimeout(timeoutId)
+      setBusy(false)
+      console.error('[auth-page] submit failed:', err)
+      setError('Erro de conexão. Tente novamente.')
     }
-
-    if (mode === 'register') {
-      setInfo('Conta criada! Verifique seu e-mail ou entre agora.')
-      switchMode('login')
-      return
-    }
-
-    router.replace('/')
   }
 
   // Splash enquanto valida sessão — nunca tela 100% preta
