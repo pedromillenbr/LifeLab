@@ -132,10 +132,11 @@ export default function AuthPage() {
     setBusy(true)
 
     // Hard timeout: never let the button stay stuck on "Carregando..."
+    // (auth.ts has its own 8s timeout, this is the outer safety net)
     const timeoutId = setTimeout(() => {
       setBusy(false)
-      setError('Tempo esgotado. Tente novamente.')
-    }, 10000)
+      setError('Tempo esgotado. Verifique sua conexão e tente novamente.')
+    }, 12000)
 
     try {
       const result = mode === 'login'

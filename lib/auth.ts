@@ -10,6 +10,19 @@ export interface AuthResult {
   error?: string
 }
 
+// Hard timeout for any auth network call — guarantees the UI never hangs.
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timeout after ${ms}ms`))
+    }, ms)
+    promise.then(
+      (val) => { clearTimeout(timer); resolve(val) },
+      (err) => { clearTimeout(timer); reject(err) },
+    )
+  })
+}
+
 export async function signUp(username: string, password: string): Promise<AuthResult> {
   if (!username || !password) {
     return { ok: false, error: 'Preencha todos os campos' }
@@ -18,41 +31,40 @@ export async function signUp(username: string, password: string): Promise<AuthRe
   const normalizedUsername = username.toLowerCase().trim()
   const email = toEmail(normalizedUsername)
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  })
+  try {
+    const { error } = await withTimeout(
+      supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username: normalizedUsername },
+        },
+      }),
+      8000,
+      'signUp',
+    )
 
-  if (error) {
-    console.error('SIGNUP ERROR:', error)
+    if (error) {
+      console.error('[auth] SIGNUP ERROR:', error)
 
-    if (
-      error.message.toLowerCase().includes('already registered') ||
-      error.message.toLowerCase().includes('already exists') ||
-      error.message.toLowerCase().includes('user already')
-    ) {
-      return { ok: false, error: 'Usuário já existe' }
+      const msg = error.message.toLowerCase()
+      if (
+        msg.includes('already registered') ||
+        msg.includes('already exists') ||
+        msg.includes('user already')
+      ) {
+        return { ok: false, error: 'Usuário já existe' }
+      }
+
+      return { ok: false, error: error.message }
     }
 
-    return { ok: false, error: error.message }
+    return { ok: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erro desconhecido'
+    console.error('[auth] signUp exception:', message)
+    return { ok: false, error: 'Não foi possível criar a conta. Tente novamente.' }
   }
-
-  // 🔥 cria profile manualmente (já que removemos o trigger)
-  if (data.user) {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: data.user.id,
-        username: normalizedUsername,
-      })
-
-    if (profileError) {
-      console.error('PROFILE ERROR:', profileError)
-      return { ok: false, error: profileError.message }
-    }
-  }
-
-  return { ok: true }
 }
 
 export async function signIn(username: string, password: string): Promise<AuthResult> {
@@ -62,24 +74,35 @@ export async function signIn(username: string, password: string): Promise<AuthRe
 
   const email = toEmail(username)
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  try {
+    const { error } = await withTimeout(
+      supabase.auth.signInWithPassword({ email, password }),
+      8000,
+      'signIn',
+    )
 
-  if (error) {
-    console.error('LOGIN ERROR:', error)
-    return { ok: false, error: 'Usuário ou senha inválidos' }
+    if (error) {
+      console.error('[auth] LOGIN ERROR:', error)
+      return { ok: false, error: 'Usuário ou senha inválidos' }
+    }
+
+    return { ok: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Erro desconhecido'
+    console.error('[auth] signIn exception:', message)
+    return { ok: false, error: 'Não foi possível entrar. Tente novamente.' }
   }
-
-  return { ok: true }
 }
 
 export async function signOut(): Promise<void> {
-  await supabase.auth.signOut()
+  try {
+    await withTimeout(supabase.auth.signOut(), 5000, 'signOut')
+  } catch (err) {
+    console.error('[auth] signOut exception:', err)
+  }
 }
 
 export async function getSession() {
   const { data } = await supabase.auth.getSession()
   return data.session
-} 
+}
