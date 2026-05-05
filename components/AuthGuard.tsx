@@ -3,38 +3,31 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { pullFromSupabase, startAutoSync, stopAutoSync, flushSync, ensureUserMatch, clearLastUser } from '@/store/syncService'
+import { ensureValidSession, warmSupabaseClient, type StoredSession } from '@/lib/auth'
+import {
+  pullFromSupabase,
+  startAutoSync,
+  stopAutoSync,
+  flushSync,
+  ensureUserMatch,
+  clearLastUser,
+} from '@/store/syncService'
 import { applyTheme, DEFAULT_THEME_KEY } from '@/lib/themes'
 import { useStore } from '@/store/useStore'
-import type { Session } from '@supabase/supabase-js'
 
 interface AuthGuardProps {
   children: React.ReactNode
   shell: React.ReactNode
 }
 
-// Hard timeout — if Supabase doesn't respond within this window, treat as logged out
-const SESSION_TIMEOUT_MS = 3000
-// If splash is still visible after this long, auto-recover by clearing storage
-const AUTO_RECOVER_MS = 4000
-
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return new Promise((resolve) => {
-    let settled = false
-    const timer = setTimeout(() => {
-      if (!settled) { settled = true; resolve(fallback) }
-    }, ms)
-    promise.then(
-      (val) => { if (!settled) { settled = true; clearTimeout(timer); resolve(val) } },
-      ()    => { if (!settled) { settled = true; clearTimeout(timer); resolve(fallback) } },
-    )
-  })
-}
+// If the bootstrap doesn't finish in time we still show the auth page so the
+// app never hangs on a black/loading screen.
+const BOOTSTRAP_TIMEOUT_MS = 5000
 
 export function AuthGuard({ children, shell }: AuthGuardProps) {
   const router   = useRouter()
   const pathname = usePathname()
-  const [session, setSession] = useState<Session | null | undefined>(undefined)
+  const [session, setSession] = useState<StoredSession | null | undefined>(undefined)
 
   const initializedRef = useRef(false)
   const isAuthPage = pathname === '/auth'
@@ -42,32 +35,44 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
   useEffect(() => {
     let cancelled = false
 
+    // Hard ceiling — if bootstrap takes longer than this, drop to /auth.
+    const failsafe = setTimeout(() => {
+      if (cancelled) return
+      if (session === undefined) {
+        console.warn('[auth] bootstrap timeout — falling back to /auth')
+        setSession(null)
+        if (!isAuthPage) router.replace('/auth')
+      }
+    }, BOOTSTRAP_TIMEOUT_MS)
+
     async function bootstrap() {
-      // Wrap getSession in a hard timeout so the splash never hangs forever.
-      const result = await withTimeout(
-        supabase.auth.getSession().catch(() => ({ data: { session: null } })),
-        SESSION_TIMEOUT_MS,
-        { data: { session: null } },
-      )
+      let s: StoredSession | null = null
+      try {
+        s = await ensureValidSession()
+      } catch (err) {
+        console.error('[auth] ensureValidSession failed:', err)
+      }
 
       if (cancelled) return
-      const s = result.data.session
 
       if (!s) {
+        clearTimeout(failsafe)
         setSession(null)
         if (!isAuthPage) router.replace('/auth')
         return
       }
 
+      // Tell supabase-js about the session in the background — best effort,
+      // never blocks the redirect.
+      warmSupabaseClient(s).catch(() => {})
+
       if (!initializedRef.current) {
         initializedRef.current = true
 
-        // 1. Check if this is the same user as before. If different account,
-        //    wipe local data so we don't leak previous user's content.
+        // 1. Wipe local data if a different user logged in on this device.
         const sameUser = ensureUserMatch(s.user.id)
 
-        // 2. Hydrate localStorage → Zustand only if same user (otherwise it's
-        //    already wiped by ensureUserMatch).
+        // 2. Hydrate localStorage → Zustand if same user.
         if (sameUser) {
           try {
             const r = useStore.persist.rehydrate()
@@ -77,7 +82,7 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
           }
         }
 
-        // 3. Pull from Supabase.
+        // 3. Pull from Supabase (REST direct).
         try {
           await pullFromSupabase(s.user.id)
         } catch (err) {
@@ -90,6 +95,7 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
         } catch (err) {
           console.error('[auth] applyTheme failed:', err)
         }
+
         try {
           startAutoSync(s.user.id)
         } catch (err) {
@@ -98,6 +104,7 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       }
 
       if (cancelled) return
+      clearTimeout(failsafe)
       setSession(s)
       if (isAuthPage) router.replace('/')
     }
@@ -105,69 +112,38 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
     bootstrap().catch((err) => {
       console.error('[auth] bootstrap fatal error:', err)
       if (!cancelled) {
+        clearTimeout(failsafe)
         setSession(null)
         if (!isAuthPage) router.replace('/auth')
       }
     })
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+    // We still subscribe to supabase-js auth events so SIGNED_OUT from the
+    // sidebar (or token refresh) is reflected in the UI. Anything that comes
+    // through here is a nice-to-have; the source of truth is localStorage.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sb) => {
       if (cancelled) return
       if (event === 'INITIAL_SESSION') return
 
-      if (event === 'SIGNED_OUT' || !s) {
+      if (event === 'SIGNED_OUT' || !sb) {
         initializedRef.current = false
         stopAutoSync()
-        // Clear the user-id pointer so next login is treated as fresh
         clearLastUser()
-        // Wipe persisted store so cached data doesn't show in /auth or
-        // before the next user's pull completes
         try { localStorage.removeItem('lifelab-storage') } catch { /* ignore */ }
         setSession(null)
         if (!isAuthPage) router.replace('/auth')
         return
       }
-
-      if (event === 'SIGNED_IN') {
-        // ALWAYS check for user change on SIGNED_IN — handles fresh signups
-        // and account switches even if bootstrap already ran.
-        const sameUser = ensureUserMatch(s.user.id)
-
-        if (!initializedRef.current || !sameUser) {
-          initializedRef.current = true
-          stopAutoSync() // tear down any previous user's sync subscription
-          if (sameUser) {
-            try {
-              const r = useStore.persist.rehydrate()
-              if (r instanceof Promise) await r
-            } catch (err) { console.error('[auth] rehydrate failed:', err) }
-          }
-          try { await pullFromSupabase(s.user.id) } catch (err) { console.error('[auth] pull failed:', err) }
-          try {
-            const state = useStore.getState()
-            applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
-          } catch (err) { console.error('[auth] applyTheme failed:', err) }
-          try { startAutoSync(s.user.id) } catch (err) { console.error('[auth] startAutoSync failed:', err) }
-        }
-        setSession(s)
-        if (isAuthPage) router.replace('/')
-        return
-      }
-
-      if (event === 'TOKEN_REFRESHED') {
-        setSession(s)
-        try { startAutoSync(s.user.id) } catch (err) { console.error('[auth] startAutoSync failed:', err) }
-        return
-      }
     })
 
-    // Flush pending sync before page unload (closing tab, navigating away)
+    // Flush pending sync before page unload
     const handleBeforeUnload = () => { flushSync() }
     window.addEventListener('beforeunload', handleBeforeUnload)
     window.addEventListener('pagehide', handleBeforeUnload)
 
     return () => {
       cancelled = true
+      clearTimeout(failsafe)
       subscription.unsubscribe()
       window.removeEventListener('beforeunload', handleBeforeUnload)
       window.removeEventListener('pagehide', handleBeforeUnload)
@@ -175,7 +151,6 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Loading splash with automatic self-recovery
   if (session === undefined) {
     return <LoadingSplash />
   }
@@ -186,46 +161,7 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
   return <>{shell}{children}</>
 }
 
-// ──────────────────────────────────────────────────────────────────────
-//  LoadingSplash — auto-recovers if the bootstrap takes too long.
-//  After AUTO_RECOVER_MS, silently wipes auth tokens and reloads.
-// ──────────────────────────────────────────────────────────────────────
 function LoadingSplash() {
-  useEffect(() => {
-    // Track recovery attempts in sessionStorage so we don't loop forever
-    const RECOVERY_KEY = 'lifelab-recovery-attempts'
-    const attempts = parseInt(sessionStorage.getItem(RECOVERY_KEY) || '0', 10)
-
-    // After 2 failed auto-recoveries, give up and just send to /auth
-    if (attempts >= 2) {
-      sessionStorage.removeItem(RECOVERY_KEY)
-      const timer = setTimeout(() => {
-        location.href = '/auth'
-      }, AUTO_RECOVER_MS)
-      return () => clearTimeout(timer)
-    }
-
-    const timer = setTimeout(() => {
-      try {
-        // Clear only auth-related keys to avoid losing sync data
-        const keysToRemove: string[] = []
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          if (key && (key.startsWith('sb-') || key === 'lifelab-auth')) {
-            keysToRemove.push(key)
-          }
-        }
-        keysToRemove.forEach(k => localStorage.removeItem(k))
-        sessionStorage.setItem(RECOVERY_KEY, String(attempts + 1))
-      } catch {
-        /* ignore storage errors */
-      }
-      location.reload()
-    }, AUTO_RECOVER_MS)
-
-    return () => clearTimeout(timer)
-  }, [])
-
   return (
     <div style={{
       position: 'fixed', inset: 0,
@@ -243,12 +179,4 @@ function LoadingSplash() {
       <style>{`@keyframes ll-guard-spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
-}
-
-// Clear the recovery counter once we successfully reach the app
-if (typeof window !== 'undefined') {
-  // After hydration with a real session, the counter resets naturally on next visit
-  setTimeout(() => {
-    try { sessionStorage.removeItem('lifelab-recovery-attempts') } catch { /* ignore */ }
-  }, 10000)
 }

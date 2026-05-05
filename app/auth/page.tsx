@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { signIn, signUp } from '@/lib/auth'
+import { signIn, signUp, ensureValidSession } from '@/lib/auth'
 
 // ── Design tokens (mesmos do sistema) ────────────────────────────────
 const P      = 'var(--color-primary)'
@@ -74,45 +73,30 @@ export default function AuthPage() {
   const [ready, setReady]   = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Se já tem sessão ativa → redireciona imediatamente.
-  // Hard timeout de 2s — se Supabase não responder, mostra a tela de auth
-  // de qualquer jeito (nunca trava em tela preta).
+  // Se já tem sessão local → redireciona imediatamente.
+  // Hard timeout de 2s no caminho de refresh; se exceder, mostramos a tela
+  // de auth (nunca trava em tela preta).
   useEffect(() => {
-    let done = false
+    let cancelled = false
     const timer = setTimeout(() => {
-      if (!done) {
-        done = true
-        // Timeout — Supabase travou. Limpa tokens zumbi e mostra auth.
-        try {
-          for (let i = localStorage.length - 1; i >= 0; i--) {
-            const key = localStorage.key(i)
-            if (key && (key.startsWith('sb-') || key === 'lifelab-auth')) {
-              localStorage.removeItem(key)
-            }
-          }
-          console.warn('[auth-page] getSession timed out, cleared zombie tokens')
-        } catch { /* ignore */ }
-        setReady(true)
-      }
+      if (!cancelled) setReady(true)
     }, 2000)
 
-    supabase.auth.getSession()
-      .then(({ data }) => {
-        if (done) return
-        done = true
+    ensureValidSession()
+      .then((session) => {
+        if (cancelled) return
         clearTimeout(timer)
-        if (data.session) router.replace('/')
+        if (session) router.replace('/')
         else setReady(true)
       })
       .catch((err) => {
-        console.error('[auth-page] getSession failed:', err)
-        if (done) return
-        done = true
+        console.error('[auth-page] ensureValidSession failed:', err)
+        if (cancelled) return
         clearTimeout(timer)
         setReady(true)
       })
 
-    return () => { done = true; clearTimeout(timer) }
+    return () => { cancelled = true; clearTimeout(timer) }
   }, [router])
 
   // Foca o input ao trocar de modo

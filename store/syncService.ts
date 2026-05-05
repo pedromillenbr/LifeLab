@@ -1,6 +1,6 @@
 'use client'
 
-import { supabase } from '@/lib/supabase'
+import { restFetch } from '@/lib/auth'
 import { useStore } from './useStore'
 
 const LAST_USER_KEY = 'lifelab-last-user-id'
@@ -137,20 +137,29 @@ let _unsubscribe: (() => void) | null = null
 
 async function pushNow(userId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('user_data')
-      .upsert(
-        { id: userId, payload: getPayload(), updated_at: new Date().toISOString() },
-        { onConflict: 'id' }
-      )
-    if (error) {
-      console.error('[sync] push error:', error.message)
+    const res = await restFetch('/user_data', {
+      method: 'POST',
+      headers: {
+        // PostgREST upsert: merge on conflict via primary key
+        'Prefer': 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        id: userId,
+        payload: getPayload(),
+        updated_at: new Date().toISOString(),
+      }),
+      timeoutMs: 10000,
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      console.error('[sync] push HTTP', res.status, text)
       return false
     }
     console.log('[sync] pushed')
     return true
   } catch (err) {
-    console.error('[sync] push exception:', err)
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg !== 'no-session') console.error('[sync] push exception:', err)
     return false
   }
 }
@@ -168,19 +177,20 @@ function schedulePush() {
 export async function pullFromSupabase(userId: string): Promise<'pulled' | 'pushed' | 'merged' | 'no-op'> {
   let data: { payload: unknown; updated_at: string } | null = null
   try {
-    const result = await supabase
-      .from('user_data')
-      .select('payload, updated_at')
-      .eq('id', userId)
-      .maybeSingle()
-    if (result.error) {
-      console.error('[sync] pull error:', result.error.message)
-      // Don't push on error — could destroy remote data if remote query fails transiently
+    const res = await restFetch(
+      `/user_data?id=eq.${encodeURIComponent(userId)}&select=payload,updated_at&limit=1`,
+      { method: 'GET', timeoutMs: 10000 },
+    )
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      console.error('[sync] pull HTTP', res.status, text)
       return 'no-op'
     }
-    data = result.data
+    const rows = (await res.json().catch(() => [])) as Array<{ payload: unknown; updated_at: string }>
+    data = rows[0] ?? null
   } catch (err) {
-    console.error('[sync] pull exception:', err)
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg !== 'no-session') console.error('[sync] pull exception:', err)
     return 'no-op'
   }
 
