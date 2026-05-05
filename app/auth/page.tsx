@@ -156,11 +156,11 @@ export default function AuthPage() {
 
     setBusy(true)
 
-    // Hard timeout: never let the button stay stuck on "Carregando..."
+    // Hard safety timeout (auth.ts has its own 6s per call)
     const timeoutId = setTimeout(() => {
       setBusy(false)
-      setError('Tempo esgotado. Verifique sua conexão e tente novamente.')
-    }, 12000)
+      setError('Tempo esgotado. Verifique sua conexão.')
+    }, 8000)
 
     try {
       const result = mode === 'login'
@@ -168,19 +168,15 @@ export default function AuthPage() {
         : await signUp(name, pass)
 
       clearTimeout(timeoutId)
-      setBusy(false)
 
       if (!result.ok) {
+        setBusy(false)
         setError(result.error ?? 'Erro desconhecido')
         return
       }
 
-      if (mode === 'register') {
-        setInfo('Conta criada! Entre agora.')
-        switchMode('login')
-        return
-      }
-
+      // Both signUp and signIn now log the user in automatically.
+      // Redirect to home immediately.
       router.replace('/')
     } catch (err) {
       clearTimeout(timeoutId)
