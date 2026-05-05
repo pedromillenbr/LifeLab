@@ -32,7 +32,7 @@ export async function signUp(username: string, password: string): Promise<AuthRe
   const email = toEmail(normalizedUsername)
 
   try {
-    const { error } = await withTimeout(
+    const { data, error } = await withTimeout(
       supabase.auth.signUp({
         email,
         password,
@@ -59,10 +59,26 @@ export async function signUp(username: string, password: string): Promise<AuthRe
       return { ok: false, error: error.message }
     }
 
+    // Sign-out the auto-created session so onAuthStateChange doesn't fire
+    // SIGNED_IN immediately and cause a race with the UI redirect.
+    // The user will sign in manually right after.
+    if (data.session) {
+      try {
+        await withTimeout(supabase.auth.signOut(), 3000, 'post-signup signOut')
+      } catch { /* best effort */ }
+    }
+
     return { ok: true }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido'
     console.error('[auth] signUp exception:', message)
+
+    // Even if we timed out waiting for the response, the account may have
+    // been created on Supabase's side. Tell the user to try logging in.
+    if (message.includes('timeout')) {
+      return { ok: false, error: 'A conta pode ter sido criada. Tente fazer login.' }
+    }
+
     return { ok: false, error: 'Não foi possível criar a conta. Tente novamente.' }
   }
 }

@@ -107,21 +107,6 @@ function getPayload() {
   }
 }
 
-function isLocalEmpty(): boolean {
-  const s = useStore.getState()
-  return (
-    s.weightLog.length === 0 &&
-    s.habits.length === 0 &&
-    s.workoutSessions.length === 0 &&
-    s.routines.length === 0 &&
-    s.foodEntries.length === 0 &&
-    s.transactions.length === 0 &&
-    s.missions.length === 0 &&
-    s.profile.xp === 0 &&
-    !s.profile.avatar
-  )
-}
-
 // Score-based comparison — count "real" data items (not defaults)
 function dataScore(payload: ReturnType<typeof getPayload>): number {
   return (
@@ -199,13 +184,11 @@ export async function pullFromSupabase(userId: string): Promise<'pulled' | 'push
     return 'no-op'
   }
 
-  // No remote row yet — only push if local has actual content
+  // No remote row yet — ALWAYS create one so future devices have something to pull.
+  // This is critical: without an anchor row, two devices that both start empty
+  // would never sync (each would be "no-op" forever).
   if (!data?.payload) {
-    if (isLocalEmpty()) {
-      console.log('[sync] no remote row, local empty — skipping push')
-      return 'no-op'
-    }
-    console.log('[sync] no remote row, local has data — pushing up')
+    console.log('[sync] no remote row — creating initial row')
     await pushNow(userId)
     return 'pushed'
   }
