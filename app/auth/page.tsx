@@ -74,12 +74,32 @@ export default function AuthPage() {
   const [ready, setReady]   = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Se já tem sessão ativa → redireciona imediatamente
+  // Se já tem sessão ativa → redireciona imediatamente.
+  // Hard timeout de 2s — se Supabase não responder, mostra a tela de auth
+  // de qualquer jeito (nunca trava em tela preta).
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace('/')
-      else setReady(true)
-    })
+    let done = false
+    const timer = setTimeout(() => {
+      if (!done) { done = true; setReady(true) }
+    }, 2000)
+
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        if (done) return
+        done = true
+        clearTimeout(timer)
+        if (data.session) router.replace('/')
+        else setReady(true)
+      })
+      .catch((err) => {
+        console.error('[auth-page] getSession failed:', err)
+        if (done) return
+        done = true
+        clearTimeout(timer)
+        setReady(true)
+      })
+
+    return () => { done = true; clearTimeout(timer) }
   }, [router])
 
   // Foca o input ao trocar de modo
@@ -131,7 +151,25 @@ export default function AuthPage() {
     router.replace('/')
   }
 
-  if (!ready) return null // aguarda verificação de sessão — sem flash
+  // Splash enquanto valida sessão — nunca tela 100% preta
+  if (!ready) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0,
+        background: 'var(--color-bg-1)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <div style={{
+          width: 32, height: 32,
+          border: '2.5px solid var(--color-primary-border)',
+          borderTopColor: 'var(--color-primary)',
+          borderRadius: '50%',
+          animation: 'll-auth-spin 0.7s linear infinite',
+        }} />
+        <style>{`@keyframes ll-auth-spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
 
   return (
     <div
