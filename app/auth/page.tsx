@@ -179,21 +179,22 @@ export default function AuthPage() {
         >
           {/* Título */}
           <div className="mb-6 text-center">
+            
             <h1
               style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 26,
+                fontSize: 30,
                 fontWeight: 800,
-                color: TM,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.2,
+                letterSpacing: '-1px',
+                lineHeight: 1.1,
                 marginBottom: 8,
+                color: 'var(--color-primary)',
+                animation: 'nameGlow 3s ease-in-out infinite',
               }}
             >
               Olá, seja bem-vindo
             </h1>
-            <p style={{ fontSize: 13, color: TT, lineHeight: 1.5 }}>
-              Crie sua conta ou entre em uma conta existente para continuar
+            <p style={{ fontSize: 13, color: TT, lineHeight: 1.6 }}>
+              Crie sua conta ou entre para continuar
             </p>
           </div>
 
@@ -298,25 +299,33 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-3 rounded-xl font-bold text-[14px] flex items-center justify-center gap-2 transition-all duration-200 mt-2"
+              className="w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-200 mt-2"
               style={{
-                background: busy ? 'rgba(34,197,94,0.4)' : P,
+                background: busy ? 'rgba(34,197,94,0.35)' : P,
                 color: '#000',
-                boxShadow: busy ? 'none' : '0 0 22px var(--color-primary-glow)',
+                boxShadow: busy
+                  ? 'none'
+                  : '0 0 18px var(--color-primary-glow), 0 0 40px rgba(var(--color-primary-rgb), 0.20)',
                 cursor: busy ? 'not-allowed' : 'pointer',
-                border: 'none',
+                border: busy ? `1px solid ${PB}` : '1px solid transparent',
+                fontSize: 15,
+                letterSpacing: '-0.3px',
                 fontFamily: 'var(--font-display)',
-                letterSpacing: '-0.01em',
+                fontWeight: 800,
               }}
             >
               {busy ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.7 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'll-spin 0.7s linear infinite' }}>
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
                   Carregando...
                 </span>
-              ) : 'Evolua sua vida!'}
+              ) : (
+                <span style={{ animation: 'ctaGlow 2.5s ease-in-out infinite' }}>
+                  Evolua sua vida!
+                </span>
+              )}
             </button>
           </form>
         </div>
@@ -330,6 +339,14 @@ export default function AuthPage() {
       <style>{`
         @keyframes ll-spin {
           to { transform: rotate(360deg); }
+        }
+        @keyframes nameGlow {
+          0%, 100% { text-shadow: 0 0 18px rgba(var(--color-primary-rgb), 0.35), 0 0 40px rgba(var(--color-primary-rgb), 0.15); }
+          50%       { text-shadow: 0 0 28px rgba(var(--color-primary-rgb), 0.65), 0 0 60px rgba(var(--color-primary-rgb), 0.30); }
+        }
+        @keyframes ctaGlow {
+          0%, 100% { text-shadow: 0 0 8px rgba(0,0,0,0.4); }
+          50%       { text-shadow: 0 0 14px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.25); }
         }
       `}</style>
     </div>
