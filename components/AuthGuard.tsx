@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { pullFromSupabase, startAutoSync, stopAutoSync, flushSync } from '@/store/syncService'
+import { pullFromSupabase, startAutoSync, stopAutoSync, flushSync, ensureUserMatch, clearLastUser } from '@/store/syncService'
 import { applyTheme, DEFAULT_THEME_KEY } from '@/lib/themes'
 import { useStore } from '@/store/useStore'
 import type { Session } from '@supabase/supabase-js'
@@ -14,9 +14,9 @@ interface AuthGuardProps {
 }
 
 // Hard timeout — if Supabase doesn't respond within this window, treat as logged out
-const SESSION_TIMEOUT_MS = 4000
+const SESSION_TIMEOUT_MS = 3000
 // If splash is still visible after this long, auto-recover by clearing storage
-const AUTO_RECOVER_MS = 8000
+const AUTO_RECOVER_MS = 4000
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return new Promise((resolve) => {
@@ -62,17 +62,22 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       if (!initializedRef.current) {
         initializedRef.current = true
 
-        // 1. Hydrate localStorage → Zustand FIRST so sync compares against
-        //    real local data, not empty defaults.
-        try {
-          const r = useStore.persist.rehydrate()
-          if (r instanceof Promise) await r
-        } catch (err) {
-          console.error('[auth] rehydrate failed:', err)
+        // 1. Check if this is the same user as before. If different account,
+        //    wipe local data so we don't leak previous user's content.
+        const sameUser = ensureUserMatch(s.user.id)
+
+        // 2. Hydrate localStorage → Zustand only if same user (otherwise it's
+        //    already wiped by ensureUserMatch).
+        if (sameUser) {
+          try {
+            const r = useStore.persist.rehydrate()
+            if (r instanceof Promise) await r
+          } catch (err) {
+            console.error('[auth] rehydrate failed:', err)
+          }
         }
 
-        // 2. Pull from Supabase (which will compare local vs remote and
-        //    keep whichever has more data).
+        // 3. Pull from Supabase.
         try {
           await pullFromSupabase(s.user.id)
         } catch (err) {
@@ -113,6 +118,11 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       if (event === 'SIGNED_OUT' || !s) {
         initializedRef.current = false
         stopAutoSync()
+        // Clear the user-id pointer so next login is treated as fresh
+        clearLastUser()
+        // Wipe persisted store so cached data doesn't show in /auth or
+        // before the next user's pull completes
+        try { localStorage.removeItem('lifelab-storage') } catch { /* ignore */ }
         setSession(null)
         if (!isAuthPage) router.replace('/auth')
         return
@@ -121,10 +131,13 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       if (event === 'SIGNED_IN') {
         if (!initializedRef.current) {
           initializedRef.current = true
-          try {
-            const r = useStore.persist.rehydrate()
-            if (r instanceof Promise) await r
-          } catch (err) { console.error('[auth] rehydrate failed:', err) }
+          const sameUser = ensureUserMatch(s.user.id)
+          if (sameUser) {
+            try {
+              const r = useStore.persist.rehydrate()
+              if (r instanceof Promise) await r
+            } catch (err) { console.error('[auth] rehydrate failed:', err) }
+          }
           try { await pullFromSupabase(s.user.id) } catch (err) { console.error('[auth] pull failed:', err) }
           try {
             const state = useStore.getState()

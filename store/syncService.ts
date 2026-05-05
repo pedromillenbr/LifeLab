@@ -3,6 +3,76 @@
 import { supabase } from '@/lib/supabase'
 import { useStore } from './useStore'
 
+const LAST_USER_KEY = 'lifelab-last-user-id'
+const STORAGE_KEY   = 'lifelab-storage'
+
+// Reset store to defaults — used when a different user logs in
+export function resetStoreToDefaults() {
+  useStore.setState({
+    profile: {
+      name: 'Usuário',
+      bio: '',
+      avatar: null,
+      level: 1,
+      xp: 0,
+      xpToNextLevel: 100,
+      primaryColor: 'verde',
+      darkMode: true,
+      notifications: false,
+      currency: 'BRL',
+      language: 'pt',
+      createdAt: new Date().toISOString().split('T')[0],
+    },
+    habits: [],
+    missions: [],
+    weightLog: [],
+    transactions: [],
+    bibleReadings: [],
+    activePlanId: 'nt1year',
+    prayerLog: [],
+    accessLog: [],
+    routines: [],
+    workoutSessions: [],
+    calendarEvents: [],
+    biblePlansProgress: {},
+    foodEntries: [],
+    dietGoals: { calories: 2000, protein: 120, waterGoal: 2 },
+    customMeals: [
+      { id: 'cafe',   label: 'Café da manhã', icon: 'sun'    },
+      { id: 'almoco', label: 'Almoço',        icon: 'soup'   },
+      { id: 'jantar', label: 'Jantar',        icon: 'moon'   },
+      { id: 'lanche', label: 'Lanches',       icon: 'cookie' },
+    ],
+    waterLog: [],
+  })
+  // Wipe persisted blob so old user's data doesn't leak back via rehydrate
+  try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
+}
+
+// Check if the current user differs from the last logged-in user
+// If yes, wipe local data to prevent cross-account leakage
+export function ensureUserMatch(userId: string): boolean {
+  try {
+    const lastUser = localStorage.getItem(LAST_USER_KEY)
+    if (lastUser && lastUser !== userId) {
+      console.log('[sync] user changed (was', lastUser, 'now', userId, ') — clearing local data')
+      resetStoreToDefaults()
+      localStorage.setItem(LAST_USER_KEY, userId)
+      return false // user changed
+    }
+    if (!lastUser) {
+      localStorage.setItem(LAST_USER_KEY, userId)
+    }
+    return true // same user
+  } catch {
+    return true
+  }
+}
+
+export function clearLastUser() {
+  try { localStorage.removeItem(LAST_USER_KEY) } catch { /* ignore */ }
+}
+
 // ── helpers ───────────────────────────────────────────────────────────
 
 function getPayload() {
