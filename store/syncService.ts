@@ -50,20 +50,29 @@ export function resetStoreToDefaults() {
 }
 
 // Check if the current user differs from the last logged-in user
-// If yes, wipe local data to prevent cross-account leakage
+// If yes (or if there's stale data with no owner), wipe local data
+// to prevent cross-account leakage
 export function ensureUserMatch(userId: string): boolean {
   try {
     const lastUser = localStorage.getItem(LAST_USER_KEY)
-    if (lastUser && lastUser !== userId) {
+
+    if (lastUser === userId) {
+      return true // same user — keep local data
+    }
+
+    // Either user changed, or no lastUser pointer exists.
+    // In both cases, any data in lifelab-storage is suspect — wipe it.
+    if (lastUser) {
       console.log('[sync] user changed (was', lastUser, 'now', userId, ') — clearing local data')
-      resetStoreToDefaults()
-      localStorage.setItem(LAST_USER_KEY, userId)
-      return false // user changed
+    } else {
+      const hasStaleData = !!localStorage.getItem(STORAGE_KEY)
+      if (hasStaleData) {
+        console.log('[sync] no user pointer but stale storage exists — clearing')
+      }
     }
-    if (!lastUser) {
-      localStorage.setItem(LAST_USER_KEY, userId)
-    }
-    return true // same user
+    resetStoreToDefaults()
+    localStorage.setItem(LAST_USER_KEY, userId)
+    return false // treat as new user
   } catch {
     return true
   }

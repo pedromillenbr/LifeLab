@@ -129,9 +129,13 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       }
 
       if (event === 'SIGNED_IN') {
-        if (!initializedRef.current) {
+        // ALWAYS check for user change on SIGNED_IN — handles fresh signups
+        // and account switches even if bootstrap already ran.
+        const sameUser = ensureUserMatch(s.user.id)
+
+        if (!initializedRef.current || !sameUser) {
           initializedRef.current = true
-          const sameUser = ensureUserMatch(s.user.id)
+          stopAutoSync() // tear down any previous user's sync subscription
           if (sameUser) {
             try {
               const r = useStore.persist.rehydrate()
