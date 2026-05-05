@@ -13,21 +13,43 @@ interface AuthGuardProps {
   shell: React.ReactNode
 }
 
+// Hard timeout — if Supabase doesn't respond within this window, treat as logged out
+const SESSION_TIMEOUT_MS = 5000
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    let settled = false
+    const timer = setTimeout(() => {
+      if (!settled) { settled = true; resolve(fallback) }
+    }, ms)
+    promise.then(
+      (val) => { if (!settled) { settled = true; clearTimeout(timer); resolve(val) } },
+      ()    => { if (!settled) { settled = true; clearTimeout(timer); resolve(fallback) } },
+    )
+  })
+}
+
 export function AuthGuard({ children, shell }: AuthGuardProps) {
   const router   = useRouter()
   const pathname = usePathname()
   const [session, setSession] = useState<Session | null | undefined>(undefined)
 
-  // Prevent double-initialisation: getSession fires first, then onAuthStateChange
-  // fires INITIAL_SESSION immediately after. We only want one pull per session start.
   const initializedRef = useRef(false)
-
   const isAuthPage = pathname === '/auth'
 
   useEffect(() => {
-    // ── 1. Get current session synchronously ──────────────────────────
-    supabase.auth.getSession().then(async ({ data }) => {
-      const s = data.session
+    let cancelled = false
+
+    async function bootstrap() {
+      // Wrap getSession in a hard timeout so the splash never hangs forever.
+      const result = await withTimeout(
+        supabase.auth.getSession().catch(() => ({ data: { session: null } })),
+        SESSION_TIMEOUT_MS,
+        { data: { session: null } },
+      )
+
+      if (cancelled) return
+      const s = result.data.session
 
       if (!s) {
         setSession(null)
@@ -35,25 +57,44 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
         return
       }
 
-      // First valid session: pull remote data, apply theme, start auto-sync
       if (!initializedRef.current) {
         initializedRef.current = true
-        await pullFromSupabase(s.user.id)
-        const state = useStore.getState()
-        applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
-        startAutoSync(s.user.id)
+        try {
+          await pullFromSupabase(s.user.id)
+        } catch (err) {
+          console.error('[auth] pull failed:', err)
+          // Don't block UI on sync failures — proceed with local data
+        }
+        try {
+          const state = useStore.getState()
+          applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
+        } catch (err) {
+          console.error('[auth] applyTheme failed:', err)
+        }
+        try {
+          startAutoSync(s.user.id)
+        } catch (err) {
+          console.error('[auth] startAutoSync failed:', err)
+        }
       }
 
+      if (cancelled) return
       setSession(s)
       if (isAuthPage) router.replace('/')
+    }
+
+    bootstrap().catch((err) => {
+      console.error('[auth] bootstrap fatal error:', err)
+      if (!cancelled) {
+        setSession(null)
+        if (!isAuthPage) router.replace('/auth')
+      }
     })
 
-    // ── 2. Listen for auth state changes (login / logout / refresh) ───
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
-      if (event === 'INITIAL_SESSION') {
-        // Already handled by getSession above — skip to avoid double pull
-        return
-      }
+      if (cancelled) return
+      if (event === 'INITIAL_SESSION') return
 
       if (event === 'SIGNED_OUT' || !s) {
         initializedRef.current = false
@@ -64,13 +105,14 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       }
 
       if (event === 'SIGNED_IN') {
-        // Fresh login (not token refresh) — pull remote data
         if (!initializedRef.current) {
           initializedRef.current = true
-          await pullFromSupabase(s.user.id)
-          const state = useStore.getState()
-          applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
-          startAutoSync(s.user.id)
+          try { await pullFromSupabase(s.user.id) } catch (err) { console.error('[auth] pull failed:', err) }
+          try {
+            const state = useStore.getState()
+            applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
+          } catch (err) { console.error('[auth] applyTheme failed:', err) }
+          try { startAutoSync(s.user.id) } catch (err) { console.error('[auth] startAutoSync failed:', err) }
         }
         setSession(s)
         if (isAuthPage) router.replace('/')
@@ -78,15 +120,16 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       }
 
       if (event === 'TOKEN_REFRESHED') {
-        // Silent token refresh — just update session, no re-pull needed
         setSession(s)
-        // Ensure auto-sync is still running (e.g. after page reload)
-        startAutoSync(s.user.id)
+        try { startAutoSync(s.user.id) } catch (err) { console.error('[auth] startAutoSync failed:', err) }
         return
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -97,6 +140,7 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
         position: 'fixed', inset: 0,
         background: 'var(--color-bg-1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexDirection: 'column', gap: 16,
         zIndex: 9999,
       }}>
         <div style={{
@@ -106,6 +150,27 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
           borderRadius: '50%',
           animation: 'll-guard-spin 0.7s linear infinite',
         }} />
+        <button
+          onClick={() => {
+            try {
+              localStorage.clear()
+              sessionStorage.clear()
+            } catch { /* ignore */ }
+            location.reload()
+          }}
+          style={{
+            background: 'transparent',
+            color: 'var(--color-text-muted)',
+            border: '1px solid var(--color-primary-border)',
+            borderRadius: 8,
+            padding: '6px 12px',
+            fontSize: 12,
+            cursor: 'pointer',
+            opacity: 0.5,
+          }}
+        >
+          Carregando há muito tempo? Limpar cache
+        </button>
         <style>{`@keyframes ll-guard-spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
