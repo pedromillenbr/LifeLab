@@ -11,28 +11,64 @@ export interface AuthResult {
 }
 
 export async function signUp(username: string, password: string): Promise<AuthResult> {
-  const email = toEmail(username)
+  if (!username || !password) {
+    return { ok: false, error: 'Preencha todos os campos' }
+  }
 
-  const { error } = await supabase.auth.signUp({ email, password })
+  const normalizedUsername = username.toLowerCase().trim()
+  const email = toEmail(normalizedUsername)
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  })
 
   if (error) {
-    if (error.message.toLowerCase().includes('already registered') ||
-        error.message.toLowerCase().includes('already exists') ||
-        error.message.toLowerCase().includes('user already')) {
+    console.error('SIGNUP ERROR:', error)
+
+    if (
+      error.message.toLowerCase().includes('already registered') ||
+      error.message.toLowerCase().includes('already exists') ||
+      error.message.toLowerCase().includes('user already')
+    ) {
       return { ok: false, error: 'Usuário já existe' }
     }
-    return { ok: false, error: 'Erro ao criar conta. Tente novamente.' }
+
+    return { ok: false, error: error.message }
+  }
+
+  // 🔥 cria profile manualmente (já que removemos o trigger)
+  if (data.user) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: data.user.id,
+        username: normalizedUsername,
+      })
+
+    if (profileError) {
+      console.error('PROFILE ERROR:', profileError)
+      return { ok: false, error: profileError.message }
+    }
   }
 
   return { ok: true }
 }
 
 export async function signIn(username: string, password: string): Promise<AuthResult> {
+  if (!username || !password) {
+    return { ok: false, error: 'Preencha todos os campos' }
+  }
+
   const email = toEmail(username)
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
   if (error) {
+    console.error('LOGIN ERROR:', error)
     return { ok: false, error: 'Usuário ou senha inválidos' }
   }
 
