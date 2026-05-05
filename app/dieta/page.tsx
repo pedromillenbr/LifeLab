@@ -644,6 +644,8 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
   // ── auto-calc mode (food selected from DB) ──────────────────
   const [selectedFood, setSelectedFood] = useState<FoodDBItem | null>(null)
   const [grams,        setGrams]        = useState(100)
+  const [units,        setUnits]        = useState(1)
+  const [useUnits,     setUseUnits]     = useState(false)
   const [search,       setSearch]       = useState('')
   const [activeMeal,   setActiveMeal]   = useState(mealId)
 
@@ -653,8 +655,13 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
 
   const autoMode = selectedFood !== null
 
+  // Decide effective grams based on mode (unit vs grams)
+  const effectiveGrams = (autoMode && useUnits && selectedFood?.unitGrams)
+    ? units * selectedFood.unitGrams
+    : grams
+
   // Computed values (auto mode)
-  const mult    = grams / 100
+  const mult    = effectiveGrams / 100
   const compCal = selectedFood ? Math.round(selectedFood.cal * mult) : 0
   const compP   = selectedFood ? +(selectedFood.p * mult).toFixed(1)  : 0
   const compC   = selectedFood ? +(selectedFood.c * mult).toFixed(1)  : 0
@@ -666,11 +673,14 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
   const manualValid = draft.name.trim().length > 0
     && Number.isFinite(parseFloat(draft.calories))
     && parseFloat(draft.calories) > 0
-  const canAdd = autoMode ? grams > 0 : manualValid
+  const canAdd = autoMode ? (useUnits ? units > 0 : grams > 0) : manualValid
 
   function pickFood(food: FoodDBItem) {
     setSelectedFood(food)
     setGrams(food.serving ?? 100)
+    setUnits(1)
+    // default: use units if the food has unitLabel, else grams
+    setUseUnits(!!(food.unitLabel && food.unitGrams))
     setSearch('')
   }
 
@@ -689,9 +699,12 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
 
   function handleAdd() {
     if (autoMode && selectedFood) {
+      const qtyLabel = (useUnits && selectedFood.unitLabel && selectedFood.unitGrams)
+        ? `${units} ${units === 1 ? selectedFood.unitLabel : selectedFood.unitLabel + 's'}`
+        : `${effectiveGrams} g`
       onAdd({
         name:     selectedFood.name,
-        quantity: `${grams} g`,
+        quantity: qtyLabel,
         calories: compCal,
         protein:  compP || undefined,
         carbs:    compC || undefined,
@@ -831,19 +844,63 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
               </button>
             </div>
 
+            {/* Toggle gramas / unidades */}
+            {selectedFood.unitLabel && selectedFood.unitGrams && (
+              <div className="flex gap-1.5">
+                {(['g', 'un'] as const).map(mode => {
+                  const active = mode === 'un' ? useUnits : !useUnits
+                  const label  = mode === 'un' ? selectedFood.unitLabel! : 'gramas'
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => setUseUnits(mode === 'un')}
+                      className="px-3 py-1 rounded-lg text-[11px] font-semibold transition-all"
+                      style={{
+                        background: active ? PM : BG2,
+                        border: `1px solid ${active ? PB : BORDER}`,
+                        color: active ? P : TT,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
             <div>
-              <label style={{ fontSize: 11, color: TT, display: 'block', marginBottom: 5 }}>
-                Quantidade (g) — valores são recalculados automaticamente
-              </label>
-              <input
-                type="number"
-                className="input"
-                inputMode="numeric"
-                min={1}
-                value={grams}
-                onChange={e => setGrams(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                onKeyDown={e => { if (e.key === 'Enter' && canAdd) handleAdd() }}
-              />
+              {useUnits && selectedFood.unitLabel && selectedFood.unitGrams ? (
+                <>
+                  <label style={{ fontSize: 11, color: TT, display: 'block', marginBottom: 5 }}>
+                    Quantidade ({selectedFood.unitLabel}) — valores recalculados automaticamente
+                  </label>
+                  <input
+                    type="number"
+                    className="input"
+                    inputMode="numeric"
+                    min={1}
+                    value={units}
+                    onChange={e => setUnits(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    onKeyDown={e => { if (e.key === 'Enter' && canAdd) handleAdd() }}
+                  />
+                </>
+              ) : (
+                <>
+                  <label style={{ fontSize: 11, color: TT, display: 'block', marginBottom: 5 }}>
+                    Quantidade (g) — valores são recalculados automaticamente
+                  </label>
+                  <input
+                    type="number"
+                    className="input"
+                    inputMode="numeric"
+                    min={1}
+                    value={grams}
+                    onChange={e => setGrams(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    onKeyDown={e => { if (e.key === 'Enter' && canAdd) handleAdd() }}
+                  />
+                </>
+              )}
             </div>
 
             {/* Preview calculado */}
