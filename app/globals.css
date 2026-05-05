@@ -1343,7 +1343,8 @@ html, body { overflow-x: hidden; max-width: 100%; }
 /* Tap targets — touch ≥44px hint */
 @media (hover: none) {
   button, a[role="button"] { min-height: 44px; }
-  .group-hover\\:scale-110 { transform: none !important; }
+  .group:hover .scale-110-child,
+  [class*="group-hover"] { transform: none !important; }
 }
 
 /* Horizontal scrollers */

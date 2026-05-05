@@ -1,14 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Dumbbell, CheckSquare, Target,
-  DollarSign, Calendar, BookOpen, Sparkles, Settings, Timer, UtensilsCrossed, LogOut
+  DollarSign, Calendar, BookOpen, Sparkles, Settings, Timer, UtensilsCrossed
 } from 'lucide-react'
 import { useStore } from '@/store/useStore'
 import { cn } from '@/lib/utils'
-import { signOut } from '@/lib/auth'
 
 const NAV = [
   { href: '/',           icon: LayoutDashboard, label: 'Dashboard' },
@@ -25,13 +24,7 @@ const NAV = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router   = useRouter()
   const { profile } = useStore()
-
-  async function handleLogout() {
-    await signOut()
-    router.replace('/auth')
-  }
 
   return (
     <aside
@@ -135,35 +128,6 @@ export function Sidebar() {
 
       {/* Bottom */}
       <div className="flex flex-col gap-1 w-full px-2">
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          title="Sair"
-          className="w-full h-10 rounded-xl flex items-center justify-center group relative transition-all duration-250"
-          style={{ background: 'transparent', border: '1px solid transparent', cursor: 'pointer' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.08)' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-        >
-          <LogOut
-            size={16}
-            strokeWidth={1.8}
-            style={{ color: 'var(--color-text-muted)', transition: 'color 180ms' }}
-            className="group-hover:text-red-400 transition-colors duration-200"
-          />
-          <span
-            className="absolute left-full ml-3 px-3 py-1.5 text-xs font-medium rounded-lg
-                       opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
-            style={{
-              background: 'var(--color-bg-2)',
-              border: '1px solid var(--color-primary-border)',
-              boxShadow: 'var(--shadow-card)',
-              color: 'var(--color-text-main)',
-            }}
-          >
-            Sair
-          </span>
-        </button>
-
         <Link
           href="/configuracoes"
           title="Configurações"

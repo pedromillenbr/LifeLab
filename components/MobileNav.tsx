@@ -86,8 +86,13 @@ export function MobileNav() {
         {/* Abas com scroll horizontal */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 flex items-center gap-1.5 overflow-x-auto scroll-smooth"
-          style={{ scrollBehavior: 'smooth' }}
+          className="flex-1 flex items-center gap-1.5 overflow-x-auto"
+          style={{
+            scrollBehavior: 'smooth',
+            touchAction: 'pan-x',
+            overscrollBehaviorX: 'contain',
+            WebkitOverflowScrolling: 'touch',
+          }}
         >
           {NAV.map(({ href, icon: Icon, label }) => {
             const active = pathname === href || (href !== '/' && pathname.startsWith(href))
