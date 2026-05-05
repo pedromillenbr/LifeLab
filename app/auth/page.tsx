@@ -80,7 +80,20 @@ export default function AuthPage() {
   useEffect(() => {
     let done = false
     const timer = setTimeout(() => {
-      if (!done) { done = true; setReady(true) }
+      if (!done) {
+        done = true
+        // Timeout — Supabase travou. Limpa tokens zumbi e mostra auth.
+        try {
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i)
+            if (key && (key.startsWith('sb-') || key === 'lifelab-auth')) {
+              localStorage.removeItem(key)
+            }
+          }
+          console.warn('[auth-page] getSession timed out, cleared zombie tokens')
+        } catch { /* ignore */ }
+        setReady(true)
+      }
     }, 2000)
 
     supabase.auth.getSession()
@@ -129,10 +142,21 @@ export default function AuthPage() {
       return
     }
 
+    // Limpa qualquer token zumbi do localStorage antes de tentar auth.
+    // Isso evita que o supabase-js trave em loop tentando refresh de
+    // um token corrompido de sessão anterior.
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i)
+        if (key && (key.startsWith('sb-') || key === 'lifelab-auth')) {
+          localStorage.removeItem(key)
+        }
+      }
+    } catch { /* ignore */ }
+
     setBusy(true)
 
     // Hard timeout: never let the button stay stuck on "Carregando..."
-    // (auth.ts has its own 8s timeout, this is the outer safety net)
     const timeoutId = setTimeout(() => {
       setBusy(false)
       setError('Tempo esgotado. Verifique sua conexão e tente novamente.')
