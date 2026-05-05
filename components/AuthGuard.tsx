@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { pullFromSupabase, startAutoSync, stopAutoSync } from '@/store/syncService'
@@ -18,51 +18,79 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
   const pathname = usePathname()
   const [session, setSession] = useState<Session | null | undefined>(undefined)
 
+  // Prevent double-initialisation: getSession fires first, then onAuthStateChange
+  // fires INITIAL_SESSION immediately after. We only want one pull per session start.
+  const initializedRef = useRef(false)
+
   const isAuthPage = pathname === '/auth'
 
-  const handleSession = useCallback(async (s: Session | null, isNew = false) => {
-    setSession(s)
-
-    if (!s) {
-      // Logged out — stop syncing
-      stopAutoSync()
-      if (!isAuthPage) router.replace('/auth')
-      return
-    }
-
-    if (isAuthPage) {
-      router.replace('/')
-    }
-
-    // Pull remote data → merge into Zustand (always on session start)
-    if (isNew) {
-      await pullFromSupabase(s.user.id)
-      // Re-apply theme after remote data loaded (may differ from local)
-      const state = useStore.getState()
-      applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
-    }
-
-    // Start auto-push watcher
-    startAutoSync(s.user.id)
-  }, [router, isAuthPage])
-
   useEffect(() => {
-    // Initial session check
-    supabase.auth.getSession().then(({ data }) => {
-      handleSession(data.session, true)
+    // ── 1. Get current session synchronously ──────────────────────────
+    supabase.auth.getSession().then(async ({ data }) => {
+      const s = data.session
+
+      if (!s) {
+        setSession(null)
+        if (!isAuthPage) router.replace('/auth')
+        return
+      }
+
+      // First valid session: pull remote data, apply theme, start auto-sync
+      if (!initializedRef.current) {
+        initializedRef.current = true
+        await pullFromSupabase(s.user.id)
+        const state = useStore.getState()
+        applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
+        startAutoSync(s.user.id)
+      }
+
+      setSession(s)
+      if (isAuthPage) router.replace('/')
     })
 
-    // Real-time auth state changes (login / logout / token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-      // SIGNED_IN = fresh login; TOKEN_REFRESHED = silent refresh (no re-pull needed)
-      const isNewLogin = event === 'SIGNED_IN'
-      handleSession(s, isNewLogin)
+    // ── 2. Listen for auth state changes (login / logout / refresh) ───
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+      if (event === 'INITIAL_SESSION') {
+        // Already handled by getSession above — skip to avoid double pull
+        return
+      }
+
+      if (event === 'SIGNED_OUT' || !s) {
+        initializedRef.current = false
+        stopAutoSync()
+        setSession(null)
+        if (!isAuthPage) router.replace('/auth')
+        return
+      }
+
+      if (event === 'SIGNED_IN') {
+        // Fresh login (not token refresh) — pull remote data
+        if (!initializedRef.current) {
+          initializedRef.current = true
+          await pullFromSupabase(s.user.id)
+          const state = useStore.getState()
+          applyTheme(state.profile.primaryColor || DEFAULT_THEME_KEY)
+          startAutoSync(s.user.id)
+        }
+        setSession(s)
+        if (isAuthPage) router.replace('/')
+        return
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        // Silent token refresh — just update session, no re-pull needed
+        setSession(s)
+        // Ensure auto-sync is still running (e.g. after page reload)
+        startAutoSync(s.user.id)
+        return
+      }
     })
 
     return () => subscription.unsubscribe()
-  }, [handleSession])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  // Loading splash — short, no content flash
+  // Loading splash
   if (session === undefined) {
     return (
       <div style={{

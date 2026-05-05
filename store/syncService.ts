@@ -1,29 +1,9 @@
 'use client'
 
-/**
- * Supabase ↔ Zustand sync
- *
- * Strategy: one row per user in `user_data` table (JSONB column `payload`).
- * - On login  → pull row from Supabase, merge into Zustand (Supabase wins for new devices)
- * - On change → debounced upsert of the full Zustand partialised state
- *
- * Table DDL (run once in Supabase SQL editor):
- *
- *   create table if not exists public.user_data (
- *     id         uuid primary key references auth.users(id) on delete cascade,
- *     payload    jsonb not null default '{}'::jsonb,
- *     updated_at timestamptz not null default now()
- *   );
- *   alter table public.user_data enable row level security;
- *   create policy "owner" on public.user_data
- *     using  (auth.uid() = id)
- *     with check (auth.uid() = id);
- */
-
 import { supabase } from '@/lib/supabase'
 import { useStore } from './useStore'
 
-// ── helpers ──────────────────────────────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────────────
 
 function getPayload() {
   const s = useStore.getState()
@@ -48,22 +28,62 @@ function getPayload() {
   }
 }
 
+// Guards against the subscribe callback firing during setState (pull)
+let _isPulling = false
+
+// Tracks current user for push operations
+let _currentUserId: string | null = null
+let _pushTimer: ReturnType<typeof setTimeout> | null = null
+let _unsubscribe: (() => void) | null = null
+
+// ── push: Zustand → Supabase (debounced) ─────────────────────────────
+
+function schedulePush() {
+  if (!_currentUserId || _isPulling) return
+  if (_pushTimer) clearTimeout(_pushTimer)
+  _pushTimer = setTimeout(async () => {
+    if (!_currentUserId) return
+    const { error } = await supabase
+      .from('user_data')
+      .upsert(
+        { id: _currentUserId, payload: getPayload(), updated_at: new Date().toISOString() },
+        { onConflict: 'id' }
+      )
+    if (error) console.error('[sync] push error:', error.message)
+    else console.log('[sync] pushed')
+  }, 1200)
+}
+
 // ── pull: Supabase → Zustand ──────────────────────────────────────────
 
-export async function pullFromSupabase(userId: string): Promise<boolean> {
+export async function pullFromSupabase(userId: string): Promise<'pulled' | 'pushed' | 'no-op'> {
   const { data, error } = await supabase
     .from('user_data')
-    .select('payload')
+    .select('payload, updated_at')
     .eq('id', userId)
     .maybeSingle()
 
   if (error) {
     console.error('[sync] pull error:', error.message)
-    return false
+    return 'no-op'
   }
-  if (!data?.payload) return false   // first login on this account — nothing to pull
 
-  // Merge remote payload into store (remote wins over empty defaults)
+  // No remote row → this account has never synced. Push local data now.
+  if (!data?.payload) {
+    console.log('[sync] no remote row — pushing local data')
+    const { error: pushErr } = await supabase
+      .from('user_data')
+      .upsert(
+        { id: userId, payload: getPayload(), updated_at: new Date().toISOString() },
+        { onConflict: 'id' }
+      )
+    if (pushErr) console.error('[sync] initial push error:', pushErr.message)
+    return 'pushed'
+  }
+
+  // Remote row exists — apply it to the store.
+  // Block the subscribe handler so setState doesn't trigger a redundant push.
+  _isPulling = true
   const remote = data.payload as ReturnType<typeof getPayload>
   useStore.setState({
     profile:            remote.profile            ?? useStore.getState().profile,
@@ -84,48 +104,32 @@ export async function pullFromSupabase(userId: string): Promise<boolean> {
     customMeals:        remote.customMeals        ?? useStore.getState().customMeals,
     waterLog:           remote.waterLog           ?? [],
   })
+  _isPulling = false
 
-  return true
+  console.log('[sync] pulled from supabase')
+  return 'pulled'
 }
 
-// ── push: Zustand → Supabase (debounced) ─────────────────────────────
-
-let _pushTimer: ReturnType<typeof setTimeout> | null = null
-let _currentUserId: string | null = null
-
-export function setCurrentUserId(id: string | null) {
-  _currentUserId = id
-}
-
-export function pushToSupabase() {
-  if (!_currentUserId) return
-  if (_pushTimer) clearTimeout(_pushTimer)
-  _pushTimer = setTimeout(async () => {
-    if (!_currentUserId) return
-    const { error } = await supabase
-      .from('user_data')
-      .upsert(
-        { id: _currentUserId, payload: getPayload(), updated_at: new Date().toISOString() },
-        { onConflict: 'id' }
-      )
-    if (error) console.error('[sync] push error:', error.message)
-  }, 1200)   // 1.2s debounce — agrega múltiplas ações rápidas
-}
-
-// ── subscribe: auto-push on every store mutation ─────────────────────
-
-let _unsubscribe: (() => void) | null = null
+// ── auto-sync: subscribe to store mutations ───────────────────────────
 
 export function startAutoSync(userId: string) {
-  setCurrentUserId(userId)
-  // Subscribe to any store change → push
+  // Prevent double-subscription if called twice for the same user
+  if (_unsubscribe) {
+    if (_currentUserId === userId) return   // already running for this user
+    _unsubscribe()                          // switch user — tear down old subscription
+    _unsubscribe = null
+  }
+
+  _currentUserId = userId
   _unsubscribe = useStore.subscribe(() => {
-    pushToSupabase()
+    schedulePush()
   })
+  console.log('[sync] auto-sync started for', userId)
 }
 
 export function stopAutoSync() {
-  setCurrentUserId(null)
+  _currentUserId = null
   if (_pushTimer) { clearTimeout(_pushTimer); _pushTimer = null }
   if (_unsubscribe) { _unsubscribe(); _unsubscribe = null }
+  console.log('[sync] auto-sync stopped')
 }
