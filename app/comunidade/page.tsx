@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Trophy, Users, Crown } from 'lucide-react'
 import { ensureValidSession } from '@/lib/auth'
 import { fetchMyPublicProfile, type PublicProfile } from '@/lib/community/api'
 import { OnboardingModal } from './_components/OnboardingModal'
 import { RankingTab } from './_components/RankingTab'
-import { FriendsTab } from './_components/FriendsTab'
-import { HallOfEliteTab } from './_components/HallOfEliteTab'
 import { CommunityStyles } from './_components/styles'
+
+// Tabs other than the default (Ranking) are loaded only on first click.
+const FriendsTab     = lazy(() => import('./_components/FriendsTab').then(m => ({ default: m.FriendsTab })))
+const HallOfEliteTab = lazy(() => import('./_components/HallOfEliteTab').then(m => ({ default: m.HallOfEliteTab })))
 
 type Tab = 'ranking' | 'friends' | 'hall'
 
@@ -92,8 +94,12 @@ export default function ComunidadePage() {
 
       <div className="com-pane">
         {tab === 'ranking' && <RankingTab profile={profile} />}
-        {tab === 'friends' && <FriendsTab profile={profile} />}
-        {tab === 'hall'    && <HallOfEliteTab profile={profile} />}
+        {tab !== 'ranking' && (
+          <Suspense fallback={<div className="com-loading"><div className="com-loading-spinner" /></div>}>
+            {tab === 'friends' && <FriendsTab profile={profile} />}
+            {tab === 'hall'    && <HallOfEliteTab profile={profile} />}
+          </Suspense>
+        )}
       </div>
     </div>
   )

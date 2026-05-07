@@ -77,8 +77,8 @@ export function CommunityStyles() {
       }
       .com-onboard-overlay {
         position: fixed; inset: 0; z-index: 50;
-        background: rgba(11,12,16,0.85);
-        backdrop-filter: blur(12px);
+        background: rgba(11,12,16,0.92);
+        backdrop-filter: blur(6px);
         display: flex; align-items: center; justify-content: center;
         padding: 20px;
         animation: com-fade .25s ease both;
@@ -350,6 +350,91 @@ export function CommunityStyles() {
         color: var(--com-t-dis);
         cursor: not-allowed;
         box-shadow: none;
+      }
+
+      /* ── Divisions guide (collapsed by default) ──────────────── */
+      .com-guide { margin-bottom: 14px; }
+      .com-guide-toggle {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 7px 12px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--com-bd);
+        border-radius: 9999px;
+        color: var(--com-t3);
+        font-size: 11px; font-weight: 600;
+        font-family: var(--font-body);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: color .12s, border-color .12s, background .12s;
+      }
+      .com-guide-toggle:hover {
+        color: var(--green);
+        border-color: var(--green-g30);
+        background: var(--green-g07);
+      }
+      .com-guide-list {
+        list-style: none; padding: 0; margin: 12px 0 0;
+        display: flex; flex-direction: column; gap: 5px;
+        animation: com-fade .25s ease both;
+      }
+      .com-guide-item {
+        display: grid;
+        grid-template-columns: 36px 1fr auto;
+        gap: 10px; align-items: center;
+        padding: 10px 12px;
+        background:
+          linear-gradient(90deg, color-mix(in srgb, var(--metal) 6%, transparent), transparent 70%),
+          rgba(255,255,255,0.02);
+        border: 1px solid color-mix(in srgb, var(--metal) 22%, var(--com-bd));
+        border-radius: 9px;
+      }
+      .com-guide-item.is-current {
+        background:
+          linear-gradient(90deg, color-mix(in srgb, var(--metal) 14%, transparent), transparent 70%),
+          rgba(255,255,255,0.04);
+        border-color: color-mix(in srgb, var(--metal) 50%, transparent);
+        box-shadow: 0 0 14px var(--metal-glow);
+      }
+      .com-guide-item.is-mythic .com-guide-name {
+        background: linear-gradient(180deg, #ffffff 0%, var(--metal) 70%);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 18px var(--metal-glow);
+      }
+      .com-guide-rank {
+        font-family: var(--font-mono);
+        font-size: 13px; font-weight: 800;
+        color: var(--metal);
+        text-align: center;
+        letter-spacing: -0.04em;
+      }
+      .com-guide-info { min-width: 0; }
+      .com-guide-name {
+        font-size: 13px; font-weight: 700;
+        color: var(--com-t1);
+        letter-spacing: -0.2px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .com-guide-tagline {
+        font-size: 11px; color: var(--com-t3);
+        margin-top: 1px;
+        font-style: italic;
+      }
+      .com-guide-meta {
+        display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+        flex-shrink: 0;
+      }
+      .com-guide-min {
+        font-family: var(--font-mono);
+        font-size: 11px; font-weight: 700;
+        color: var(--metal);
+        letter-spacing: -0.02em;
+      }
+      .com-guide-days {
+        font-size: 9px; color: var(--com-t3);
+        font-family: var(--font-mono);
+        letter-spacing: 0.02em;
       }
 
       /* "Edit profile" trigger button on the personal card ──────── */
@@ -971,8 +1056,8 @@ export function CommunityStyles() {
       /* ── Season-end modal ────────────────────────────────────── */
       .com-season-overlay {
         position: fixed; inset: 0; z-index: 60;
-        background: rgba(11,12,16,0.90);
-        backdrop-filter: blur(14px);
+        background: rgba(11,12,16,0.93);
+        backdrop-filter: blur(6px);
         display: flex; align-items: center; justify-content: center;
         padding: 20px;
         animation: com-fade .25s ease both;
@@ -1076,26 +1161,38 @@ export function CommunityStyles() {
       /* ── Pane wrapper ────────────────────────────────────────── */
       .com-pane { animation: com-fade .25s ease both; }
 
+      /* Respect reduced motion: kill infinite glow/pulse loops. */
+      @media (prefers-reduced-motion: reduce) {
+        .com-pane,
+        .com-onboard-card,
+        .com-edit-card,
+        .com-season-card,
+        .com-promo-card,
+        .com-promo-bg,
+        .com-promo-particles span,
+        .com-elite-card.is-mythic .com-elite-inner::before,
+        .com-elite-aura,
+        .com-promo-mini-aura {
+          animation: none !important;
+        }
+      }
+
       /* ── Promotion modal (cinematic rank-up) ─────────────────── */
       .com-promo-overlay {
         position: fixed; inset: 0; z-index: 70;
         display: flex; align-items: center; justify-content: center;
         padding: 20px;
-        background: rgba(11,12,16,0.92);
-        backdrop-filter: blur(16px);
+        background: rgba(11,12,16,0.95);
+        backdrop-filter: blur(8px);
         animation: com-fade .25s ease both;
         overflow: hidden;
       }
       .com-promo-bg {
         position: absolute; inset: 0; pointer-events: none;
         background:
-          radial-gradient(60% 50% at 50% 50%, rgba(34,197,94,0.12), transparent 70%),
-          radial-gradient(40% 30% at 50% 60%, rgba(250,204,21,0.06), transparent 70%);
-        animation: com-promo-bg-pulse 3.5s ease-in-out infinite;
-      }
-      @keyframes com-promo-bg-pulse {
-        0%, 100% { opacity: 0.55; transform: scale(1); }
-        50%      { opacity: 1; transform: scale(1.06); }
+          radial-gradient(60% 50% at 50% 50%, rgba(34,197,94,0.14), transparent 70%),
+          radial-gradient(40% 30% at 50% 60%, rgba(250,204,21,0.07), transparent 70%);
+        opacity: 0.85;
       }
       .com-promo-particles {
         position: absolute; inset: 0; pointer-events: none;

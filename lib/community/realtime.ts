@@ -14,6 +14,9 @@ interface SubscribeOptions {
   pollMs?:  number
 }
 
+// Default lighter polling: 60s. Realtime subscription does the heavy
+// lifting when available; the poll is just a safety net.
+
 /**
  * Subscribes to changes on profiles_public via Supabase Realtime.
  * Always returns a cleanup function. If realtime isn't available
@@ -21,7 +24,7 @@ interface SubscribeOptions {
  * UI fresh.
  */
 export function subscribeRanking(opts: SubscribeOptions): () => void {
-  const { onChange, pollMs = 30_000 } = opts
+  const { onChange, pollMs = 60_000 } = opts
 
   let disposed = false
   let scheduled: ReturnType<typeof setTimeout> | null = null
@@ -51,9 +54,13 @@ export function subscribeRanking(opts: SubscribeOptions): () => void {
   }
 
   // ── Polling fallback ────────────────────────────────────────────
+  // Skip the tick entirely when the tab is hidden to save bandwidth
+  // and CPU. Visibility events below will refetch on resume.
   let pollTimer: ReturnType<typeof setInterval> | null = null
   if (pollMs > 0) {
-    pollTimer = setInterval(() => trigger(), pollMs)
+    pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') trigger()
+    }, pollMs)
   }
 
   // ── Refetch on tab visibility / focus ──────────────────────────

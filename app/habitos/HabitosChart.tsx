@@ -4,9 +4,10 @@ import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'rec
 type Props = {
   progressData: { day: number; pct: number }[]
   completionPct: number
+  monthLabel?: string  // e.g. 'Maio · 2026' — shown under the progress bar
 }
 
-export default function HabitosChart({ progressData, completionPct }: Props) {
+export default function HabitosChart({ progressData, completionPct, monthLabel }: Props) {
   const pct = Math.max(0, Math.min(100, Number.isFinite(completionPct) ? completionPct : 0))
   return (
     <div className="rounded-lg p-5 mb-5 animate-fade-in"
@@ -62,7 +63,7 @@ export default function HabitosChart({ progressData, completionPct }: Props) {
           )}
         </div>
         <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8, fontWeight: 500 }}>
-          Desde onboarding • Segmentado por semana
+          {monthLabel ?? 'Mês corrente'} • Reinicia todo dia 1º
         </p>
       </div>
 

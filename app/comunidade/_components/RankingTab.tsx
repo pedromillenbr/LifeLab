@@ -1,13 +1,17 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, Trophy, Hourglass, AlertTriangle, Pencil } from 'lucide-react'
 import { Avatar } from './Avatar'
 import { DivisionBadge } from './DivisionBadge'
 import { RankRow } from './RankRow'
-import { SeasonEndModal } from './SeasonEndModal'
-import { PromotionModal } from './PromotionModal'
-import { EditProfileModal } from './EditProfileModal'
+import { DivisionsGuide } from './DivisionsGuide'
+
+// Modals are heavy (cinematic animations + portal trees) and rarely
+// visible. Code-split so initial paint of /comunidade is faster.
+const SeasonEndModal   = lazy(() => import('./SeasonEndModal').then(m => ({ default: m.SeasonEndModal })))
+const PromotionModal   = lazy(() => import('./PromotionModal').then(m => ({ default: m.PromotionModal })))
+const EditProfileModal = lazy(() => import('./EditProfileModal').then(m => ({ default: m.EditProfileModal })))
 import {
   fetchRankingMonthly, fetchRankingGlobal, fetchCurrentSeason,
   fetchUnacknowledgedSeasonHistory, fetchUnacknowledgedPromotion,
@@ -57,16 +61,18 @@ export function RankingTab({ profile }: RankingTabProps) {
     return unsub
   }, [refetch])
 
-  // Season info + pending promotion (poll every 25s + on focus)
+  // Season info + pending promotion. Poll every 60s while the tab is
+  // visible; pause polling otherwise. Always refetch on focus so the
+  // user sees a promotion immediately when coming back.
   useEffect(() => {
     fetchCurrentSeason().then(setSeason)
     fetchUnacknowledgedSeasonHistory(profile.id).then(setPendingHistory)
 
     let cancelled = false
     const checkPromotion = async () => {
+      if (document.visibilityState !== 'visible') return
       const ev = await fetchUnacknowledgedPromotion(profile.id)
       if (!cancelled && ev) {
-        // Refetch latest profile so the promotion card shows current XP/streak.
         const fresh = await fetchMyPublicProfile(profile.id)
         if (cancelled) return
         if (fresh) setLatestProfile(fresh)
@@ -74,13 +80,15 @@ export function RankingTab({ profile }: RankingTabProps) {
       }
     }
     checkPromotion()
-    const t = setInterval(checkPromotion, 25_000)
+    const t = setInterval(checkPromotion, 60_000)
     const onFocus = () => checkPromotion()
     window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
     return () => {
       cancelled = true
       clearInterval(t)
       window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
     }
   }, [profile.id])
 
@@ -150,33 +158,34 @@ export function RankingTab({ profile }: RankingTabProps) {
 
   return (
     <>
-      {pendingPromotion && (
-        <PromotionModal
-          event={pendingPromotion}
-          displayName={latestProfile.display_name}
-          totalXP={latestProfile.total_xp}
-          streak={latestProfile.streak}
-          onClose={() => setPendingPromotion(null)}
-        />
-      )}
-      {pendingHistory && (
-        <SeasonEndModal
-          history={pendingHistory}
-          displayName={effectiveProfile.display_name}
-          onClose={() => setPendingHistory(null)}
-        />
-      )}
-
-      {editing && (
-        <EditProfileModal
-          profile={effectiveProfile}
-          onClose={() => setEditing(false)}
-          onSaved={(updated) => {
-            setProfileLocal(updated)
-            setLatestProfile(updated)
-          }}
-        />
-      )}
+      <Suspense fallback={null}>
+        {pendingPromotion && (
+          <PromotionModal
+            event={pendingPromotion}
+            displayName={latestProfile.display_name}
+            totalXP={latestProfile.total_xp}
+            streak={latestProfile.streak}
+            onClose={() => setPendingPromotion(null)}
+          />
+        )}
+        {pendingHistory && (
+          <SeasonEndModal
+            history={pendingHistory}
+            displayName={effectiveProfile.display_name}
+            onClose={() => setPendingHistory(null)}
+          />
+        )}
+        {editing && (
+          <EditProfileModal
+            profile={effectiveProfile}
+            onClose={() => setEditing(false)}
+            onSaved={(updated) => {
+              setProfileLocal(updated)
+              setLatestProfile(updated)
+            }}
+          />
+        )}
+      </Suspense>
 
       {/* Sub-tabs: Mensal (principal) / Histórico (secundário) */}
       <div className="com-subtabs" role="tablist">
@@ -274,6 +283,8 @@ export function RankingTab({ profile }: RankingTabProps) {
           )}
         </div>
       </div>
+
+      <DivisionsGuide currentKey={currentDiv.key} />
 
       {loading ? (
         <RankingSkeleton />

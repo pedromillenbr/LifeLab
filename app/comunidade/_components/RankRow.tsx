@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { ChevronUp, ChevronDown, Flame, Minus } from 'lucide-react'
 import { Avatar } from './Avatar'
 import { DivisionBadge } from './DivisionBadge'
@@ -11,7 +12,7 @@ interface RankRowProps {
   showXP: 'total' | 'monthly'
 }
 
-export function RankRow({ row, isYou, showXP }: RankRowProps) {
+function RankRowImpl({ row, isYou, showXP }: RankRowProps) {
   const xp = showXP === 'total' ? row.total_xp ?? 0 : row.xp ?? 0
 
   return (
@@ -53,3 +54,20 @@ export function RankRow({ row, isYou, showXP }: RankRowProps) {
     </div>
   )
 }
+
+// Memoize so the list doesn't re-render every row when sibling rows
+// or unrelated parent state changes.
+export const RankRow = memo(RankRowImpl, (prev, next) => (
+  prev.isYou === next.isYou &&
+  prev.showXP === next.showXP &&
+  prev.row.id === next.row.id &&
+  prev.row.position === next.row.position &&
+  prev.row.display_name === next.row.display_name &&
+  prev.row.streak === next.row.streak &&
+  prev.row.division_key === next.row.division_key &&
+  prev.row.movement === next.row.movement &&
+  prev.row.avatar_color === next.row.avatar_color &&
+  prev.row.avatar_initials === next.row.avatar_initials &&
+  (prev.row.total_xp ?? 0) === (next.row.total_xp ?? 0) &&
+  (prev.row.xp ?? 0) === (next.row.xp ?? 0)
+))

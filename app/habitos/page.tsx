@@ -46,16 +46,16 @@ export default function HabitosPage() {
     return d.toISOString().split('T')[0];
   });
 
-  // Janela fixa de 30 dias para o gráfico — garante que as ondas
-  // sempre rendam mesmo quando o onboarding é recente.
-  const CHART_WINDOW = 30;
-  const chartDates = Array.from({ length: CHART_WINDOW }, (_, i) => {
-    const d = new Date(todayDate);
-    d.setDate(todayDate.getDate() - (CHART_WINDOW - 1 - i));
+  // Mês civil corrente: 1º até hoje. Reinicia todo dia 1º.
+  const monthYear  = todayDate.getFullYear();
+  const monthIndex = todayDate.getMonth();
+  const todayDay   = todayDate.getDate();
+  const chartDates = Array.from({ length: todayDay }, (_, i) => {
+    const d = new Date(monthYear, monthIndex, i + 1);
     return d.toISOString().split('T')[0];
   });
 
-  // Progresso geral (sempre 30 pontos)
+  // Eixo X em dias do mês (1..hoje); pct = % de hábitos completados naquele dia.
   const progressData = chartDates.map((date, idx) => ({
     day: idx + 1,
     pct: habits.length > 0
@@ -145,7 +145,11 @@ export default function HabitosPage() {
       </div>
 
       {/* Progress chart */}
-      <HabitosChart progressData={progressData} completionPct={completionPct} />
+      <HabitosChart
+        progressData={progressData}
+        completionPct={completionPct}
+        monthLabel={`${todayDate.toLocaleDateString('pt-BR', { month: 'long' })} · ${monthYear}`}
+      />
 
 
       {/* Grade de Consistência — NOVA VISUALIZAÇÃO SEMANAL */}
