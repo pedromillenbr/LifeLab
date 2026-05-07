@@ -7,7 +7,7 @@ import {
   fetchRankingGlobal, fetchTopByStreak, fetchTopByBestStreak,
   fetchSeasonChampions, type RankingRow, type PublicProfile,
 } from '@/lib/community/api'
-import { divisionForXP, type DivisionKey } from '@/lib/community/divisions'
+import { divisionForUser, type DivisionKey } from '@/lib/community/divisions'
 
 type Category = 'top_xp' | 'top_streak' | 'historic_streak' | 'champions'
 
@@ -78,7 +78,7 @@ export function HallOfEliteTab({ profile: _profile }: HallProps) {
               key={p.id}
               rank={i + 1}
               displayName={p.display_name}
-              divisionKey={divisionForXP(p.total_xp).key as DivisionKey}
+              divisionKey={divisionForUser(p.total_xp, p.days_active ?? 999).key as DivisionKey}
               xp={p.total_xp}
               streak={p.streak}
               caption="STREAK ATUAL"
@@ -90,7 +90,7 @@ export function HallOfEliteTab({ profile: _profile }: HallProps) {
               key={p.id}
               rank={i + 1}
               displayName={p.display_name}
-              divisionKey={divisionForXP(p.total_xp).key as DivisionKey}
+              divisionKey={divisionForUser(p.total_xp, p.days_active ?? 999).key as DivisionKey}
               xp={p.total_xp}
               streak={p.best_streak}
               caption="MAIOR STREAK"

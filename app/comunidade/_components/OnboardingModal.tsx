@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, Loader2, ShieldAlert } from 'lucide-react'
 import { Avatar } from './Avatar'
+import { Portal } from './Portal'
 import { checkDisplayNameAvailable, claimDisplayName, type PublicProfile } from '@/lib/community/api'
 
 interface OnboardingModalProps {
@@ -73,6 +74,7 @@ export function OnboardingModal({ userId, onDone }: OnboardingModalProps) {
   const canSubmit = status === 'available' && !submitting
 
   return (
+    <Portal>
     <div className="com-onboard-overlay" role="dialog" aria-modal="true">
       <div className="com-onboard-card">
         <div className="com-onboard-eyebrow">
@@ -131,5 +133,6 @@ export function OnboardingModal({ userId, onDone }: OnboardingModalProps) {
         </p>
       </div>
     </div>
+    </Portal>
   )
 }

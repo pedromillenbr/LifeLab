@@ -3,6 +3,7 @@
 import { Crown, Flame, X } from 'lucide-react'
 import { Avatar } from './Avatar'
 import { DivisionBadge } from './DivisionBadge'
+import { Portal } from './Portal'
 import { acknowledgeSeasonHistory, type SeasonHistoryRow } from '@/lib/community/api'
 import type { DivisionKey } from '@/lib/community/divisions'
 
@@ -23,6 +24,7 @@ export function SeasonEndModal({ history, displayName, onClose }: SeasonEndModal
   const top10  = final_position <= 10
 
   return (
+    <Portal>
     <div className="com-season-overlay" role="dialog" aria-modal="true">
       <div className={`com-season-card ${podium ? 'is-podium' : ''} ${top10 ? 'is-top10' : ''}`}>
         <button className="com-season-close" onClick={dismiss} aria-label="Fechar">
@@ -68,5 +70,6 @@ export function SeasonEndModal({ history, displayName, onClose }: SeasonEndModal
         </button>
       </div>
     </div>
+    </Portal>
   )
 }

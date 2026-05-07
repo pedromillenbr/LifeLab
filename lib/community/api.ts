@@ -17,11 +17,51 @@ export interface PublicProfile {
   monthly_xp:        number
   streak:            number
   best_streak:       number
+  days_active:       number
   last_active_at:    string | null
   prev_position:     number | null
   prev_position_at:  string | null
   created_at:        string
   updated_at:        string
+}
+
+export interface PromotionEvent {
+  id:              number
+  user_id:         string
+  from_division:   string
+  to_division:     string
+  occurred_at:     string
+  acknowledged_at: string | null
+}
+
+export interface FriendRequestRow {
+  id:          number
+  from_user:   string
+  to_user:     string
+  status:      'pending' | 'accepted' | 'declined' | 'cancelled'
+  created_at:  string
+  resolved_at: string | null
+}
+
+export interface FriendRow {
+  friend_id:    string
+  display_name: string
+  avatar_seed:  string
+  total_xp:     number
+  monthly_xp:   number
+  streak:       number
+  days_active:  number
+  division_key: DivisionKey
+}
+
+export interface FriendMessage {
+  id:          number
+  from_user:   string
+  to_user:     string
+  body:        string
+  pre_fill_id: string | null
+  created_at:  string
+  read_at:     string | null
 }
 
 export interface RankingRow {
@@ -140,6 +180,137 @@ export async function syncStreak(streak: number): Promise<void> {
     await restFetch('/rpc/sync_streak', {
       method: 'POST',
       body: JSON.stringify({ p_streak: streak }),
+    })
+  } catch { /* non-fatal */ }
+}
+
+/** Records the current local day as an "access day" for the user. */
+export async function bumpDaysActive(day: string): Promise<number | null> {
+  try {
+    const res = await restFetch('/rpc/bump_days_active', {
+      method: 'POST',
+      body: JSON.stringify({ p_day: day }),
+    })
+    if (!res.ok) return null
+    return await res.json() as number
+  } catch {
+    return null
+  }
+}
+
+// ── Promotion events ────────────────────────────────────────────────
+
+export async function fetchUnacknowledgedPromotion(userId: string): Promise<PromotionEvent | null> {
+  const res = await publicFetch(
+    `/promotion_events?user_id=eq.${encodeURIComponent(userId)}&acknowledged_at=is.null&select=*&order=occurred_at.desc&limit=1`,
+  )
+  if (!res.ok) return null
+  const rows = (await res.json().catch(() => [])) as PromotionEvent[]
+  return rows[0] ?? null
+}
+
+export async function acknowledgePromotion(id: number): Promise<void> {
+  try {
+    await restFetch(`/promotion_events?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ acknowledged_at: new Date().toISOString() }),
+    })
+  } catch { /* non-fatal */ }
+}
+
+// ── Friends ─────────────────────────────────────────────────────────
+
+export async function addFriendByName(name: string): Promise<{ status: 'sent' | 'accepted' | 'already_friends' | 'self' | 'not_found' | 'error' }> {
+  try {
+    const res = await restFetch('/rpc/add_friend_by_name', {
+      method: 'POST',
+      body: JSON.stringify({ p_name: name }),
+    })
+    if (!res.ok) return { status: 'error' }
+    const data = await res.json() as { status?: string }
+    const s = data.status ?? 'error'
+    if (s === 'sent' || s === 'accepted' || s === 'already_friends' || s === 'self' || s === 'not_found') {
+      return { status: s }
+    }
+    return { status: 'error' }
+  } catch {
+    return { status: 'error' }
+  }
+}
+
+export async function respondFriendRequest(id: number, accept: boolean): Promise<{ ok: boolean }> {
+  try {
+    const res = await restFetch('/rpc/respond_friend_request', {
+      method: 'POST',
+      body: JSON.stringify({ p_request_id: id, p_accept: accept }),
+    })
+    return { ok: res.ok }
+  } catch {
+    return { ok: false }
+  }
+}
+
+export async function fetchMyFriends(): Promise<FriendRow[]> {
+  try {
+    const res = await restFetch('/rpc/my_friends', { method: 'POST' })
+    if (!res.ok) return []
+    return await res.json() as FriendRow[]
+  } catch {
+    return []
+  }
+}
+
+export async function fetchIncomingFriendRequests(userId: string): Promise<Array<FriendRequestRow & { profile: { display_name: string; avatar_seed: string } | null }>> {
+  const res = await publicFetch(
+    `/friend_requests?to_user=eq.${encodeURIComponent(userId)}&status=eq.pending&select=*,profile:profiles_public!friend_requests_from_user_fkey(display_name,avatar_seed)&order=created_at.desc`,
+  )
+  if (!res.ok) return []
+  return (await res.json().catch(() => [])) as Array<FriendRequestRow & { profile: { display_name: string; avatar_seed: string } | null }>
+}
+
+// ── Friend messages (trash-talk) ────────────────────────────────────
+
+export async function sendFriendMessage(toUserId: string, body: string, preFillId?: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await restFetch('/rpc/send_friend_message', {
+      method: 'POST',
+      body: JSON.stringify({ p_to: toUserId, p_body: body, p_pre_fill: preFillId ?? null }),
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      return { ok: false, error: text || `HTTP ${res.status}` }
+    }
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'network' }
+  }
+}
+
+export async function fetchUnreadMessages(userId: string): Promise<FriendMessage[]> {
+  const res = await publicFetch(
+    `/friend_messages?to_user=eq.${encodeURIComponent(userId)}&read_at=is.null&select=*&order=created_at.desc&limit=20`,
+  )
+  if (!res.ok) return []
+  return (await res.json().catch(() => [])) as FriendMessage[]
+}
+
+export async function fetchMessagesWith(otherUserId: string, limit = 30): Promise<FriendMessage[]> {
+  // Two `or` conditions to fetch both directions.
+  const res = await publicFetch(
+    `/friend_messages?or=(and(from_user.eq.${encodeURIComponent(otherUserId)}),and(to_user.eq.${encodeURIComponent(otherUserId)}))&select=*&order=created_at.desc&limit=${limit}`,
+  )
+  if (!res.ok) return []
+  const rows = (await res.json().catch(() => [])) as FriendMessage[]
+  return rows.reverse()
+}
+
+export async function markMessagesRead(ids: number[]): Promise<void> {
+  if (ids.length === 0) return
+  try {
+    const filter = `id=in.(${ids.join(',')})`
+    await restFetch(`/friend_messages?${filter}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ read_at: new Date().toISOString() }),
     })
   } catch { /* non-fatal */ }
 }

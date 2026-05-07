@@ -6,13 +6,16 @@ import { Avatar } from './Avatar'
 import { DivisionBadge } from './DivisionBadge'
 import { RankRow } from './RankRow'
 import { SeasonEndModal } from './SeasonEndModal'
+import { PromotionModal } from './PromotionModal'
 import {
   fetchRankingMonthly, fetchRankingGlobal, fetchCurrentSeason,
-  fetchUnacknowledgedSeasonHistory, nextMilestone,
-  type RankingRow, type SeasonRow, type SeasonHistoryRow, type PublicProfile,
+  fetchUnacknowledgedSeasonHistory, fetchUnacknowledgedPromotion,
+  fetchMyPublicProfile, nextMilestone,
+  type RankingRow, type SeasonRow, type SeasonHistoryRow,
+  type PromotionEvent, type PublicProfile,
 } from '@/lib/community/api'
 import { subscribeRanking } from '@/lib/community/realtime'
-import { divisionForXP, nextDivision, xpToNextDivision } from '@/lib/community/divisions'
+import { divisionForUser, nextDivision, xpToNextDivision } from '@/lib/community/divisions'
 import { decideTaunt } from '@/lib/community/taunts'
 
 interface RankingTabProps {
@@ -27,6 +30,8 @@ export function RankingTab({ profile }: RankingTabProps) {
   const [loading, setLoading] = useState(true)
   const [season, setSeason] = useState<SeasonRow | null>(null)
   const [pendingHistory, setPendingHistory] = useState<SeasonHistoryRow | null>(null)
+  const [pendingPromotion, setPendingPromotion] = useState<PromotionEvent | null>(null)
+  const [latestProfile, setLatestProfile] = useState<PublicProfile>(profile)
   const youRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -45,10 +50,31 @@ export function RankingTab({ profile }: RankingTabProps) {
     return unsub
   }, [refetch])
 
-  // Season info
+  // Season info + pending promotion (poll every 25s + on focus)
   useEffect(() => {
     fetchCurrentSeason().then(setSeason)
     fetchUnacknowledgedSeasonHistory(profile.id).then(setPendingHistory)
+
+    let cancelled = false
+    const checkPromotion = async () => {
+      const ev = await fetchUnacknowledgedPromotion(profile.id)
+      if (!cancelled && ev) {
+        // Refetch latest profile so the promotion card shows current XP/streak.
+        const fresh = await fetchMyPublicProfile(profile.id)
+        if (cancelled) return
+        if (fresh) setLatestProfile(fresh)
+        setPendingPromotion(ev)
+      }
+    }
+    checkPromotion()
+    const t = setInterval(checkPromotion, 25_000)
+    const onFocus = () => checkPromotion()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      cancelled = true
+      clearInterval(t)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [profile.id])
 
   // ── Derived ─────────────────────────────────────────────────────
@@ -56,9 +82,10 @@ export function RankingTab({ profile }: RankingTabProps) {
   const top3   = rows.slice(0, 3)
   const rest   = rows.slice(3)
   const xpForRanking = mode === 'monthly' ? profile.monthly_xp : profile.total_xp
-  const currentDiv = divisionForXP(xpForRanking)
-  const nextDiv    = nextDivision(xpForRanking)
-  const xpToNext   = xpToNextDivision(xpForRanking)
+  const daysActive = profile.days_active ?? 0
+  const currentDiv = divisionForUser(xpForRanking, daysActive)
+  const nextDiv    = nextDivision(xpForRanking, daysActive)
+  const xpToNext   = xpToNextDivision(xpForRanking, daysActive)
 
   // Countdown to season end
   const seasonEndsAt = useMemo(() => {
@@ -116,6 +143,15 @@ export function RankingTab({ profile }: RankingTabProps) {
 
   return (
     <>
+      {pendingPromotion && (
+        <PromotionModal
+          event={pendingPromotion}
+          displayName={latestProfile.display_name}
+          totalXP={latestProfile.total_xp}
+          streak={latestProfile.streak}
+          onClose={() => setPendingPromotion(null)}
+        />
+      )}
       {pendingHistory && (
         <SeasonEndModal
           history={pendingHistory}

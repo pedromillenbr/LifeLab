@@ -20,8 +20,10 @@ export interface Division {
   name:       string
   short:      string
   tagline:    string
-  /** Inclusive lower bound; the next division's `min` is the upper bound. */
+  /** Inclusive XP lower bound; the next division's `min` is the upper bound. */
   min:        number
+  /** If set, the user must also have at least this many distinct active days. */
+  minDaysActive?: number
   /** Metallic accent color used on badges and chips. NOT the brand green. */
   metal:      string
   /** Glow color applied around badges; should match the metal but softer. */
@@ -30,9 +32,9 @@ export interface Division {
   mythic?:    boolean
 }
 
-// ⚠ The threshold curve is intentionally aggressive at the bottom (1→2→3
-// happens FAST to hook the user) and exponential after rank 4 (~30 days
-// of consistent use ≈ 3000 XP).
+// ⚠ Promotion to ranks 1→2 and 2→3 is GATED ON `days_active` as well.
+// Mirror of public.division_for_user(xp, days_active) in community_v2.sql.
+// `min` here is the XP threshold; `minDaysActive` is the access-day gate.
 export const DIVISIONS: Division[] = [
   {
     key: 'ze_bosta',     rank: 1, name: 'Zé Bosta',
@@ -41,38 +43,38 @@ export const DIVISIONS: Division[] = [
   },
   {
     key: 'faixa_branca', rank: 2, name: 'Faixa Branca da Disciplina',
-    short: 'Faixa Branca', tagline: 'O primeiro corte.',
-    min: 50,   metal: '#e5e5e5', glow: 'rgba(229,229,229,0.30)',
+    short: 'Faixa Branca', tagline: 'Aqui só fica quem aparece.',
+    min: 200,  minDaysActive: 2, metal: '#e5e5e5', glow: 'rgba(229,229,229,0.30)',
   },
   {
     key: 'sargento',     rank: 3, name: 'Sargento do Foco',
     short: 'Sargento',   tagline: 'Já não há recuo.',
-    min: 200,  metal: '#a07845', glow: 'rgba(160,120,69,0.35)',
+    min: 800,  minDaysActive: 5, metal: '#a07845', glow: 'rgba(160,120,69,0.35)',
   },
   {
     key: 'cara_focado',  rank: 4, name: 'Apenas um Cara Focado',
     short: 'Cara Focado', tagline: 'Trinta dias sem ceder.',
-    min: 800,  metal: '#7a92a8', glow: 'rgba(122,146,168,0.35)',
+    min: 3000, minDaysActive: 12, metal: '#7a92a8', glow: 'rgba(122,146,168,0.35)',
   },
   {
     key: 'obstinado',    rank: 5, name: 'Obstinado em Vencer',
     short: 'Obstinado',  tagline: 'A constância virou identidade.',
-    min: 3000, metal: '#c8c8d0', glow: 'rgba(200,200,208,0.40)',
+    min: 8000, metal: '#c8c8d0', glow: 'rgba(200,200,208,0.40)',
   },
   {
     key: 'capitao',      rank: 6, name: 'Capitão América Antes do Soro',
     short: 'Capitão',    tagline: 'Sem soro. Só vontade.',
-    min: 8000, metal: '#b8975a', glow: 'rgba(184,151,90,0.45)',
+    min: 20000, metal: '#b8975a', glow: 'rgba(184,151,90,0.45)',
   },
   {
     key: 'goggins',      rank: 7, name: 'David Goggins da Shopee',
     short: 'Goggins',    tagline: 'Quem te conhece sabe.',
-    min: 20000, metal: '#eab308', glow: 'rgba(234,179,8,0.50)',
+    min: 50000, metal: '#eab308', glow: 'rgba(234,179,8,0.50)',
   },
   {
     key: 'pele',         rank: 8, name: 'Pelé do LifeLab',
     short: 'Pelé',       tagline: 'Lendário. Quase mítico.',
-    min: 50000, metal: '#facc15', glow: 'rgba(250,204,21,0.65)',
+    min: 120000, metal: '#facc15', glow: 'rgba(250,204,21,0.65)',
     mythic: true,
   },
 ]
@@ -90,27 +92,51 @@ export function divisionForXP(xp: number): Division {
   return current
 }
 
+/**
+ * Gated version that also requires `minDaysActive` distinct days of use.
+ * Mirror of public.division_for_user(xp, days_active) in SQL.
+ */
+export function divisionForUser(xp: number, daysActive: number): Division {
+  let current = DIVISIONS[0]
+  for (const d of DIVISIONS) {
+    if (xp < d.min) break
+    if (d.minDaysActive != null && daysActive < d.minDaysActive) break
+    current = d
+  }
+  return current
+}
+
 export function getDivision(key: DivisionKey): Division {
   return BY_KEY[key] ?? DIVISIONS[0]
 }
 
-export function nextDivision(xp: number): Division | null {
-  const cur = divisionForXP(xp)
+export function nextDivision(xp: number, daysActive = 999): Division | null {
+  const cur = divisionForUser(xp, daysActive)
   const next = DIVISIONS.find(d => d.rank === cur.rank + 1)
   return next ?? null
 }
 
 /** Returns 0..1 progress toward the next division. 1 if already at top. */
-export function divisionProgress(xp: number): number {
-  const cur = divisionForXP(xp)
-  const next = nextDivision(xp)
+export function divisionProgress(xp: number, daysActive = 999): number {
+  const cur = divisionForUser(xp, daysActive)
+  const next = nextDivision(xp, daysActive)
   if (!next) return 1
   const span = next.min - cur.min
   return Math.max(0, Math.min(1, (xp - cur.min) / span))
 }
 
 /** XP delta required to reach the next division. 0 if already at top. */
-export function xpToNextDivision(xp: number): number {
-  const next = nextDivision(xp)
+export function xpToNextDivision(xp: number, daysActive = 999): number {
+  const next = nextDivision(xp, daysActive)
   return next ? Math.max(0, next.min - xp) : 0
+}
+
+/**
+ * Days of activity still required before the next promotion. 0 if XP is
+ * the only blocker (or already at top).
+ */
+export function daysToNextDivision(xp: number, daysActive: number): number {
+  const next = nextDivision(xp, daysActive)
+  if (!next || next.minDaysActive == null) return 0
+  return Math.max(0, next.minDaysActive - daysActive)
 }

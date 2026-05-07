@@ -6,7 +6,7 @@
 // ════════════════════════════════════════════════════════════════════
 
 import { useStore } from '@/store/useStore'
-import { awardXP, syncStreak } from './api'
+import { awardXP, syncStreak, bumpDaysActive } from './api'
 
 let started = false
 let unsubscribe: (() => void) | null = null
@@ -15,6 +15,11 @@ let lastStreak: number | null = null
 let pendingDelta = 0
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 let lastStreakSyncMs = 0
+let lastBumpedDay: string | null = null
+
+function todayUTC(): string {
+  return new Date().toISOString().slice(0, 10)
+}
 
 /**
  * Begin syncing XP/streak deltas to the public profile.
@@ -30,6 +35,14 @@ export function startXPSync() {
   lastXP = profile.xp ?? 0
   try { lastStreak = getAccessStreak() } catch { lastStreak = 0 }
 
+  // Mark today as an active day immediately on startup. The RPC is
+  // idempotent per (user, day) so re-calls are cheap.
+  const day = todayUTC()
+  if (lastBumpedDay !== day) {
+    lastBumpedDay = day
+    bumpDaysActive(day).catch(() => {})
+  }
+
   unsubscribe = useStore.subscribe((state) => {
     const xp = state.profile.xp ?? 0
     if (lastXP == null) { lastXP = xp; return }
@@ -37,6 +50,12 @@ export function startXPSync() {
     if (delta > 0) {
       pendingDelta += delta
       lastXP = xp
+      // If the day rolled over while the app was open, bump again.
+      const day = todayUTC()
+      if (lastBumpedDay !== day) {
+        lastBumpedDay = day
+        bumpDaysActive(day).catch(() => {})
+      }
       scheduleFlush()
     } else if (delta < 0) {
       // XP can decrease (e.g. unchecking a habit). Don't push negative

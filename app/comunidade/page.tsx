@@ -48,7 +48,6 @@ export default function ComunidadePage() {
       <div className="com-root">
         <CommunityStyles />
         <Header />
-        <div className="com-blur" aria-hidden />
         <OnboardingModal
           userId={userId}
           onDone={(p) => setProfile(p)}
@@ -93,7 +92,7 @@ export default function ComunidadePage() {
 
       <div className="com-pane">
         {tab === 'ranking' && <RankingTab profile={profile} />}
-        {tab === 'friends' && <FriendsTab />}
+        {tab === 'friends' && <FriendsTab profile={profile} />}
         {tab === 'hall'    && <HallOfEliteTab profile={profile} />}
       </div>
     </div>
