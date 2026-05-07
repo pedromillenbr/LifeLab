@@ -1011,12 +1011,13 @@ function DietaStyles() {
       }
       .dieta-page-title {
         font-family: var(--font-display);
-        font-size: 28px; font-weight: 800;
-        letter-spacing: -0.025em; line-height: 1.1;
-        background: linear-gradient(180deg, #ffffff 0%, var(--green-subtle) 65%, var(--green) 100%);
-        -webkit-background-clip: text; background-clip: text;
-        -webkit-text-fill-color: transparent;
-        filter: drop-shadow(0 0 16px var(--green-glow)) drop-shadow(0 2px 4px rgba(0,0,0,0.45));
+        font-size: 24px; font-weight: 800;
+        letter-spacing: -1px; line-height: 1.1;
+        color: var(--green);
+        animation: nameGlow 3s ease-in-out infinite;
+      }
+      @media (min-width: 768px) {
+        .dieta-page-title { font-size: 30px; }
       }
       .dieta-subtitle {
         font-size: 13px; color: var(--t-sec); margin-top: 4px;
