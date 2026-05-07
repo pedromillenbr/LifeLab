@@ -465,10 +465,10 @@ export const useStore = create<AuraStore>()(
 
         return {
           fisico: Math.min(100, calcScore(fisicoHabits) + workoutBonus),
-          mental: Math.max(calcScore(mentalHabits), mentalHabits.length === 0 ? 70 : 0),
-          financeiro: Math.max(calcScore(financeiroHabits), financeiroHabits.length === 0 ? 61 : 0),
-          produtividade: Math.max(calcScore(prodHabits), prodHabits.length === 0 ? 94 : 0),
-          disciplina: Math.max(calcScore(discHabits), discHabits.length === 0 ? 93 : 0),
+          mental: calcScore(mentalHabits),
+          financeiro: calcScore(financeiroHabits),
+          produtividade: calcScore(prodHabits),
+          disciplina: calcScore(discHabits),
           espiritual: Math.round(bibleScore),
         }
       },
