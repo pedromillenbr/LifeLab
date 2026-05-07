@@ -14,6 +14,7 @@ import {
 } from '@/store/syncService'
 import { applyTheme, DEFAULT_THEME_KEY } from '@/lib/themes'
 import { useStore } from '@/store/useStore'
+import { startXPSync, stopXPSync } from '@/lib/community/xpSync'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -90,6 +91,7 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
         } catch { /* non-fatal */ }
 
         try { startAutoSync(s.user.id) } catch { /* non-fatal */ }
+        try { startXPSync() } catch { /* non-fatal */ }
       }
 
       if (cancelled) {
@@ -114,6 +116,7 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
       if (event === 'SIGNED_OUT' || !sb) {
         initializedRef.current = false
         stopAutoSync()
+        stopXPSync()
         clearLastUser()
         try { localStorage.removeItem('lifelab-storage') } catch { /* ignore */ }
         setSession(null)
