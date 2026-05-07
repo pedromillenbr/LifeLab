@@ -278,8 +278,8 @@ export default function EspiritualPage() {
   }
 
   const greetingTitle = readingState === 'completed' && prayerState === 'completed'
-    ? <>Dia completo, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(var(--color-primary-rgb), .5)' }}>{profile.name}</span> ✦</>
-    : <>Deus abençoe, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(var(--color-primary-rgb), .5)' }}>{profile.name}</span></>
+    ? <>Dia completo, <span style={{ color: 'var(--color-text-main)' }}>{profile.name}</span> ✦</>
+    : <>Deus abençoe, <span style={{ color: 'var(--color-text-main)' }}>{profile.name}</span></>
 
   return (
     <div className="p-4 md:p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
