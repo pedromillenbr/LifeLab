@@ -143,7 +143,13 @@ create trigger trg_detect_promotion
   for each row execute function public.detect_promotion();
 
 -- ── 5) Refresh ranking views to use the new gated division ──────────
-create or replace view public.ranking_global as
+-- We DROP first because CREATE OR REPLACE VIEW cannot change column
+-- order or rename columns — adding days_active in the middle would
+-- attempt to rename the existing division_key column and fail.
+drop view if exists public.ranking_global;
+drop view if exists public.ranking_monthly;
+
+create view public.ranking_global as
 select
   p.id,
   p.display_name,
@@ -159,7 +165,7 @@ select
   end as movement
 from public.profiles_public p;
 
-create or replace view public.ranking_monthly as
+create view public.ranking_monthly as
 select
   p.id,
   p.display_name,
