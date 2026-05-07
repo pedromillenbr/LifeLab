@@ -26,22 +26,46 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
   const [session, setSession] = useState<StoredSession | null | undefined>(undefined)
 
   const initializedRef = useRef(false)
+  const bootstrapRunningRef = useRef(false)
   const isAuthPage = pathname === '/auth'
 
+  // Bootstrap runs:
+  //   1) On mount
+  //   2) Whenever pathname changes (e.g. /auth → / after a successful signIn/signUp)
+  //
+  // The trick is step 2: when AuthPage calls router.replace('/'), this
+  // component re-renders with the new pathname. Without this re-run, session
+  // would still be `null` from the initial mount and we'd render `null` →
+  // black screen. Re-running ensureValidSession() picks up the session that
+  // signIn/signUp just persisted.
   useEffect(() => {
     let cancelled = false
 
     async function bootstrap() {
-      const s = await ensureValidSession().catch(() => null)
-      if (cancelled) return
+      if (bootstrapRunningRef.current) return
+      bootstrapRunningRef.current = true
+
+      let s: StoredSession | null = null
+      try {
+        s = await ensureValidSession()
+      } catch {
+        s = null
+      }
+
+      if (cancelled) {
+        bootstrapRunningRef.current = false
+        return
+      }
 
       if (!s) {
         setSession(null)
+        bootstrapRunningRef.current = false
         if (!isAuthPage) router.replace('/auth')
         return
       }
 
-      // Tell supabase-js about the session — runs in the background.
+      // Tell supabase-js about the session — runs in the background, never
+      // blocks render.
       warmSupabaseClient(s).catch(() => {})
 
       if (!initializedRef.current) {
@@ -68,16 +92,23 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
         try { startAutoSync(s.user.id) } catch { /* non-fatal */ }
       }
 
-      if (cancelled) return
+      if (cancelled) {
+        bootstrapRunningRef.current = false
+        return
+      }
       setSession(s)
+      bootstrapRunningRef.current = false
       if (isAuthPage) router.replace('/')
     }
 
     bootstrap()
 
-    // Subscribe to supabase-js auth events so SIGNED_OUT propagates.
+    return () => { cancelled = true }
+  }, [pathname, router, isAuthPage])
+
+  // One-time setup: auth event subscription + unload flush.
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sb) => {
-      if (cancelled) return
       if (event === 'INITIAL_SESSION') return
 
       if (event === 'SIGNED_OUT' || !sb) {
@@ -86,7 +117,7 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
         clearLastUser()
         try { localStorage.removeItem('lifelab-storage') } catch { /* ignore */ }
         setSession(null)
-        if (!isAuthPage) router.replace('/auth')
+        router.replace('/auth')
       }
     })
 
@@ -95,7 +126,6 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
     window.addEventListener('pagehide', handleBeforeUnload)
 
     return () => {
-      cancelled = true
       subscription.unsubscribe()
       window.removeEventListener('beforeunload', handleBeforeUnload)
       window.removeEventListener('pagehide', handleBeforeUnload)
@@ -105,7 +135,7 @@ export function AuthGuard({ children, shell }: AuthGuardProps) {
 
   if (session === undefined) return <LoadingSplash />
   if (isAuthPage) return <>{children}</>
-  if (!session)   return null
+  if (!session)   return <LoadingSplash />
 
   return <>{shell}{children}</>
 }
