@@ -21,6 +21,9 @@ import { getGreeting, formatCurrency, today } from '@/lib/utils'
 import { Pillar } from '@/store/types'
 import { getTodayReading, getReadingForDay, getBiblePlan } from '@/lib/bibleData'
 import { PEDRO, getTodayMotivation } from '@/lib/pedroProfile'
+import {
+  divisionForUser, nextDivision, divisionProgress, xpToNextDivision,
+} from '@/lib/community/divisions'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -99,6 +102,15 @@ export default function DashboardPage() {
 
   const xpPercent = Math.min(100, Math.round((profile.xp / profile.xpToNextLevel) * 100))
 
+  // Community division (mirrors what the Comunidade tab shows). Uses
+  // accessStreak as a proxy for `days_active` so the day-gate behaves
+  // consistently between dashboard and community.
+  const totalXP = profile.xp ?? 0
+  const division = divisionForUser(totalXP, accessStreak ?? 999)
+  const nextDiv = nextDivision(totalXP, accessStreak ?? 999)
+  const divPct = Math.round(divisionProgress(totalXP, accessStreak ?? 999) * 100)
+  const divToGo = xpToNextDivision(totalXP, accessStreak ?? 999)
+
   // Mental arc: 0..100 mapped to dasharray (circumference ≈ 175.93 for r=28)
   const arcLen = 2 * Math.PI * 28
   const arcDash = (scores.mental / 100) * arcLen
@@ -123,13 +135,43 @@ export default function DashboardPage() {
             <span className="fire-icon"><Flame size={12} style={{ color: '#f97316' }} /></span>
             {accessStreak} {accessStreak === 1 ? 'dia' : 'dias'}
           </div>
-          <div className="xp-widget">
+          <div
+            className="xp-widget"
+            title={nextDiv ? `${divToGo.toLocaleString('pt-BR')} XP para ${nextDiv.short}` : 'Última divisão alcançada'}
+            onClick={() => router.push('/comunidade')}
+            style={{
+              ['--metal' as string]: division.metal,
+              ['--metal-glow' as string]: division.glow,
+              cursor: 'pointer',
+            }}
+          >
             <div>
-              <div className="xp-label-h">Nível {profile.level}</div>
-              <div className="xp-nums">{profile.xp} <span>/ {profile.xpToNextLevel} XP</span></div>
+              <div className="xp-label-h">{division.name}</div>
+              <div className="xp-nums">
+                {totalXP.toLocaleString('pt-BR')}
+                {nextDiv ? <span> / {nextDiv.min.toLocaleString('pt-BR')} XP</span> : <span> XP</span>}
+              </div>
             </div>
-            <div className="xp-bar-wrap-h"><div className="xp-bar-fill-h" style={{ width: `${xpPercent}%` }} /></div>
-            <div className="level-badge">Lv.{profile.level}</div>
+            <div className="xp-bar-wrap-h">
+              <div
+                className="xp-bar-fill-h"
+                style={{
+                  width: `${divPct}%`,
+                  background: `linear-gradient(90deg, color-mix(in srgb, ${division.metal} 60%, transparent), ${division.metal})`,
+                  boxShadow: `0 0 6px ${division.glow}`,
+                }}
+              />
+            </div>
+            <div
+              className="level-badge"
+              style={{
+                color: division.metal,
+                background: `color-mix(in srgb, ${division.metal} 12%, transparent)`,
+                borderColor: `color-mix(in srgb, ${division.metal} 35%, transparent)`,
+              }}
+            >
+              #{division.rank} {division.short}
+            </div>
           </div>
         </div>
       </header>

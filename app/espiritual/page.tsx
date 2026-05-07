@@ -8,6 +8,9 @@ import {
 } from 'lucide-react'
 import { today } from '@/lib/utils'
 import { BIBLE_PLANS, getTodayReading, getPlanProgress } from '@/lib/bibleData'
+import {
+  divisionForUser, nextDivision, divisionProgress, xpToNextDivision,
+} from '@/lib/community/divisions'
 import Link from 'next/link'
 
 type Quality = 'distracted' | 'neutral' | 'deep'
@@ -16,7 +19,6 @@ type ActionState = 'idle' | 'in-progress' | 'completed'
 const GOLD = 'var(--gold)'
 const GOLD_HI = 'var(--gold)'
 const ORANGE = '#f97316'
-const XP_LEVELS = [0, 100, 250, 520, 1000, 2000, 4000, 8000, 16000, 32000]
 
 function parseReflection(text?: string): { quality: Quality | null; note: string } {
   if (!text) return { quality: null, note: '' }
@@ -192,8 +194,9 @@ function FeedbackModal({ type, onClose, onSave }: {
 export default function EspiritualPage() {
   const {
     bibleReadings, activePlanId, completeBibleReading, updateReflection, getBibleStreak,
-    profile, prayerLog, completePrayer, updatePrayerReflection,
+    profile, prayerLog, completePrayer, updatePrayerReflection, getAccessStreak,
   } = useStore()
+  const accessStreak = getAccessStreak()
 
   const [tab, setTab] = useState<'hoje' | 'historico'>('hoje')
   const [readingModal, setReadingModal] = useState(false)
@@ -235,9 +238,12 @@ export default function EspiritualPage() {
   const freqThisMonth = bibleReadings.filter(r => r.planId === activePlanId && r.completed && new Date(r.date) >= monthStart).length
   const freqBars = last7.map(d => bibleReadings.some(r => r.date === d && r.completed && r.planId === activePlanId) ? 60 : 0)
 
-  const xpStart  = XP_LEVELS[profile.level - 1] || 0
-  const xpEnd    = XP_LEVELS[profile.level] || XP_LEVELS[XP_LEVELS.length - 1] * 2
-  const levelPct = xpEnd > xpStart ? Math.min(100, Math.round(((profile.xp - xpStart) / (xpEnd - xpStart)) * 100)) : 100
+  // Community division (mirrors what the Comunidade tab shows).
+  const totalXP = profile.xp ?? 0
+  const division = divisionForUser(totalXP, accessStreak ?? 999)
+  const nextDiv  = nextDivision(totalXP, accessStreak ?? 999)
+  const levelPct = Math.round(divisionProgress(totalXP, accessStreak ?? 999) * 100)
+  const divToGo  = xpToNextDivision(totalXP, accessStreak ?? 999)
 
   const sortedReadings = [...bibleReadings].filter(r => r.planId === activePlanId).sort((a, b) => b.date.localeCompare(a.date))
 
@@ -304,20 +310,32 @@ export default function EspiritualPage() {
             <Flame size={12} style={{ color: ORANGE }} />
             {streak} dias
           </div>
-          {/* Level widget */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs"
-            style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.12)', backdropFilter: 'blur(12px)' }}>
-            <span style={{ color: 'var(--color-text-muted)' }}>Nível {profile.level}</span>
-            <span className="font-mono font-bold" style={{ color: 'var(--color-text-main)' }}>{profile.xp}</span>
+          {/* Division widget — mirrors the Comunidade ladder */}
+          <Link
+            href="/comunidade"
+            title={nextDiv ? `${divToGo.toLocaleString('pt-BR')} XP para ${nextDiv.short}` : 'Última divisão alcançada'}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs no-underline"
+            style={{ background: 'rgba(255,255,255,.06)', border: `1px solid color-mix(in srgb, ${division.metal} 30%, rgba(255,255,255,.12))`, backdropFilter: 'blur(12px)' }}
+          >
+            <span style={{ color: 'var(--color-text-muted)' }}>{division.name}</span>
+            <span className="font-mono font-bold" style={{ color: 'var(--color-text-main)' }}>{totalXP.toLocaleString('pt-BR')}</span>
             <span style={{ color: 'var(--color-text-subtle)' }}>XP</span>
             <div className="w-16 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,.1)' }}>
-              <div className="h-full rounded-full" style={{ width: `${levelPct}%`, background: 'var(--color-primary)', boxShadow: '0 0 6px rgba(var(--color-primary-rgb), .6)' }} />
+              <div className="h-full rounded-full" style={{
+                width: `${levelPct}%`,
+                background: `linear-gradient(90deg, color-mix(in srgb, ${division.metal} 60%, transparent), ${division.metal})`,
+                boxShadow: `0 0 6px ${division.glow}`,
+              }} />
             </div>
             <div className="px-1.5 py-0.5 rounded-md text-[10px] font-bold"
-              style={{ background: 'rgba(var(--color-primary-rgb), .15)', color: 'var(--color-primary)', border: '1px solid rgba(var(--color-primary-rgb), .25)' }}>
-              Lv.{profile.level}
+              style={{
+                background: `color-mix(in srgb, ${division.metal} 12%, transparent)`,
+                color: division.metal,
+                border: `1px solid color-mix(in srgb, ${division.metal} 35%, transparent)`,
+              }}>
+              #{division.rank} {division.short}
             </div>
-          </div>
+          </Link>
         </div>
       </header>
 
