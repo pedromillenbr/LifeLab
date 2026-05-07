@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDown, Trophy, Hourglass, AlertTriangle } from 'lucide-react'
+import { ArrowDown, Trophy, Hourglass, AlertTriangle, Pencil } from 'lucide-react'
 import { Avatar } from './Avatar'
 import { DivisionBadge } from './DivisionBadge'
 import { RankRow } from './RankRow'
 import { SeasonEndModal } from './SeasonEndModal'
 import { PromotionModal } from './PromotionModal'
+import { EditProfileModal } from './EditProfileModal'
 import {
   fetchRankingMonthly, fetchRankingGlobal, fetchCurrentSeason,
   fetchUnacknowledgedSeasonHistory, fetchUnacknowledgedPromotion,
@@ -32,6 +33,12 @@ export function RankingTab({ profile }: RankingTabProps) {
   const [pendingHistory, setPendingHistory] = useState<SeasonHistoryRow | null>(null)
   const [pendingPromotion, setPendingPromotion] = useState<PromotionEvent | null>(null)
   const [latestProfile, setLatestProfile] = useState<PublicProfile>(profile)
+  const [editing, setEditing] = useState(false)
+  // Local copy of the profile so edits are reflected immediately without
+  // requiring a parent refetch.
+  const [profileLocal, setProfileLocal] = useState<PublicProfile>(profile)
+  useEffect(() => { setProfileLocal(profile) }, [profile])
+  const effectiveProfile = profileLocal
   const youRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -155,8 +162,19 @@ export function RankingTab({ profile }: RankingTabProps) {
       {pendingHistory && (
         <SeasonEndModal
           history={pendingHistory}
-          displayName={profile.display_name}
+          displayName={effectiveProfile.display_name}
           onClose={() => setPendingHistory(null)}
+        />
+      )}
+
+      {editing && (
+        <EditProfileModal
+          profile={effectiveProfile}
+          onClose={() => setEditing(false)}
+          onSaved={(updated) => {
+            setProfileLocal(updated)
+            setLatestProfile(updated)
+          }}
         />
       )}
 
@@ -208,11 +226,27 @@ export function RankingTab({ profile }: RankingTabProps) {
 
       {/* Your card */}
       <div className="com-you-card">
+        <button
+          type="button"
+          className="com-you-edit-btn"
+          onClick={() => setEditing(true)}
+          aria-label="Editar perfil"
+          title="Editar perfil"
+        >
+          <Pencil size={12} />
+        </button>
         <div className="com-you-portrait">
-          <Avatar displayName={profile.display_name} divisionKey={currentDiv.key} size={56} glow />
+          <Avatar
+            displayName={effectiveProfile.display_name}
+            divisionKey={currentDiv.key}
+            avatarColor={effectiveProfile.avatar_color}
+            avatarInitials={effectiveProfile.avatar_initials}
+            size={56}
+            glow
+          />
         </div>
         <div className="com-you-meta">
-          <div className="com-you-name">{profile.display_name}</div>
+          <div className="com-you-name">{effectiveProfile.display_name}</div>
           <DivisionBadge divisionKey={currentDiv.key} size="md" />
           <div className="com-you-position">
             {youRow ? <>Posição <strong>#{youRow.position}</strong></> : <>Posição <strong>—</strong></>}
@@ -294,7 +328,14 @@ function PodiumCard({ row, mode, isYou }: { row: RankingRow; mode: Mode; isYou: 
       <div className="com-podium-rank">
         <Trophy size={11} aria-hidden /> #{row.position}
       </div>
-      <Avatar displayName={row.display_name} divisionKey={row.division_key} size={56} glow />
+      <Avatar
+        displayName={row.display_name}
+        divisionKey={row.division_key}
+        avatarColor={row.avatar_color}
+        avatarInitials={row.avatar_initials}
+        size={56}
+        glow
+      />
       <div className="com-podium-name">{row.display_name}</div>
       <DivisionBadge divisionKey={row.division_key} />
       <div className="com-podium-xp">{xp.toLocaleString('pt-BR')}<span className="com-podium-xp-unit"> XP</span></div>

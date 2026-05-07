@@ -29,7 +29,14 @@ export function RankRow({ row, isYou, showXP }: RankRowProps) {
         </span>
       </div>
 
-      <Avatar displayName={row.display_name} divisionKey={row.division_key} size={36} glow={isYou} />
+      <Avatar
+        displayName={row.display_name}
+        divisionKey={row.division_key}
+        avatarColor={row.avatar_color}
+        avatarInitials={row.avatar_initials}
+        size={36}
+        glow={isYou}
+      />
 
       <div className="com-rank-name">
         <div className="com-rank-name-text">{row.display_name}</div>

@@ -194,6 +194,184 @@ export function CommunityStyles() {
         margin-top: 14px; font-style: italic;
       }
 
+      /* ── Edit profile modal ──────────────────────────────────── */
+      .com-edit-overlay {
+        position: fixed; inset: 0; z-index: 55;
+        background: rgba(11,12,16,0.88);
+        backdrop-filter: blur(12px);
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+        animation: com-fade .25s ease both;
+      }
+      .com-edit-card {
+        position: relative;
+        background:
+          radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,0.05), transparent 55%),
+          linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+        border: 1px solid var(--green-g30);
+        border-radius: 18px;
+        padding: 26px 22px 20px;
+        max-width: 460px; width: 100%;
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.06),
+          0 24px 64px rgba(0,0,0,0.7),
+          0 0 32px var(--green-glow);
+        animation: com-modal-in .28s cubic-bezier(.22,.68,0,1.2) both;
+        max-height: 90vh; overflow-y: auto;
+      }
+      .com-edit-eyebrow {
+        font-size: 10px; font-weight: 600; letter-spacing: 0.09em;
+        text-transform: uppercase; color: var(--com-t3);
+        display: inline-flex; align-items: center; gap: 6px; margin-bottom: 8px;
+      }
+      .com-edit-title {
+        font-family: var(--font-body);
+        font-size: 22px; font-weight: 800;
+        letter-spacing: -0.5px; line-height: 1.15;
+        color: var(--com-t1);
+        margin: 0 0 16px;
+      }
+      .com-edit-preview {
+        display: flex; align-items: center; gap: 14px;
+        padding: 14px;
+        background: rgba(0,0,0,0.25);
+        border: 1px solid var(--com-bd);
+        border-radius: 12px;
+        margin-bottom: 18px;
+      }
+      .com-edit-preview-meta { min-width: 0; flex: 1; }
+      .com-edit-preview-name {
+        font-size: 16px; font-weight: 700; color: var(--com-t1);
+        letter-spacing: -0.3px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .com-edit-preview-sub {
+        font-size: 11px; color: var(--com-t3);
+        font-family: var(--font-mono); margin-top: 2px;
+      }
+      .com-edit-label {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 10px; font-weight: 600;
+        letter-spacing: 0.08em; text-transform: uppercase;
+        color: var(--com-t3); margin-bottom: 6px;
+      }
+      .com-edit-help-inline {
+        font-weight: 400; letter-spacing: 0.02em;
+        color: var(--com-t-dis);
+        text-transform: none;
+      }
+      .com-edit-lock {
+        margin-left: auto;
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 7px;
+        background: rgba(248,113,113,0.08);
+        border: 1px solid rgba(248,113,113,0.22);
+        color: rgba(254,226,226,0.85);
+        border-radius: 9999px;
+        font-size: 9px; letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .com-edit-input-wrap { position: relative; margin-bottom: 4px; }
+      .com-edit-input {
+        width: 100%; padding: 11px 12px;
+        background: rgba(0,0,0,0.30);
+        border: 1px solid var(--com-bd);
+        border-radius: 9px;
+        color: var(--com-t1);
+        font-size: 14px; font-family: var(--font-mono);
+        outline: none; letter-spacing: -0.01em;
+        transition: border-color .15s, box-shadow .15s;
+      }
+      .com-edit-input:focus {
+        border-color: var(--green-g30);
+        box-shadow: 0 0 0 3px var(--green-g07);
+      }
+      .com-edit-input:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      .com-edit-input-wrap .com-onboard-status {
+        position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      }
+      .com-edit-help {
+        font-size: 11px; color: var(--com-t3);
+        margin-top: 6px;
+        line-height: 1.4;
+      }
+      .com-edit-palette {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 8px;
+        margin-top: 4px;
+      }
+      @media (max-width: 480px) {
+        .com-edit-palette { grid-template-columns: repeat(4, 1fr); }
+      }
+      .com-edit-swatch {
+        aspect-ratio: 1;
+        border-radius: 9px;
+        background: radial-gradient(circle at 30% 25%, var(--metal), color-mix(in srgb, var(--metal) 30%, #0b0c10));
+        border: 2px solid color-mix(in srgb, var(--metal) 40%, transparent);
+        cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+        color: rgba(0,0,0,0.85);
+        transition: transform .12s, box-shadow .15s, border-color .15s;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.30);
+      }
+      .com-edit-swatch:hover {
+        transform: scale(1.06);
+        border-color: color-mix(in srgb, var(--metal) 70%, transparent);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 0 14px var(--metal-glow);
+      }
+      .com-edit-swatch.selected {
+        border-color: var(--metal);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 0 18px var(--metal-glow);
+      }
+      .com-edit-cta {
+        width: 100%; margin-top: 18px; padding: 12px;
+        background: linear-gradient(180deg, var(--color-primary-light), var(--green));
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 10px;
+        color: #000; font-size: 14px; font-weight: 700;
+        cursor: pointer; font-family: var(--font-body);
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        transition: all .15s ease;
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.30),
+          inset 0 -1px 0 rgba(0,0,0,0.15);
+      }
+      .com-edit-cta:hover:not(:disabled) {
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.35),
+          0 0 24px var(--green-glow);
+      }
+      .com-edit-cta:disabled {
+        background: rgba(255,255,255,0.06);
+        color: var(--com-t-dis);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      /* "Edit profile" trigger button on the personal card ──────── */
+      .com-you-edit-btn {
+        position: absolute; top: 10px; right: 10px;
+        width: 28px; height: 28px;
+        background: rgba(0,0,0,0.30);
+        border: 1px solid var(--com-bd);
+        border-radius: 7px;
+        color: var(--com-t3);
+        cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+        transition: all .12s;
+      }
+      .com-you-edit-btn:hover {
+        color: var(--green);
+        border-color: var(--green-g30);
+        background: var(--green-g07);
+        box-shadow: 0 0 12px var(--green-glow);
+      }
+      .com-you-card { position: relative; }
+
       /* ── Tabs ────────────────────────────────────────────────── */
       .com-tabs {
         display: flex; gap: 4px; padding: 4px;

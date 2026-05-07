@@ -13,11 +13,14 @@ export interface PublicProfile {
   id:                string
   display_name:      string
   avatar_seed:       string
+  avatar_color:      string
+  avatar_initials:   string
   total_xp:          number
   monthly_xp:        number
   streak:            number
   best_streak:       number
   days_active:       number
+  last_rename_at:    string | null
   last_active_at:    string | null
   prev_position:     number | null
   prev_position_at:  string | null
@@ -44,14 +47,16 @@ export interface FriendRequestRow {
 }
 
 export interface FriendRow {
-  friend_id:    string
-  display_name: string
-  avatar_seed:  string
-  total_xp:     number
-  monthly_xp:   number
-  streak:       number
-  days_active:  number
-  division_key: DivisionKey
+  friend_id:        string
+  display_name:     string
+  avatar_seed:      string
+  avatar_color:     string
+  avatar_initials:  string
+  total_xp:         number
+  monthly_xp:       number
+  streak:           number
+  days_active:      number
+  division_key:     DivisionKey
 }
 
 export interface FriendMessage {
@@ -65,15 +70,17 @@ export interface FriendMessage {
 }
 
 export interface RankingRow {
-  id:           string
-  display_name: string
-  avatar_seed:  string
-  total_xp?:    number
-  xp?:          number       // monthly_xp returns as `xp` from the view
-  streak:       number
-  division_key: DivisionKey
-  position:     number
-  movement?:    number       // global view only
+  id:              string
+  display_name:    string
+  avatar_seed:     string
+  avatar_color:    string
+  avatar_initials: string
+  total_xp?:       number
+  xp?:             number       // monthly_xp returns as `xp` from the view
+  streak:          number
+  division_key:    DivisionKey
+  position:        number
+  movement?:       number       // global view only
 }
 
 export interface SeasonRow {
@@ -154,6 +161,51 @@ export async function claimDisplayName(name: string, avatarSeed = ''): Promise<{
     return { ok: true, profile }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'network' }
+  }
+}
+
+export interface UpdateProfileInput {
+  displayName?:    string
+  avatarColor?:    string  // metallic palette key (hex string for tile background)
+  avatarInitials?: string  // up to 3 chars, alphanumeric
+}
+
+export type UpdateProfileResult =
+  | { ok: true; profile: PublicProfile }
+  | { ok: false; code: 'name_length' | 'name_chars' | 'name_taken' | 'name_reserved' | 'rename_cooldown' | 'unknown'; message?: string; nextAllowedAt?: string }
+
+export async function updateProfile(input: UpdateProfileInput): Promise<UpdateProfileResult> {
+  try {
+    const res = await restFetch('/rpc/update_profile', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_display_name:    input.displayName    ?? null,
+        p_avatar_color:    input.avatarColor    ?? null,
+        p_avatar_initials: input.avatarInitials ?? null,
+      }),
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      const lower = text.toLowerCase()
+      if (lower.includes('name_length'))     return { ok: false, code: 'name_length',     message: text }
+      if (lower.includes('name_chars'))      return { ok: false, code: 'name_chars',      message: text }
+      if (lower.includes('name_taken') || lower.includes('23505')) return { ok: false, code: 'name_taken',      message: text }
+      if (lower.includes('name_reserved'))   return { ok: false, code: 'name_reserved',   message: text }
+      if (lower.includes('rename_cooldown')) {
+        // Try to extract `detail` payload (ISO timestamp) from PostgREST error JSON
+        let nextAt: string | undefined
+        try {
+          const obj = JSON.parse(text) as { details?: string; detail?: string; message?: string }
+          nextAt = obj.details ?? obj.detail
+        } catch { /* ignore */ }
+        return { ok: false, code: 'rename_cooldown', nextAllowedAt: nextAt, message: text }
+      }
+      return { ok: false, code: 'unknown', message: text }
+    }
+    const profile = await res.json() as PublicProfile
+    return { ok: true, profile }
+  } catch (err) {
+    return { ok: false, code: 'unknown', message: err instanceof Error ? err.message : 'network' }
   }
 }
 

@@ -186,7 +186,13 @@ export function FriendsTab({ profile }: FriendsTabProps) {
                     fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700,
                     color: i === 0 ? '#facc15' : 'var(--com-t2)', minWidth: 24, textAlign: 'center',
                   }}>#{i + 1}</span>
-                  <Avatar displayName={f.display_name} divisionKey={f.division_key} size={36} />
+                  <Avatar
+                    displayName={f.display_name}
+                    divisionKey={f.division_key}
+                    avatarColor={f.avatar_color}
+                    avatarInitials={f.avatar_initials}
+                    size={36}
+                  />
                   <div className="com-friend-info">
                     <div className="com-friend-name">{f.display_name}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
