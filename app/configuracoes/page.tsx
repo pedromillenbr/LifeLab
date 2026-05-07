@@ -195,8 +195,7 @@ export default function ConfiguracoesPage() {
       {/* Header */}
       <div className="mb-6 md:mb-8 animate-fade-in">
         <p className="slabel" style={{ marginBottom: 4 }}>Conta</p>
-        <h1 className="flex items-center gap-3 text-2xl md:text-[30px]"
-          style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: P, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)' }}>
+        <h1 className="page-title">
           <Settings size={26} style={{ color: P, filter: 'drop-shadow(0 0 8px var(--color-primary-glow))' }} />
           Configurações
         </h1>

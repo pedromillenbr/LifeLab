@@ -118,9 +118,7 @@ export default function HabitosPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8 animate-fade-in">
         <div>
           <p className="slabel" style={{ marginBottom: 4 }}>Consistência</p>
-          <h1 className="text-2xl md:text-[30px]" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: P, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)' }}>
-            Hábitos Diários
-          </h1>
+          <h1 className="page-title">Hábitos Diários</h1>
           <p style={{ color: TT, fontSize: 13, marginTop: 4 }}>Controle de execução — hábitos, consistência e progresso</p>
         </div>
         <button onClick={() => setShowModal(true)} className="btn-primary btn-glow w-full md:w-auto justify-center min-h-[48px]">

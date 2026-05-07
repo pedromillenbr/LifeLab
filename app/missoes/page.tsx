@@ -84,14 +84,13 @@ export default function MissoesPage() {
         <div>
           <p className="slabel" style={{ marginBottom: 4 }}>Objetivos</p>
           <motion.h1
-            className="text-2xl md:text-[30px] flex flex-wrap items-baseline gap-x-3"
-            style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: TM, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)' }}
+            className="page-title"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05, duration: 0.4 }}
           >
             Missões
-            <span className="text-sm font-normal px-2 py-1 rounded-lg" style={{ background: `${P}15`, border: `1px solid ${P}30`, color: P }}>
+            <span className="text-sm font-normal px-2 py-1 rounded-lg" style={{ background: `${P}15`, border: `1px solid ${P}30`, color: P, animation: 'none' }}>
               Nível {profile.level}
             </span>
           </motion.h1>

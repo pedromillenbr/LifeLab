@@ -122,12 +122,7 @@ export default function FocoPage() {
           >
             <Timer size={11} /> Foco · Pomodoro
           </div>
-          <h1
-            className="text-[28px] font-bold tracking-tight"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text-main)' }}
-          >
-            Sessão de Foco
-          </h1>
+          <h1 className="page-title">Sessão de Foco</h1>
           <p className="text-[13px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
             Defina o tempo, entre em fullscreen e elimine distrações.
           </p>

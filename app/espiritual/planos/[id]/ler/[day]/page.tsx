@@ -178,7 +178,7 @@ export default function LeituraPage({ params }: { params: { id: string; day: str
           style={{ color: 'var(--color-text-subtle)' }}>
           <BookOpen size={11} /> Dia {day} de {plan.duration}
         </div>
-        <h1 className="text-[24px] md:text-[28px] font-bold tracking-tight">Leitura do dia</h1>
+        <h1 className="page-title">Leitura do dia</h1>
       </header>
 
       <div className="md:grid md:grid-cols-[minmax(0,1fr)_320px] md:gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">

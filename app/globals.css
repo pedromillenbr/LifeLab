@@ -403,6 +403,24 @@ html, body { max-width: 100vw; overflow-x: hidden; }
 
 .name-glow { animation: nameGlow 3s ease-in-out infinite; }
 
+/* ─── Page title (padrão de toda a app — match com "Evolução do Físico") ── */
+.page-title {
+  font-family: var(--font-body);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  color: var(--green);
+  animation: nameGlow 3s ease-in-out infinite;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (min-width: 768px) {
+  .page-title { font-size: 30px; }
+}
+
 /* ─── NOVAS CLASSES PREMIUM ─────────────────────────────────────── */
 .animate-check-pop { animation: checkPop 0.3s var(--ease-out) both; }
 .animate-glow-in { animation: glowIn 0.5s var(--ease-out) both; }

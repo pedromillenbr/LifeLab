@@ -44,7 +44,7 @@ export default function PlanoDetailPage({ params }: { params: { id: string } }) 
           style={{ color: 'var(--color-text-subtle)' }}>
           <BookOpen size={11} /> Plano de leitura
         </div>
-        <h1 className="text-[26px] md:text-[30px] font-bold tracking-tight">{plan.name}</h1>
+        <h1 className="page-title">{plan.name}</h1>
         <p className="text-[13px] mt-1" style={{ color: 'var(--color-text-muted)' }}>{plan.description}</p>
       </div>
 

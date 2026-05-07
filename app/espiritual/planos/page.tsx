@@ -56,7 +56,7 @@ export default function PlanosPage() {
           style={{ color: 'var(--color-text-subtle)' }}>
           <BookOpen size={11} /> Espiritual · Planos de Leitura
         </div>
-        <h1 className="text-[28px] font-bold tracking-tight">Escolha um plano</h1>
+        <h1 className="page-title">Escolha um plano</h1>
         <p className="text-[13px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
           Apenas um plano fica ativo por vez. Pausar mantém seu progresso; cancelar zera tudo.
         </p>

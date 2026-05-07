@@ -94,14 +94,7 @@ export default function CalendarioPage() {
             transition={{ delay: 0.05 }}
           >Agenda</motion.p>
           <motion.h1
-            className="text-2xl md:text-[30px]"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 800,
-              color: TM,
-              letterSpacing: '-0.02em',
-              textShadow: `0 0 20px ${P}60, 0 0 40px ${P}40`
-            }}
+            className="page-title"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.4 }}

@@ -279,7 +279,7 @@ export default function EspiritualPage() {
 
   const greetingTitle = readingState === 'completed' && prayerState === 'completed'
     ? <>Dia completo, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(var(--color-primary-rgb), .5)' }}>{profile.name}</span> ✦</>
-    : <>Bom dia, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(var(--color-primary-rgb), .5)' }}>{profile.name}</span></>
+    : <>Deus abençoe, <span style={{ color: 'var(--color-primary)', textShadow: '0 0 24px rgba(var(--color-primary-rgb), .5)' }}>{profile.name}</span></>
 
   return (
     <div className="p-4 md:p-6 max-w-[1400px] mx-auto" style={{ animation: 'fadeIn 0.4s ease both' }}>
@@ -290,7 +290,7 @@ export default function EspiritualPage() {
           <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[1.2px] mb-1" style={{ color: 'var(--color-text-subtle)' }}>
             <BookOpen size={11} /> Crescimento · Espiritual
           </div>
-          <h1 className="text-[28px] font-bold tracking-tight leading-tight">{greetingTitle}</h1>
+          <h1 className="page-title">{greetingTitle}</h1>
           <p className="text-[13px] italic font-light mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
             &ldquo;O silêncio é onde Deus fala mais alto.&rdquo;
           </p>

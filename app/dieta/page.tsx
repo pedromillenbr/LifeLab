@@ -191,7 +191,7 @@ export default function DietaPage() {
           <span className="dieta-eyebrow-dot" />
           Nutrição · Diário
         </div>
-        <h1 className="dieta-page-title">Dieta e Calorias</h1>
+        <h1 className="page-title">Dieta e Calorias</h1>
         <p className="dieta-subtitle">Registre rápido, acompanhe sem fricção.</p>
       </div>
 
@@ -1063,16 +1063,6 @@ function DietaStyles() {
         width: 4px; height: 4px; border-radius: 50%;
         background: var(--green);
         box-shadow: 0 0 8px var(--green-glow);
-      }
-      .dieta-page-title {
-        font-family: var(--font-body);
-        font-size: 24px; font-weight: 800;
-        letter-spacing: -1px; line-height: 1.1;
-        color: var(--green);
-        animation: nameGlow 3s ease-in-out infinite;
-      }
-      @media (min-width: 768px) {
-        .dieta-page-title { font-size: 30px; }
       }
       .dieta-subtitle {
         font-size: 13px; color: var(--t-sec); margin-top: 4px;

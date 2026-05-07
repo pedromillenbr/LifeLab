@@ -89,9 +89,7 @@ export default function FinanceiroPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
         <div>
           <p className="slabel" style={{ marginBottom: 4 }}>Controle financeiro</p>
-          <h1 className="text-2xl md:text-[30px]" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: TM, letterSpacing: '-0.02em', textShadow: '0 0 24px var(--color-primary-glow)', animation: 'fadeIn 0.4s ease 0.05s both' }}>
-            Financeiro
-          </h1>
+          <h1 className="page-title">Financeiro</h1>
           <p style={{ color: TT, fontSize: 13, marginTop: 4 }}>Renda: <span style={{ color: 'var(--color-primary)' }}>{formatCurrency(PEDRO.monthlyIncome)}/mes</span> . Orcamento: <span style={{ color: '#F5A623' }}>{formatCurrency(PEDRO.monthlyBudget)}</span></p>
         </div>
         <div className="flex items-center gap-3">
