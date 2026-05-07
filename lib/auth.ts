@@ -31,18 +31,15 @@ export interface StoredSession {
 
 function persistSession(tokens: StoredSession) {
   try {
-    const sessionData: StoredSession = {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
       expires_at: tokens.expires_at,
       expires_in: tokens.expires_in,
       token_type: tokens.token_type || 'bearer',
       user: tokens.user,
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData))
-  } catch (err) {
-    console.error('[auth] persistSession failed:', err)
-  }
+    }))
+  } catch { /* storage may be unavailable in private mode */ }
 }
 
 function clearSession() {
@@ -60,9 +57,7 @@ export function getLocalSession(): StoredSession | null {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<StoredSession>
-    if (!parsed?.access_token || !parsed?.refresh_token || !parsed?.user?.id) {
-      return null
-    }
+    if (!parsed?.access_token || !parsed?.refresh_token || !parsed?.user?.id) return null
     return parsed as StoredSession
   } catch {
     return null
@@ -83,10 +78,7 @@ interface AuthFetchResult {
   status?: number
 }
 
-async function fetchAuth(path: string, body: object, timeoutMs = 6000): Promise<AuthFetchResult> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-
+async function fetchAuth(path: string, body: object): Promise<AuthFetchResult> {
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1${path}`, {
       method: 'POST',
@@ -96,9 +88,7 @@ async function fetchAuth(path: string, body: object, timeoutMs = 6000): Promise<
         'Authorization': `Bearer ${SUPABASE_KEY}`,
       },
       body: JSON.stringify(body),
-      signal: controller.signal,
     })
-    clearTimeout(timer)
 
     const json = await res.json().catch(() => ({}))
 
@@ -116,11 +106,7 @@ async function fetchAuth(path: string, body: object, timeoutMs = 6000): Promise<
 
     return { ok: true, data: json as StoredSession }
   } catch (err) {
-    clearTimeout(timer)
     const message = err instanceof Error ? err.message : 'network error'
-    if (message.includes('aborted') || message.includes('AbortError')) {
-      return { ok: false, error: 'timeout' }
-    }
     return { ok: false, error: message }
   }
 }
@@ -136,11 +122,8 @@ async function refreshSession(refreshToken: string): Promise<StoredSession | nul
       refresh_token: refreshToken,
     })
     if (!result.ok || !result.data) {
-      console.error('[auth] refresh failed:', result.error)
-      // Refresh token invalid → wipe session so app falls back to /auth
-      if (result.status === 400 || result.status === 401) {
-        clearSession()
-      }
+      // Refresh token invalid → wipe so app falls back to /auth
+      if (result.status === 400 || result.status === 401) clearSession()
       return null
     }
     persistSession(result.data)
@@ -161,93 +144,70 @@ export async function ensureValidSession(): Promise<StoredSession | null> {
 }
 
 // Best-effort: tell supabase-js about the session so its built-in
-// `from()`/etc work too. Wrapped in a hard timeout so it can NEVER hang
-// the app even if the client locks up internally.
+// `from()`/etc work too.
 export async function warmSupabaseClient(session: StoredSession): Promise<void> {
   try {
-    await Promise.race([
-      supabase.auth.setSession({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-      }),
-      new Promise<void>(resolve => setTimeout(resolve, 800)),
-    ])
-  } catch (err) {
-    console.error('[auth] warmSupabaseClient failed:', err)
-  }
+    await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    })
+  } catch { /* non-fatal: REST path uses tokens directly */ }
 }
 
 // ── Sign up / Sign in / Sign out ─────────────────────────────────────
 
 export async function signUp(username: string, password: string): Promise<AuthResult> {
-  if (!username || !password) {
-    return { ok: false, error: 'Preencha todos os campos' }
-  }
+  const u = username.trim()
+  if (!u || !password) return { ok: false, error: 'Preencha todos os campos' }
+  if (password.length < 6) return { ok: false, error: 'A senha precisa ter pelo menos 6 caracteres' }
 
-  const normalizedUsername = username.toLowerCase().trim()
-  const email = toEmail(normalizedUsername)
+  const email = toEmail(u)
 
   const result = await fetchAuth('/signup', {
     email,
     password,
-    data: { username: normalizedUsername },
+    data: { username: u.toLowerCase() },
   })
 
   if (!result.ok) {
-    console.error('[auth] signUp failed:', result.error, result.status)
-
     const err = (result.error || '').toLowerCase()
-    if (
-      err.includes('already registered') ||
-      err.includes('already exists') ||
-      err.includes('user already')
-    ) {
+    if (err.includes('already registered') || err.includes('already exists') || err.includes('user already')) {
       return { ok: false, error: 'Usuário já existe' }
     }
-
-    if (err === 'timeout') {
-      return { ok: false, error: 'Sem conexão. Verifique sua internet.' }
-    }
-
     if (err.includes('password')) {
       return { ok: false, error: 'Senha muito curta (mínimo 6 caracteres)' }
     }
-
     return { ok: false, error: result.error || 'Erro ao criar conta' }
   }
 
-  if (result.data) {
+  if (result.data?.access_token) {
     persistSession(result.data)
-    // Best effort — never blocks the redirect
     warmSupabaseClient(result.data).catch(() => {})
+    return { ok: true }
   }
 
-  return { ok: true }
+  // No access_token in response → confirm-email is ON in Supabase.
+  // Retry as login (works when confirm-email is off and signup didn't return tokens).
+  const signin = await fetchAuth('/token?grant_type=password', { email, password })
+  if (signin.ok && signin.data) {
+    persistSession(signin.data)
+    warmSupabaseClient(signin.data).catch(() => {})
+    return { ok: true }
+  }
+  return { ok: false, error: 'Conta criada, mas o login automático falhou. Tente entrar.' }
 }
 
 export async function signIn(username: string, password: string): Promise<AuthResult> {
-  if (!username || !password) {
-    return { ok: false, error: 'Preencha todos os campos' }
-  }
+  const u = username.trim()
+  if (!u || !password) return { ok: false, error: 'Preencha todos os campos' }
 
-  const email = toEmail(username)
-
-  const result = await fetchAuth('/token?grant_type=password', {
-    email,
-    password,
-  })
+  const email = toEmail(u)
+  const result = await fetchAuth('/token?grant_type=password', { email, password })
 
   if (!result.ok) {
-    console.error('[auth] signIn failed:', result.error, result.status)
-
-    if (result.error === 'timeout') {
-      return { ok: false, error: 'Sem conexão. Verifique sua internet.' }
-    }
-
     if (result.status === 400 || (result.error || '').toLowerCase().includes('invalid')) {
       return { ok: false, error: 'Usuário ou senha inválidos' }
     }
-
     return { ok: false, error: 'Não foi possível entrar. Tente novamente.' }
   }
 
@@ -260,11 +220,8 @@ export async function signIn(username: string, password: string): Promise<AuthRe
 }
 
 export async function signOut(): Promise<void> {
-  // Capture token BEFORE clearing so we can still hit the remote logout endpoint.
   const local = getLocalSession()
-  // Wipe local first so the app reacts immediately even if remote logout hangs.
   clearSession()
-  // Fire-and-forget remote logout via REST (so the refresh token is invalidated server-side).
   if (local?.access_token) {
     fetch(`${SUPABASE_URL}/auth/v1/logout`, {
       method: 'POST',
@@ -274,13 +231,7 @@ export async function signOut(): Promise<void> {
       },
     }).catch(() => {})
   }
-  // Also tell supabase-js (with timeout)
-  try {
-    await Promise.race([
-      supabase.auth.signOut(),
-      new Promise<void>(resolve => setTimeout(resolve, 500)),
-    ])
-  } catch { /* ignore */ }
+  try { await supabase.auth.signOut() } catch { /* ignore */ }
 }
 
 export async function getSession() {
@@ -290,23 +241,30 @@ export async function getSession() {
 // ── REST helpers for authenticated PostgREST calls ───────────────────
 
 export interface RestOptions extends RequestInit {
-  timeoutMs?: number
   /** If true, do not auto-refresh the token on 401 (avoids loops). */
   noAutoRefresh?: boolean
+  /** Optional override for fetch timeout (ms). 0/undefined = no timeout. */
+  timeoutMs?: number
 }
 
 export async function restFetch(path: string, opts: RestOptions = {}): Promise<Response> {
   const session = await ensureValidSession()
   if (!session) throw new Error('no-session')
 
-  const { timeoutMs = 8000, noAutoRefresh, headers, ...rest } = opts
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const { noAutoRefresh, headers, timeoutMs, ...rest } = opts
+
+  let signal = rest.signal
+  let timer: ReturnType<typeof setTimeout> | null = null
+  if (timeoutMs && timeoutMs > 0) {
+    const controller = new AbortController()
+    timer = setTimeout(() => controller.abort(), timeoutMs)
+    signal = controller.signal
+  }
 
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
       ...rest,
-      signal: controller.signal,
+      signal,
       headers: {
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${session.access_token}`,
@@ -314,19 +272,14 @@ export async function restFetch(path: string, opts: RestOptions = {}): Promise<R
         ...(headers || {}),
       },
     })
-    clearTimeout(timer)
 
-    // 401 → try one refresh + retry
     if (res.status === 401 && !noAutoRefresh) {
       const fresh = await refreshSession(session.refresh_token)
-      if (fresh) {
-        return restFetch(path, { ...opts, noAutoRefresh: true })
-      }
+      if (fresh) return restFetch(path, { ...opts, noAutoRefresh: true })
     }
 
     return res
-  } catch (err) {
-    clearTimeout(timer)
-    throw err
+  } finally {
+    if (timer) clearTimeout(timer)
   }
 }

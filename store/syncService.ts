@@ -62,14 +62,6 @@ export function ensureUserMatch(userId: string): boolean {
 
     // Either user changed, or no lastUser pointer exists.
     // In both cases, any data in lifelab-storage is suspect — wipe it.
-    if (lastUser) {
-      console.log('[sync] user changed (was', lastUser, 'now', userId, ') — clearing local data')
-    } else {
-      const hasStaleData = !!localStorage.getItem(STORAGE_KEY)
-      if (hasStaleData) {
-        console.log('[sync] no user pointer but stale storage exists — clearing')
-      }
-    }
     resetStoreToDefaults()
     localStorage.setItem(LAST_USER_KEY, userId)
     return false // treat as new user
@@ -148,18 +140,9 @@ async function pushNow(userId: string): Promise<boolean> {
         payload: getPayload(),
         updated_at: new Date().toISOString(),
       }),
-      timeoutMs: 10000,
     })
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      console.error('[sync] push HTTP', res.status, text)
-      return false
-    }
-    console.log('[sync] pushed')
-    return true
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    if (msg !== 'no-session') console.error('[sync] push exception:', err)
+    return res.ok
+  } catch {
     return false
   }
 }
@@ -179,26 +162,17 @@ export async function pullFromSupabase(userId: string): Promise<'pulled' | 'push
   try {
     const res = await restFetch(
       `/user_data?id=eq.${encodeURIComponent(userId)}&select=payload,updated_at&limit=1`,
-      { method: 'GET', timeoutMs: 10000 },
+      { method: 'GET' },
     )
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      console.error('[sync] pull HTTP', res.status, text)
-      return 'no-op'
-    }
+    if (!res.ok) return 'no-op'
     const rows = (await res.json().catch(() => [])) as Array<{ payload: unknown; updated_at: string }>
     data = rows[0] ?? null
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    if (msg !== 'no-session') console.error('[sync] pull exception:', err)
+  } catch {
     return 'no-op'
   }
 
   // No remote row yet — ALWAYS create one so future devices have something to pull.
-  // This is critical: without an anchor row, two devices that both start empty
-  // would never sync (each would be "no-op" forever).
   if (!data?.payload) {
-    console.log('[sync] no remote row — creating initial row')
     await pushNow(userId)
     return 'pushed'
   }
@@ -208,11 +182,8 @@ export async function pullFromSupabase(userId: string): Promise<'pulled' | 'push
   const remoteScore = dataScore(remote)
   const localScore  = dataScore(local)
 
-  console.log(`[sync] scores — local: ${localScore.toFixed(1)}, remote: ${remoteScore.toFixed(1)}`)
-
   // If local has more data than remote, push local up (don't lose data)
   if (localScore > remoteScore + 0.5) {
-    console.log('[sync] local > remote — pushing local up')
     await pushNow(userId)
     return 'pushed'
   }
@@ -244,7 +215,6 @@ export async function pullFromSupabase(userId: string): Promise<'pulled' | 'push
     setTimeout(() => { _isPulling = false }, 100)
   }
 
-  console.log('[sync] pulled remote into store')
   return 'pulled'
 }
 
@@ -261,14 +231,12 @@ export function startAutoSync(userId: string) {
   _unsubscribe = useStore.subscribe(() => {
     schedulePush()
   })
-  console.log('[sync] auto-sync started for', userId)
 }
 
 export function stopAutoSync() {
   _currentUserId = null
   if (_pushTimer) { clearTimeout(_pushTimer); _pushTimer = null }
   if (_unsubscribe) { _unsubscribe(); _unsubscribe = null }
-  console.log('[sync] auto-sync stopped')
 }
 
 // Force an immediate push — useful before logout or critical actions

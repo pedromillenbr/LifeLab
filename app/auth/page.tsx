@@ -4,18 +4,14 @@ import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn, signUp, ensureValidSession } from '@/lib/auth'
 
-// ── Design tokens (mesmos do sistema) ────────────────────────────────
+// ── Design tokens ────────────────────────────────────────────────────
 const P      = 'var(--color-primary)'
 const PM     = 'var(--color-primary-muted)'
 const PB     = 'var(--color-primary-border)'
-const BG2    = 'var(--color-bg-2)'
 const BORDER = 'var(--color-border)'
-const TM     = 'var(--color-text-main)'
 const TT     = 'var(--color-text-muted)'
 
-// ════════════════════════════════════════════════════════════════════
-//  PARTICLES — CSS-only, zero libraries
-// ════════════════════════════════════════════════════════════════════
+// ── Particles (decorative, CSS-only) ─────────────────────────────────
 const PARTICLE_COUNT = 28
 
 function Particles() {
@@ -63,114 +59,74 @@ function Particles() {
 //  AUTH PAGE
 // ════════════════════════════════════════════════════════════════════
 export default function AuthPage() {
-  const router  = useRouter()
-  const [mode,  setMode]    = useState<'login' | 'register'>('login')
-  const [name,  setName]    = useState('')
-  const [pass,  setPass]    = useState('')
-  const [error, setError]   = useState('')
-  const [info,  setInfo]    = useState('')
-  const [busy,  setBusy]    = useState(false)
-  const [ready, setReady]   = useState(false)
+  const router = useRouter()
+  const [mode, setMode]   = useState<'login' | 'register'>('login')
+  const [name, setName]   = useState('')
+  const [pass, setPass]   = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy]   = useState(false)
+  const [ready, setReady] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Se já tem sessão local → redireciona imediatamente.
-  // Hard timeout de 2s no caminho de refresh; se exceder, mostramos a tela
-  // de auth (nunca trava em tela preta).
+  // If a valid session already exists locally → go straight to the app.
   useEffect(() => {
     let cancelled = false
-    const timer = setTimeout(() => {
+    ensureValidSession().then((session) => {
+      if (cancelled) return
+      if (session) router.replace('/')
+      else setReady(true)
+    }).catch(() => {
       if (!cancelled) setReady(true)
-    }, 2000)
-
-    ensureValidSession()
-      .then((session) => {
-        if (cancelled) return
-        clearTimeout(timer)
-        if (session) router.replace('/')
-        else setReady(true)
-      })
-      .catch((err) => {
-        console.error('[auth-page] ensureValidSession failed:', err)
-        if (cancelled) return
-        clearTimeout(timer)
-        setReady(true)
-      })
-
-    return () => { cancelled = true; clearTimeout(timer) }
+    })
+    return () => { cancelled = true }
   }, [router])
 
-  // Foca o input ao trocar de modo
+  // Focus the username input when the form is ready or the mode changes.
   useEffect(() => {
-    if (ready) setTimeout(() => inputRef.current?.focus(), 80)
+    if (ready) setTimeout(() => inputRef.current?.focus(), 60)
   }, [mode, ready])
 
   function switchMode(next: 'login' | 'register') {
+    if (busy) return
     setMode(next)
     setError('')
-    setInfo('')
-    setName('')
-    setPass('')
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setError('')
-    setInfo('')
+    if (busy) return
 
-    if (!name.trim() || !pass.trim()) {
+    const u = name.trim()
+    const p = pass
+
+    setError('')
+
+    if (!u || !p) {
       setError('Preencha todos os campos')
       return
     }
-    if (pass.length < 6) {
+    if (p.length < 6) {
       setError('A senha precisa ter pelo menos 6 caracteres')
       return
     }
 
-    // Limpa qualquer token zumbi do localStorage antes de tentar auth.
-    // Isso evita que o supabase-js trave em loop tentando refresh de
-    // um token corrompido de sessão anterior.
-    try {
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i)
-        if (key && (key.startsWith('sb-') || key === 'lifelab-auth')) {
-          localStorage.removeItem(key)
-        }
-      }
-    } catch { /* ignore */ }
-
     setBusy(true)
 
-    // Hard safety timeout (auth.ts has its own 6s per call)
-    const timeoutId = setTimeout(() => {
+    const result = mode === 'login'
+      ? await signIn(u, p)
+      : await signUp(u, p)
+
+    if (!result.ok) {
       setBusy(false)
-      setError('Tempo esgotado. Verifique sua conexão.')
-    }, 8000)
-
-    try {
-      const result = mode === 'login'
-        ? await signIn(name, pass)
-        : await signUp(name, pass)
-
-      clearTimeout(timeoutId)
-
-      if (!result.ok) {
-        setBusy(false)
-        setError(result.error ?? 'Erro desconhecido')
-        return
-      }
-
-      // Both signUp and signIn now log the user in automatically.
-      // Redirect to home immediately.
-      router.replace('/')
-    } catch (err) {
-      clearTimeout(timeoutId)
-      setBusy(false)
-      console.error('[auth-page] submit failed:', err)
-      setError('Erro de conexão. Tente novamente.')
+      setError(result.error ?? 'Erro desconhecido')
+      return
     }
+
+    // signUp/signIn already persisted the session — go to the app.
+    router.replace('/')
   }
 
-  // Splash enquanto valida sessão — nunca tela 100% preta
+  // Splash while we check for an existing session — never a black screen.
   if (!ready) {
     return (
       <div style={{
@@ -201,7 +157,7 @@ export default function AuthPage() {
         className="relative z-10 w-full max-w-[400px]"
         style={{ animation: 'fadeIn 0.45s var(--ease-out) both' }}
       >
-        {/* ── Logo mark ─────────────────────────────────────────── */}
+        {/* Logo mark */}
         <div className="flex justify-center mb-8">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center"
@@ -223,7 +179,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* ── Card ──────────────────────────────────────────────── */}
+        {/* Card */}
         <div
           className="rounded-2xl p-8"
           style={{
@@ -234,9 +190,8 @@ export default function AuthPage() {
             boxShadow: 'var(--shadow-modal)',
           }}
         >
-          {/* Título */}
+          {/* Title */}
           <div className="mb-6 text-center">
-            
             <h1
               style={{
                 fontSize: 30,
@@ -248,10 +203,10 @@ export default function AuthPage() {
                 animation: 'nameGlow 3s ease-in-out infinite',
               }}
             >
-              Olá, seja bem-vindo
+              {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
             </h1>
             <p style={{ fontSize: 13, color: TT, lineHeight: 1.6 }}>
-              Crie sua conta ou entre para continuar
+              {mode === 'login' ? 'Entre para continuar evoluindo' : 'Comece sua jornada agora'}
             </p>
           </div>
 
@@ -263,14 +218,17 @@ export default function AuthPage() {
             {(['login', 'register'] as const).map(m => (
               <button
                 key={m}
+                type="button"
                 onClick={() => switchMode(m)}
+                disabled={busy}
                 className="flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all duration-200"
                 style={{
                   background: mode === m ? P : 'transparent',
                   color:      mode === m ? '#000' : TT,
                   boxShadow:  mode === m ? '0 0 14px var(--color-primary-glow)' : 'none',
-                  cursor: 'pointer',
+                  cursor: busy ? 'not-allowed' : 'pointer',
                   border: 'none',
+                  opacity: busy && mode !== m ? 0.5 : 1,
                 }}
               >
                 {m === 'login' ? 'Entrar' : 'Criar conta'}
@@ -278,9 +236,8 @@ export default function AuthPage() {
             ))}
           </div>
 
-          {/* Formulário */}
+          {/* Form */}
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
-            {/* Nome */}
             <div>
               <label
                 htmlFor="ll-username"
@@ -296,13 +253,15 @@ export default function AuthPage() {
                 autoComplete="username"
                 placeholder="seu_nome"
                 value={name}
-                onChange={e => { setName(e.target.value); setError('') }}
+                onChange={e => { setName(e.target.value); if (error) setError('') }}
                 disabled={busy}
                 style={{ fontSize: 14 }}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
             </div>
 
-            {/* Senha */}
             <div>
               <label
                 htmlFor="ll-password"
@@ -317,14 +276,12 @@ export default function AuthPage() {
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 placeholder="••••••••"
                 value={pass}
-                onChange={e => { setPass(e.target.value); setError('') }}
+                onChange={e => { setPass(e.target.value); if (error) setError('') }}
                 disabled={busy}
                 style={{ fontSize: 14 }}
-                onKeyDown={e => { if (e.key === 'Enter') handleSubmit(e as unknown as FormEvent) }}
               />
             </div>
 
-            {/* Mensagens */}
             {error && (
               <div
                 className="rounded-lg px-3 py-2.5 text-[12px]"
@@ -338,21 +295,7 @@ export default function AuthPage() {
                 {error}
               </div>
             )}
-            {info && (
-              <div
-                className="rounded-lg px-3 py-2.5 text-[12px]"
-                style={{
-                  background: PM,
-                  border: `1px solid ${PB}`,
-                  color: P,
-                  animation: 'fadeIn 0.2s ease both',
-                }}
-              >
-                {info}
-              </div>
-            )}
 
-            {/* CTA */}
             <button
               type="submit"
               disabled={busy}
@@ -372,38 +315,35 @@ export default function AuthPage() {
               }}
             >
               {busy ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.7 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.85 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'll-spin 0.7s linear infinite' }}>
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
-                  Carregando...
+                  {mode === 'login' ? 'Entrando...' : 'Criando conta...'}
                 </span>
               ) : (
                 <span style={{ animation: 'ctaGlow 2.5s ease-in-out infinite' }}>
-                  Evolua sua vida!
+                  {mode === 'login' ? 'Entrar' : 'Evolua sua vida!'}
                 </span>
               )}
             </button>
           </form>
         </div>
 
-        {/* rodapé */}
         <p className="text-center mt-6" style={{ fontSize: 11, color: 'var(--color-text-subtle)' }}>
           LifeLab · Seu sistema de alta performance
         </p>
       </div>
 
       <style>{`
-        @keyframes ll-spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes ll-spin { to { transform: rotate(360deg); } }
         @keyframes nameGlow {
           0%, 100% { text-shadow: 0 0 18px rgba(var(--color-primary-rgb), 0.35), 0 0 40px rgba(var(--color-primary-rgb), 0.15); }
-          50%       { text-shadow: 0 0 28px rgba(var(--color-primary-rgb), 0.65), 0 0 60px rgba(var(--color-primary-rgb), 0.30); }
+          50%      { text-shadow: 0 0 28px rgba(var(--color-primary-rgb), 0.65), 0 0 60px rgba(var(--color-primary-rgb), 0.30); }
         }
         @keyframes ctaGlow {
           0%, 100% { text-shadow: 0 0 8px rgba(0,0,0,0.4); }
-          50%       { text-shadow: 0 0 14px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.25); }
+          50%      { text-shadow: 0 0 14px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.25); }
         }
       `}</style>
     </div>
