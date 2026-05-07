@@ -391,10 +391,37 @@ export function CommunityStyles() {
       }
       .com-guide-item.is-current {
         background:
-          linear-gradient(90deg, color-mix(in srgb, var(--metal) 14%, transparent), transparent 70%),
+          linear-gradient(90deg, color-mix(in srgb, var(--green) 22%, transparent), color-mix(in srgb, var(--green) 6%, transparent) 80%),
           rgba(255,255,255,0.04);
-        border-color: color-mix(in srgb, var(--metal) 50%, transparent);
-        box-shadow: 0 0 14px var(--metal-glow);
+        border-color: var(--green);
+        box-shadow:
+          0 0 0 1px var(--green) inset,
+          0 0 18px var(--green-g30),
+          0 0 28px var(--metal-glow);
+        position: relative;
+      }
+      .com-guide-item.is-current::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        background: var(--green);
+        border-radius: 9px 0 0 9px;
+        box-shadow: 0 0 10px var(--green);
+      }
+      .com-guide-item.is-current .com-guide-rank { color: var(--green); }
+      .com-guide-you {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 2px 7px;
+        font-family: var(--font-mono);
+        font-size: 9px; font-weight: 800;
+        letter-spacing: 0.12em;
+        color: #052e1a;
+        background: var(--green);
+        border-radius: 4px;
+        vertical-align: middle;
+        box-shadow: 0 0 10px var(--green-g30);
       }
       .com-guide-item.is-mythic .com-guide-name {
         background: linear-gradient(180deg, #ffffff 0%, var(--metal) 70%);

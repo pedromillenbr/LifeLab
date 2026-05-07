@@ -39,7 +39,10 @@ export function DivisionsGuide({ currentKey }: DivisionsGuideProps) {
               >
                 <div className="com-guide-rank">#{d.rank}</div>
                 <div className="com-guide-info">
-                  <div className="com-guide-name">{d.name}</div>
+                  <div className="com-guide-name">
+                    {d.name}
+                    {isCurrent && <span className="com-guide-you">VOCÊ</span>}
+                  </div>
                   <div className="com-guide-tagline">{d.tagline}</div>
                 </div>
                 <div className="com-guide-meta">

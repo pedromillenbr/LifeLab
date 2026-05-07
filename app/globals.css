@@ -828,19 +828,19 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   --radius-s: 9px;
 }
 
-/* Cursor glow follower */
+/* Cursor glow follower — kept very subtle for perf and minimal distraction. */
 #cursor-glow {
   position: fixed; pointer-events: none; z-index: 1;
-  width: 500px; height: 500px;
+  left: 0; top: 0;
+  width: 220px; height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(var(--color-primary-rgb), 0.06) 0%, transparent 70%);
-  transform: translate(-50%,-50%);
-  transition: left .12s ease-out, top .12s ease-out;
+  background: radial-gradient(circle, rgba(var(--color-primary-rgb), 0.018) 0%, transparent 70%);
+  will-change: transform;
   display: block;
 }
-
-/* Floating particles canvas */
-#particle-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .6; }
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  #cursor-glow { display: none; }
+}
 
 /* ===== SpotCard ===== */
 @keyframes shimmerTrail {
