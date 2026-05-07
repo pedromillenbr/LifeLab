@@ -552,10 +552,10 @@ export default function DietaPage() {
           mealLabel={customMeals.find(m => m.id === modalMeal)?.label ?? modalMeal}
           meals={customMeals}
           onClose={() => setModalMeal(null)}
-          onAdd={(entry) => {
+          onAdd={(entry, keepOpen) => {
             addFoodEntry({ ...entry, meal: modalMeal, date: dayKey })
             setCalPulse(true)
-            setModalMeal(null)
+            if (!keepOpen) setModalMeal(null)
           }}
           recentFoods={recentFoods}
         />
@@ -634,30 +634,42 @@ interface AddFoodModalProps {
   mealLabel: string
   meals: { id: string; label: string }[]
   onClose: () => void
-  onAdd: (e: {
-    name: string; quantity: string; calories: number
-    protein?: number; carbs?: number; fat?: number
-    meal: string; date: string
-  }) => void
+  onAdd: (
+    e: {
+      name: string; quantity: string; calories: number
+      protein?: number; carbs?: number; fat?: number
+      meal: string; date: string
+    },
+    keepOpen: boolean,
+  ) => void
   recentFoods: FoodEntry[]
 }
 
 function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }: AddFoodModalProps) {
   const [selectedFood, setSelectedFood] = useState<FoodDBItem | null>(null)
-  const [grams, setGrams] = useState(100)
-  const [units, setUnits] = useState(1)
+  // grams/units kept as strings so the user can clear the field with backspace.
+  // Validation (and the "min 1" fallback) happens only at submit time.
+  const [grams, setGrams] = useState('100')
+  const [units, setUnits] = useState('1')
   const [useUnits, setUseUnits] = useState(false)
   const [search, setSearch] = useState('')
   const [activeMeal, setActiveMeal] = useState(mealId)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const [draft, setDraft] = useState({ name: '', quantity: '', calories: '', protein: '', carbs: '', fat: '' })
   const [showMacros, setShowMacros] = useState(false)
 
   const autoMode = selectedFood !== null
 
+  // Parsed-at-render quantity (used for live preview only). Empty / invalid → 0.
+  const parsedUnits = parseInt(units, 10)
+  const parsedGrams = parseInt(grams, 10)
+  const liveUnits = Number.isFinite(parsedUnits) && parsedUnits > 0 ? parsedUnits : 0
+  const liveGrams = Number.isFinite(parsedGrams) && parsedGrams > 0 ? parsedGrams : 0
+
   const effectiveGrams = (autoMode && useUnits && selectedFood?.unitGrams)
-    ? units * selectedFood.unitGrams
-    : grams
+    ? liveUnits * selectedFood.unitGrams
+    : liveGrams
 
   const mult = effectiveGrams / 100
   const compCal = selectedFood ? Math.round(selectedFood.cal * mult) : 0
@@ -670,12 +682,14 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
   const manualValid = draft.name.trim().length > 0
     && Number.isFinite(parseFloat(draft.calories))
     && parseFloat(draft.calories) > 0
-  const canAdd = autoMode ? (useUnits ? units > 0 : grams > 0) : manualValid
+  const canAdd = autoMode
+    ? (useUnits ? liveUnits > 0 : liveGrams > 0)
+    : manualValid
 
   function pickFood(food: FoodDBItem) {
     setSelectedFood(food)
-    setGrams(food.serving ?? 100)
-    setUnits(1)
+    setGrams(String(food.serving ?? 100))
+    setUnits('1')
     setUseUnits(!!(food.unitLabel && food.unitGrams))
     setSearch('')
   }
@@ -693,34 +707,61 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
     setShowMacros(!!(f.protein || f.carbs || f.fat))
   }
 
-  function handleAdd() {
+  function resetForNext() {
+    // Clears the current selection / draft so the user can pick the next food
+    // without closing the modal. Keeps activeMeal and search bar focused.
+    setSelectedFood(null)
+    setGrams('100')
+    setUnits('1')
+    setUseUnits(false)
+    setDraft({ name: '', quantity: '', calories: '', protein: '', carbs: '', fat: '' })
+    setShowMacros(false)
+    setSearch('')
+    setTimeout(() => searchInputRef.current?.focus(), 30)
+  }
+
+  function buildEntry() {
     if (autoMode && selectedFood) {
+      // Fall back to 1 if the field is empty/invalid at submit time.
+      const u = liveUnits > 0 ? liveUnits : 1
+      const g = liveGrams > 0 ? liveGrams : 1
+      const grams = (useUnits && selectedFood.unitGrams)
+        ? u * selectedFood.unitGrams
+        : g
       const qtyLabel = (useUnits && selectedFood.unitLabel && selectedFood.unitGrams)
-        ? `${units} ${units === 1 ? selectedFood.unitLabel : selectedFood.unitLabel + 's'}`
-        : `${effectiveGrams} g`
-      onAdd({
+        ? `${u} ${u === 1 ? selectedFood.unitLabel : selectedFood.unitLabel + 's'}`
+        : `${grams} g`
+      const m = grams / 100
+      return {
         name: selectedFood.name,
         quantity: qtyLabel,
-        calories: compCal,
-        protein: compP || undefined,
-        carbs:   compC || undefined,
-        fat:     compF || undefined,
+        calories: Math.round(selectedFood.cal * m),
+        protein: +(selectedFood.p * m).toFixed(1) || undefined,
+        carbs:   +(selectedFood.c * m).toFixed(1) || undefined,
+        fat:     +(selectedFood.f * m).toFixed(1) || undefined,
         meal: activeMeal,
         date: today(),
-      })
-    } else {
-      if (!manualValid) return
-      onAdd({
-        name: draft.name.trim(),
-        quantity: draft.quantity.trim() || '1 porção',
-        calories: parseFloat(draft.calories),
-        protein: draft.protein ? parseFloat(draft.protein) : undefined,
-        carbs:   draft.carbs   ? parseFloat(draft.carbs)   : undefined,
-        fat:     draft.fat     ? parseFloat(draft.fat)     : undefined,
-        meal: activeMeal,
-        date: today(),
-      })
+      }
     }
+    if (!manualValid) return null
+    return {
+      name: draft.name.trim(),
+      quantity: draft.quantity.trim() || '1 porção',
+      calories: parseFloat(draft.calories),
+      protein: draft.protein ? parseFloat(draft.protein) : undefined,
+      carbs:   draft.carbs   ? parseFloat(draft.carbs)   : undefined,
+      fat:     draft.fat     ? parseFloat(draft.fat)     : undefined,
+      meal: activeMeal,
+      date: today(),
+    }
+  }
+
+  function handleAdd(keepOpen: boolean) {
+    if (!canAdd) return
+    const entry = buildEntry()
+    if (!entry) return
+    onAdd(entry, keepOpen)
+    if (keepOpen) resetForNext()
   }
 
   return (
@@ -729,6 +770,7 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
         <div className="dieta-search-wrap">
           <Search size={13} className="dieta-search-icon" />
           <input
+            ref={searchInputRef}
             className="dieta-search-input"
             placeholder="Buscar alimento... (ex: frango, aveia)"
             value={search}
@@ -836,11 +878,12 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
                 min={1}
                 value={useUnits ? units : grams}
                 onChange={e => {
-                  const v = Math.max(1, parseInt(e.target.value, 10) || 1)
+                  // Allow empty / partial input — validation happens at submit.
+                  const v = e.target.value
                   if (useUnits) setUnits(v)
                   else setGrams(v)
                 }}
-                onKeyDown={e => { if (e.key === 'Enter' && canAdd) handleAdd() }}
+                onKeyDown={e => { if (e.key === 'Enter' && canAdd) handleAdd(false) }}
               />
             </div>
 
@@ -896,7 +939,7 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
                 placeholder="180"
                 value={draft.calories}
                 onChange={e => setDraft(d => ({ ...d, calories: e.target.value }))}
-                onKeyDown={e => { if (e.key === 'Enter' && canAdd) handleAdd() }}
+                onKeyDown={e => { if (e.key === 'Enter' && canAdd) handleAdd(false) }}
               />
             </div>
             <button
@@ -944,13 +987,25 @@ function AddFoodModal({ mealId, mealLabel, meals, onClose, onAdd, recentFoods }:
           </div>
         )}
 
-        <button
-          className="dieta-btn-primary"
-          disabled={!canAdd}
-          onClick={handleAdd}
-        >
-          <Plus size={14} /> Adicionar alimento
-        </button>
+        <div className="dieta-add-actions">
+          <button
+            type="button"
+            className="dieta-btn-secondary"
+            disabled={!canAdd}
+            onClick={() => handleAdd(true)}
+            title="Adicionar e continuar (não fecha o modal)"
+          >
+            <Plus size={13} /> Adicionar mais
+          </button>
+          <button
+            type="button"
+            className="dieta-btn-primary"
+            disabled={!canAdd}
+            onClick={() => handleAdd(false)}
+          >
+            <Plus size={14} /> Adicionar e fechar
+          </button>
+        </div>
       </div>
     </Modal>
   )
@@ -1294,6 +1349,37 @@ function DietaStyles() {
       }
       .dieta-btn-sm:hover:not(:disabled) { background: var(--green-subtle); }
       .dieta-btn-sm:disabled { background: rgba(255,255,255,0.07); color: var(--t-dis); cursor: not-allowed; box-shadow: none; }
+
+      .dieta-add-actions {
+        display: grid; grid-template-columns: auto 1fr; gap: 8px;
+      }
+      .dieta-btn-secondary {
+        padding: 11px 16px; border-radius: 9px;
+        background: var(--green-g07);
+        border: 1px solid var(--green-g30);
+        color: var(--green);
+        font-size: 13px; font-weight: 600; font-family: inherit;
+        cursor: pointer; letter-spacing: 0.01em;
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        transition: all .15s ease;
+        white-space: nowrap;
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.06),
+          inset 0 -1px 0 rgba(0,0,0,0.2);
+      }
+      .dieta-btn-secondary:hover:not(:disabled) {
+        background: var(--green-g12);
+        border-color: var(--green);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.08),
+          0 0 18px var(--green-glow);
+      }
+      .dieta-btn-secondary:active:not(:disabled) { transform: scale(0.98); }
+      .dieta-btn-secondary:disabled {
+        background: rgba(255,255,255,0.04);
+        color: var(--t-dis); cursor: not-allowed;
+        border-color: var(--bd); box-shadow: none;
+      }
 
       /* ── Water card (horizontal cyan fill) ─────────────────── */
       .dieta-water-card {
