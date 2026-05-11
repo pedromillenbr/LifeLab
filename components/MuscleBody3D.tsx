@@ -50,7 +50,7 @@ export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
     <div style={{ position: 'relative', height, width: '100%' }}>
       <div style={{ height: '100%', width: '100%', cursor: 'grab', touchAction: 'none' }}>
         <Canvas
-          camera={{ position: [0, 1.4, 4.0], fov: 32 }}
+          camera={{ position: [0, 1.0, 3.2], fov: 35 }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true }}
           shadows
@@ -73,7 +73,7 @@ export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
             autoRotateSpeed={1.0}
             minPolarAngle={Math.PI / 3.2}
             maxPolarAngle={Math.PI / 1.7}
-            target={[0, 0.9, 0]}
+            target={[0, 0.85, 0]}
           />
         </Canvas>
       </div>
@@ -129,14 +129,15 @@ function BodyModel({ url, intensity, onHover }: BodyModelProps) {
   const { scene } = useGLTF(url)
   const groupRef = useRef<THREE.Group>(null)
 
-  // Clone para evitar mutações globais entre re-renders
-  const cloned = useRef<THREE.Group | null>(null)
-  if (!cloned.current) {
-    cloned.current = scene.clone(true)
-    cloned.current.traverse((obj) => {
+  // Clone + normalização: medir bounding box e escalar o modelo
+  // para altura unitária 1, recolocando os pés em y=0. Assim os
+  // overlays funcionam para qualquer GLB independente de unidade
+  // (m, cm, polegada) ou orientação salva no arquivo.
+  const { normalized, depth } = useRef(((): { normalized: THREE.Group; depth: number } => {
+    const cloned = scene.clone(true)
+    cloned.traverse((obj) => {
       if ((obj as THREE.Mesh).isMesh) {
         const mesh = obj as THREE.Mesh
-        // Material limpo, cor pele neutra
         const mat = new THREE.MeshStandardMaterial({
           color: '#d8dde8',
           roughness: 0.55,
@@ -147,20 +148,34 @@ function BodyModel({ url, intensity, onHover }: BodyModelProps) {
         mesh.receiveShadow = true
       }
     })
-  }
+    const box = new THREE.Box3().setFromObject(cloned)
+    const size = new THREE.Vector3()
+    const center = new THREE.Vector3()
+    box.getSize(size)
+    box.getCenter(center)
+    const height = size.y || 1
+    const scale = 1 / height
+    // Pivô: centro horizontal, pés no chão
+    cloned.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale)
+    cloned.scale.setScalar(scale)
+    const wrapper = new THREE.Group()
+    wrapper.add(cloned)
+    return { normalized: wrapper, depth: size.z * scale }
+  })()).current
 
   // Idle breathing
   useFrame(({ clock }) => {
     if (groupRef.current) {
-      groupRef.current.position.y = Math.sin(clock.getElapsedTime() * 1.2) * 0.015
+      groupRef.current.position.y = Math.sin(clock.getElapsedTime() * 1.2) * 0.012
     }
   })
 
   return (
-    <group ref={groupRef} scale={1.25}>
-      <primitive object={cloned.current} />
-      {/* Overlays glow por grupo muscular */}
-      <MuscleOverlays intensity={intensity} onHover={onHover} />
+    <group ref={groupRef} scale={1.7}>
+      <primitive object={normalized} />
+      {/* Overlays glow por grupo muscular — agora em coordenadas
+          relativas à altura 1 (0 = pé, 1 = topo da cabeça) */}
+      <MuscleOverlays intensity={intensity} onHover={onHover} depth={depth} />
     </group>
   )
 }
@@ -168,32 +183,37 @@ function BodyModel({ url, intensity, onHover }: BodyModelProps) {
 interface MuscleOverlaysProps {
   intensity: Record<MuscleGroup, MuscleIntensity>
   onHover: (m: MuscleGroup | null) => void
+  depth: number
 }
 
 /**
- * Overlays semi-transparentes posicionados em cima do modelo,
- * cada um representando um grupo muscular. Cor e glow refletem
- * a intensidade da semana. O usuário aponta para o overlay para
- * ver detalhes daquele grupo.
+ * Overlays semi-transparentes posicionados em cima do modelo, em
+ * coordenadas RELATIVAS à altura unitária (0 = pé, 1 = topo da cabeça).
+ * Funciona em qualquer GLB porque o BodyModel normaliza a escala.
+ * Z é proporcional à espessura medida do modelo.
  */
-function MuscleOverlays({ intensity, onHover }: MuscleOverlaysProps) {
+function MuscleOverlays({ intensity, onHover, depth }: MuscleOverlaysProps) {
+  // Espessura do corpo (varia por modelo). Usamos pra colocar
+  // os overlays frontais ligeiramente à frente e traseiros atrás.
+  const front = depth * 0.45
+  const back  = -depth * 0.45
+
   return (
     <>
-      {/* Posições aproximadas em escala do modelo Soldier.glb (altura ~1.8) */}
-      <Overlay muscle="peito"   intensity={intensity.peito}   position={[0, 1.32, 0.15]}   geom={['box',     [0.42, 0.22, 0.18]]} onHover={onHover} />
-      <Overlay muscle="costas"  intensity={intensity.costas}  position={[0, 1.30, -0.15]}  geom={['box',     [0.46, 0.42, 0.18]]} onHover={onHover} />
-      <Overlay muscle="ombros"  intensity={intensity.ombros}  position={[-0.27, 1.45, 0]}  geom={['sphere',  [0.13]]}              onHover={onHover} />
-      <Overlay muscle="ombros"  intensity={intensity.ombros}  position={[0.27, 1.45, 0]}   geom={['sphere',  [0.13]]}              onHover={onHover} />
-      <Overlay muscle="biceps"  intensity={intensity.biceps}  position={[-0.34, 1.18, 0.06]} geom={['capsule', [0.08, 0.18]]}      onHover={onHover} />
-      <Overlay muscle="biceps"  intensity={intensity.biceps}  position={[0.34, 1.18, 0.06]}  geom={['capsule', [0.08, 0.18]]}      onHover={onHover} />
-      <Overlay muscle="triceps" intensity={intensity.triceps} position={[-0.34, 1.18, -0.06]} geom={['capsule', [0.07, 0.18]]}     onHover={onHover} />
-      <Overlay muscle="triceps" intensity={intensity.triceps} position={[0.34, 1.18, -0.06]}  geom={['capsule', [0.07, 0.18]]}     onHover={onHover} />
-      <Overlay muscle="abdomen" intensity={intensity.abdomen} position={[0, 1.05, 0.16]}   geom={['box',     [0.28, 0.30, 0.15]]} onHover={onHover} />
-      <Overlay muscle="gluteos" intensity={intensity.gluteos} position={[0, 0.78, -0.15]}  geom={['sphere',  [0.20]]}              onHover={onHover} />
-      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[-0.13, 0.50, 0.04]} geom={['capsule', [0.12, 0.40]]}      onHover={onHover} />
-      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[0.13, 0.50, 0.04]}  geom={['capsule', [0.12, 0.40]]}      onHover={onHover} />
-      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[-0.13, 0.10, 0]}    geom={['capsule', [0.09, 0.25]]}      onHover={onHover} />
-      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[0.13, 0.10, 0]}     geom={['capsule', [0.09, 0.25]]}      onHover={onHover} />
+      <Overlay muscle="peito"   intensity={intensity.peito}   position={[0, 0.73, front * 0.85]}     geom={['box',     [0.23, 0.13, 0.10]]} onHover={onHover} />
+      <Overlay muscle="costas"  intensity={intensity.costas}  position={[0, 0.72, back * 0.85]}      geom={['box',     [0.26, 0.24, 0.10]]} onHover={onHover} />
+      <Overlay muscle="ombros"  intensity={intensity.ombros}  position={[-0.16, 0.82, 0]}            geom={['sphere',  [0.075]]}            onHover={onHover} />
+      <Overlay muscle="ombros"  intensity={intensity.ombros}  position={[0.16, 0.82, 0]}             geom={['sphere',  [0.075]]}            onHover={onHover} />
+      <Overlay muscle="biceps"  intensity={intensity.biceps}  position={[-0.20, 0.67, front * 0.4]}  geom={['capsule', [0.045, 0.10]]}      onHover={onHover} />
+      <Overlay muscle="biceps"  intensity={intensity.biceps}  position={[0.20, 0.67, front * 0.4]}   geom={['capsule', [0.045, 0.10]]}      onHover={onHover} />
+      <Overlay muscle="triceps" intensity={intensity.triceps} position={[-0.20, 0.67, back * 0.4]}   geom={['capsule', [0.040, 0.10]]}      onHover={onHover} />
+      <Overlay muscle="triceps" intensity={intensity.triceps} position={[0.20, 0.67, back * 0.4]}    geom={['capsule', [0.040, 0.10]]}      onHover={onHover} />
+      <Overlay muscle="abdomen" intensity={intensity.abdomen} position={[0, 0.58, front * 0.9]}      geom={['box',     [0.15, 0.17, 0.08]]} onHover={onHover} />
+      <Overlay muscle="gluteos" intensity={intensity.gluteos} position={[0, 0.44, back * 0.85]}      geom={['sphere',  [0.115]]}            onHover={onHover} />
+      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[-0.075, 0.28, front * 0.2]} geom={['capsule', [0.07, 0.22]]}       onHover={onHover} />
+      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[0.075, 0.28, front * 0.2]}  geom={['capsule', [0.07, 0.22]]}       onHover={onHover} />
+      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[-0.075, 0.07, 0]}           geom={['capsule', [0.05, 0.13]]}       onHover={onHover} />
+      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[0.075, 0.07, 0]}            geom={['capsule', [0.05, 0.13]]}       onHover={onHover} />
     </>
   )
 }
