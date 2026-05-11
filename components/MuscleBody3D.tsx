@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import type { MuscleGroup } from '@/lib/exercises'
 import { MUSCLE_GROUP_LABELS } from '@/lib/exercises'
 import {
@@ -18,11 +18,32 @@ const MUSCLE_ORDER: MuscleGroup[] = [
   'pernas', 'gluteos',
 ]
 
-const SKIN = '#cfd6e2'
-const SKIN_DARK = '#a8b0bd'
-const SHADOW = 'rgba(0,0,0,.18)'
+/**
+ * Paleta premium — tons frios neutros pra "pele" e dourado→âmbar pros músculos
+ * trabalhados. As cores chapadas em INTENSITY_COLOR (lib) seguem usadas pelos
+ * chips e tooltip pra consistência com o resto do app; o SVG usa gradients.
+ */
+const PALETTE = {
+  /* Pele neutra (músculos não treinados) */
+  skinHi: '#7a8497',
+  skinMid: '#4f5867',
+  skinLo: '#2c3340',
+  skinDeep: '#1a1f2a',
+  /* Treinado leve — dourado premium */
+  lightHi: '#fde68a',
+  lightMid: '#fbbf24',
+  lightLo: '#a16207',
+  /* Treinado intenso — âmbar quente → vermelho */
+  intenseHi: '#fb923c',
+  intenseMid: '#ef4444',
+  intenseLo: '#7f1d1d',
+  /* Stage / ambiente */
+  rim: '#a8c5ff',
+  bgCenter: 'rgba(60, 80, 120, 0.18)',
+  bgEdge: 'rgba(8, 10, 16, 0.85)',
+}
 
-export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
+export function MuscleBody3D({ stats, height = 460 }: MuscleBody3DProps) {
   const [hovered, setHovered] = useState<MuscleGroup | null>(null)
 
   return (
@@ -37,116 +58,31 @@ export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
       }}
       className="muscle-body-root"
     >
-      {/* Bonecos lado a lado */}
-      <div
-        style={{
-          position: 'relative', height: '100%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: 12, padding: '8px 4px 28px',
-        }}
-      >
-        <FigureWrap label="Frente">
-          <FrontView intensity={stats.intensityByMuscle} hovered={hovered} onHover={setHovered} />
-        </FigureWrap>
-        <FigureWrap label="Costas">
-          <BackView intensity={stats.intensityByMuscle} hovered={hovered} onHover={setHovered} />
-        </FigureWrap>
+      <FigureStage stats={stats} hovered={hovered} onHover={setHovered} />
+      <SidePanel stats={stats} hovered={hovered} onHover={setHovered} />
 
-        {/* Tooltip sobre hover */}
-        {hovered && (
-          <div
-            style={{
-              position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)',
-              padding: '6px 14px', borderRadius: 999,
-              background: 'rgba(15,17,22,.92)',
-              border: `1px solid ${INTENSITY_COLOR[stats.intensityByMuscle[hovered]]}`,
-              color: '#fff', fontSize: 12, fontWeight: 600,
-              backdropFilter: 'blur(12px)', pointerEvents: 'none',
-              boxShadow: `0 0 16px ${INTENSITY_COLOR[stats.intensityByMuscle[hovered]]}55`,
-              whiteSpace: 'nowrap', zIndex: 5,
-            }}
-          >
-            {MUSCLE_GROUP_LABELS[hovered]} · {stats.setsByMuscle[hovered]} séries · {INTENSITY_LABEL[stats.intensityByMuscle[hovered]]}
-          </div>
-        )}
-
-        {/* Legenda */}
-        <div
-          style={{
-            position: 'absolute', bottom: 4, left: 8, right: 8,
-            display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap',
-            pointerEvents: 'none',
-          }}
-        >
-          {(['none', 'light', 'intense'] as MuscleIntensity[]).map(level => (
-            <div key={level} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'rgba(255,255,255,.6)' }}>
-              <span
-                style={{
-                  width: 8, height: 8, borderRadius: 999,
-                  background: INTENSITY_COLOR[level],
-                  boxShadow: level !== 'none' ? `0 0 6px ${INTENSITY_COLOR[level]}` : 'none',
-                }}
-              />
-              {INTENSITY_LABEL[level]}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Painel lateral — chips */}
-      <div
-        style={{
-          display: 'flex', flexDirection: 'column', gap: 6,
-          overflowY: 'auto', paddingRight: 4,
-        }}
-        className="muscle-side-panel"
-      >
-        {MUSCLE_ORDER.map(m => {
-          const level = stats.intensityByMuscle[m]
-          const sets = stats.setsByMuscle[m]
-          const color = INTENSITY_COLOR[level]
-          const isHovered = hovered === m
-          return (
-            <button
-              key={m}
-              type="button"
-              onMouseEnter={() => setHovered(m)}
-              onMouseLeave={() => setHovered(null)}
-              onFocus={() => setHovered(m)}
-              onBlur={() => setHovered(null)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 10px',
-                background: isHovered ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.03)',
-                border: `1px solid ${level !== 'none' ? color : 'rgba(255,255,255,.09)'}`,
-                borderRadius: 10,
-                cursor: 'pointer',
-                transition: 'background .2s ease, transform .2s ease',
-                transform: isHovered ? 'translateX(-2px)' : 'translateX(0)',
-                textAlign: 'left',
-                color: 'var(--color-text-main)',
-                font: 'inherit',
-              }}
-            >
-              <span
-                style={{
-                  width: 10, height: 10, borderRadius: 999,
-                  background: color, flexShrink: 0,
-                  boxShadow: level !== 'none' ? `0 0 8px ${color}` : 'none',
-                }}
-              />
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 12, fontWeight: 600, lineHeight: 1.15 }}>
-                  {MUSCLE_GROUP_LABELS[m]}
-                </span>
-                <span style={{ display: 'block', fontSize: 10, color: 'var(--color-text-subtle)', marginTop: 1 }}>
-                  {sets > 0 ? `${sets} ${sets === 1 ? 'série' : 'séries'}` : '—'}
-                </span>
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      <style jsx global>{`
+        @keyframes mb-pulseIntense {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.82; }
+        }
+        @keyframes mb-pulseLight {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.92; }
+        }
+        @keyframes mb-fadeRise {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .mb-muscle {
+          transition: filter .35s ease, opacity .35s ease;
+          cursor: pointer;
+        }
+        .mb-muscle[data-level="intense"] { animation: mb-pulseIntense 2.4s ease-in-out infinite; }
+        .mb-muscle[data-level="light"]   { animation: mb-pulseLight 3.2s ease-in-out infinite; }
+        .mb-muscle:hover { filter: brightness(1.18) drop-shadow(0 0 6px rgba(255,255,255,.35)); }
+        .mb-stage { animation: mb-fadeRise .55s cubic-bezier(.22,.68,0,1.2) both; }
+      `}</style>
 
       <style jsx>{`
         @media (max-width: 640px) {
@@ -154,18 +90,117 @@ export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
             grid-template-columns: 1fr !important;
             grid-template-rows: 1fr auto !important;
           }
-          .muscle-side-panel {
-            flex-direction: row !important;
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            padding-bottom: 4px;
-          }
-          .muscle-side-panel button {
-            flex-shrink: 0;
-            min-width: 110px;
-          }
         }
       `}</style>
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────
+   STAGE — fundo cinematográfico + duas figuras + tooltip + legenda
+   ──────────────────────────────────────────────────────────── */
+function FigureStage({
+  stats, hovered, onHover,
+}: { stats: MuscleWeekStats; hovered: MuscleGroup | null; onHover: (m: MuscleGroup | null) => void }) {
+  return (
+    <div
+      className="mb-stage"
+      style={{
+        position: 'relative',
+        height: '100%',
+        borderRadius: 14,
+        overflow: 'hidden',
+        background: `
+          radial-gradient(ellipse at 50% 35%, ${PALETTE.bgCenter} 0%, transparent 60%),
+          radial-gradient(ellipse at 50% 80%, rgba(20,40,80,0.12) 0%, transparent 55%),
+          linear-gradient(180deg, ${PALETTE.bgEdge} 0%, #05070b 100%)
+        `,
+        boxShadow: 'inset 0 0 60px rgba(0,0,0,.6)',
+      }}
+    >
+      {/* Vinheta sutil */}
+      <div
+        style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.45) 100%)',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* Linhas de "ground" sutis */}
+      <svg
+        viewBox="0 0 200 40" preserveAspectRatio="none"
+        style={{ position: 'absolute', bottom: 18, left: 0, right: 0, height: 32, opacity: 0.18, pointerEvents: 'none' }}
+      >
+        <defs>
+          <linearGradient id="floorLine" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(168,197,255,0)" />
+            <stop offset="50%" stopColor="rgba(168,197,255,.7)" />
+            <stop offset="100%" stopColor="rgba(168,197,255,0)" />
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="20" x2="200" y2="20" stroke="url(#floorLine)" strokeWidth="0.5" />
+      </svg>
+
+      {/* Figuras */}
+      <div
+        style={{
+          position: 'relative', height: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 8, padding: '6px 4px 36px',
+        }}
+      >
+        <FigureWrap label="FRENTE">
+          <FrontView stats={stats} hovered={hovered} onHover={onHover} />
+        </FigureWrap>
+        <FigureWrap label="COSTAS">
+          <BackView stats={stats} hovered={hovered} onHover={onHover} />
+        </FigureWrap>
+      </div>
+
+      {/* Tooltip de hover */}
+      {hovered && (
+        <div
+          style={{
+            position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+            padding: '6px 14px', borderRadius: 999,
+            background: 'rgba(15,17,22,.92)',
+            border: `1px solid ${INTENSITY_COLOR[stats.intensityByMuscle[hovered]]}`,
+            color: '#fff', fontSize: 11, fontWeight: 600,
+            backdropFilter: 'blur(12px)', pointerEvents: 'none',
+            boxShadow: `0 4px 16px rgba(0,0,0,.5), 0 0 18px ${INTENSITY_COLOR[stats.intensityByMuscle[hovered]]}55`,
+            whiteSpace: 'nowrap', zIndex: 5,
+            letterSpacing: 0.3,
+          }}
+        >
+          <span style={{ textTransform: 'uppercase', opacity: 0.9 }}>{MUSCLE_GROUP_LABELS[hovered]}</span>
+          <span style={{ opacity: 0.5, margin: '0 8px' }}>·</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{stats.setsByMuscle[hovered]} séries</span>
+          <span style={{ opacity: 0.5, margin: '0 8px' }}>·</span>
+          <span>{INTENSITY_LABEL[stats.intensityByMuscle[hovered]]}</span>
+        </div>
+      )}
+
+      {/* Legenda */}
+      <div
+        style={{
+          position: 'absolute', bottom: 6, left: 8, right: 8,
+          display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap',
+          pointerEvents: 'none',
+        }}
+      >
+        {(['none', 'light', 'intense'] as MuscleIntensity[]).map(level => (
+          <div key={level} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: 'rgba(255,255,255,.55)', letterSpacing: 0.6, textTransform: 'uppercase' }}>
+            <span
+              style={{
+                width: 7, height: 7, borderRadius: 999,
+                background: INTENSITY_COLOR[level],
+                boxShadow: level !== 'none' ? `0 0 8px ${INTENSITY_COLOR[level]}` : 'none',
+              }}
+            />
+            {INTENSITY_LABEL[level]}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -177,331 +212,881 @@ function FigureWrap({ label, children }: { label: string; children: React.ReactN
         {children}
       </div>
       <div style={{
-        marginTop: 2, fontSize: 9, fontWeight: 600,
-        color: 'rgba(255,255,255,.4)', letterSpacing: 1, textTransform: 'uppercase',
+        marginTop: 2, fontSize: 8, fontWeight: 700,
+        color: 'rgba(168,197,255,.5)', letterSpacing: 2,
+        fontFamily: "'JetBrains Mono', monospace",
       }}>{label}</div>
     </div>
   )
 }
 
+/* ────────────────────────────────────────────────────────────
+   PAINEL LATERAL DE MÚSCULOS
+   ──────────────────────────────────────────────────────────── */
+function SidePanel({
+  stats, hovered, onHover,
+}: { stats: MuscleWeekStats; hovered: MuscleGroup | null; onHover: (m: MuscleGroup | null) => void }) {
+  return (
+    <div
+      style={{
+        display: 'flex', flexDirection: 'column', gap: 6,
+        overflowY: 'auto', paddingRight: 4,
+      }}
+      className="muscle-side-panel"
+    >
+      {MUSCLE_ORDER.map(m => {
+        const level = stats.intensityByMuscle[m]
+        const sets = stats.setsByMuscle[m]
+        const color = INTENSITY_COLOR[level]
+        const isHovered = hovered === m
+        return (
+          <button
+            key={m}
+            type="button"
+            onMouseEnter={() => onHover(m)}
+            onMouseLeave={() => onHover(null)}
+            onFocus={() => onHover(m)}
+            onBlur={() => onHover(null)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 10px',
+              background: isHovered ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.03)',
+              border: `1px solid ${level !== 'none' ? color : 'rgba(255,255,255,.09)'}`,
+              borderRadius: 10,
+              cursor: 'pointer',
+              transition: 'background .2s ease, transform .2s ease',
+              transform: isHovered ? 'translateX(-2px)' : 'translateX(0)',
+              textAlign: 'left',
+              color: 'var(--color-text-main)',
+              font: 'inherit',
+            }}
+          >
+            <span
+              style={{
+                width: 10, height: 10, borderRadius: 999,
+                background: color, flexShrink: 0,
+                boxShadow: level !== 'none' ? `0 0 8px ${color}` : 'none',
+              }}
+            />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: 12, fontWeight: 600, lineHeight: 1.15 }}>
+                {MUSCLE_GROUP_LABELS[m]}
+              </span>
+              <span style={{ display: 'block', fontSize: 10, color: 'var(--color-text-subtle)', marginTop: 1 }}>
+                {sets > 0 ? `${sets} ${sets === 1 ? 'série' : 'séries'}` : '—'}
+              </span>
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────
+   DEFS — gradients + filtros SVG (volume + AO + rim light fake)
+   prefix garante IDs únicos quando 2 SVGs coexistem.
+   ──────────────────────────────────────────────────────────── */
+function Defs({ prefix }: { prefix: string }) {
+  return (
+    <defs>
+      {/* Pele (silhueta neutra) — gradient suave volumétrico */}
+      <radialGradient id={`${prefix}-skin`} cx="42%" cy="30%" r="80%">
+        <stop offset="0%" stopColor={PALETTE.skinHi} />
+        <stop offset="55%" stopColor={PALETTE.skinMid} />
+        <stop offset="100%" stopColor={PALETTE.skinDeep} />
+      </radialGradient>
+
+      {/* Músculo NÃO treinado — tom integrado à pele, levemente mais saturado */}
+      <radialGradient id={`${prefix}-mNone`} cx="40%" cy="32%" r="80%">
+        <stop offset="0%" stopColor={PALETTE.skinHi} />
+        <stop offset="60%" stopColor={PALETTE.skinMid} />
+        <stop offset="100%" stopColor={PALETTE.skinLo} />
+      </radialGradient>
+
+      {/* Músculo LEVE — dourado premium */}
+      <radialGradient id={`${prefix}-mLight`} cx="42%" cy="32%" r="85%">
+        <stop offset="0%" stopColor={PALETTE.lightHi} />
+        <stop offset="55%" stopColor={PALETTE.lightMid} />
+        <stop offset="100%" stopColor={PALETTE.lightLo} />
+      </radialGradient>
+
+      {/* Músculo INTENSO — âmbar/vermelho */}
+      <radialGradient id={`${prefix}-mIntense`} cx="42%" cy="32%" r="85%">
+        <stop offset="0%" stopColor={PALETTE.intenseHi} />
+        <stop offset="55%" stopColor={PALETTE.intenseMid} />
+        <stop offset="100%" stopColor={PALETTE.intenseLo} />
+      </radialGradient>
+
+      {/* Rim light (luz de borda azulada do canto direito) */}
+      <linearGradient id={`${prefix}-rim`} x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="rgba(168,197,255,0)" />
+        <stop offset="80%" stopColor="rgba(168,197,255,0)" />
+        <stop offset="100%" stopColor="rgba(168,197,255,0.45)" />
+      </linearGradient>
+
+      {/* Sombra ambiente lateral */}
+      <linearGradient id={`${prefix}-aoSide`} x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="rgba(0,0,0,0.25)" />
+        <stop offset="35%" stopColor="rgba(0,0,0,0)" />
+        <stop offset="65%" stopColor="rgba(0,0,0,0)" />
+        <stop offset="100%" stopColor="rgba(0,0,0,0.25)" />
+      </linearGradient>
+
+      {/* Sombra inferior do tronco */}
+      <linearGradient id={`${prefix}-aoBottom`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+        <stop offset="100%" stopColor="rgba(0,0,0,0.5)" />
+      </linearGradient>
+
+      {/* Sombra de chão (elipse projetada) */}
+      <radialGradient id={`${prefix}-ground`} cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="rgba(0,0,0,0.55)" />
+        <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+      </radialGradient>
+
+      {/* Filtro de blur sutil pra suavizar bordas */}
+      <filter id={`${prefix}-soft`} x="-10%" y="-10%" width="120%" height="120%">
+        <feGaussianBlur stdDeviation="0.35" />
+      </filter>
+    </defs>
+  )
+}
+
+/* ────────────────────────────────────────────────────────────
+   Helper de fill por intensidade — aponta pro gradient certo
+   ──────────────────────────────────────────────────────────── */
+function fillFor(prefix: string, level: MuscleIntensity): string {
+  if (level === 'intense') return `url(#${prefix}-mIntense)`
+  if (level === 'light')   return `url(#${prefix}-mLight)`
+  return `url(#${prefix}-mNone)`
+}
+
 interface ViewProps {
-  intensity: Record<MuscleGroup, MuscleIntensity>
+  stats: MuscleWeekStats
   hovered: MuscleGroup | null
   onHover: (m: MuscleGroup | null) => void
 }
 
-function muscleStyle(level: MuscleIntensity, isHovered: boolean): React.CSSProperties {
-  const color = INTENSITY_COLOR[level]
-  let filter = 'none'
-  if (isHovered) {
-    filter = `drop-shadow(0 0 6px ${color}cc) brightness(1.15)`
-  } else if (level === 'intense') {
-    filter = `drop-shadow(0 0 4px ${color}88)`
-  } else if (level === 'light') {
-    filter = `drop-shadow(0 0 3px ${color}66)`
-  }
-  return {
-    fill: color,
-    stroke: 'rgba(0,0,0,.35)',
-    strokeWidth: 0.6,
-    filter,
-    cursor: 'pointer',
-    transition: 'fill .35s ease, filter .35s ease',
-  }
-}
-
 /* ────────────────────────────────────────────────────────────
-   FRONT VIEW
-   viewBox 200×420 — silhueta anatômica masculina musculosa
-   Grupos: peito, ombros, biceps, abdomen, pernas (quads/calves)
+   FRONT VIEW — viewBox 200×460
+   Anatomia: deltoides 3 cabeças, peito U c/ inserção, serrátil,
+   abs 8-pack + V-cut + linha alba, bíceps 2 cabeças,
+   antebraço (flexores), quads 4 cabeças, panturrilhas, tibial.
    ──────────────────────────────────────────────────────────── */
-function FrontView({ intensity, hovered, onHover }: ViewProps) {
+function FrontView({ stats, hovered, onHover }: ViewProps) {
+  const uid = useId().replace(/:/g, '')
+  const p = `f${uid}`
   const handler = (m: MuscleGroup) => ({
     onPointerEnter: () => onHover(m),
     onPointerLeave: () => onHover(null),
-    style: muscleStyle(intensity[m], hovered === m),
+    'data-level': stats.intensityByMuscle[m],
+    className: 'mb-muscle',
   })
+  const lvl = (m: MuscleGroup) => stats.intensityByMuscle[m]
 
   return (
-    <svg viewBox="0 0 200 420" style={{ height: '100%', maxWidth: '100%', display: 'block' }}>
-      <defs>
-        <radialGradient id="skinGradFront" cx="50%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#d8dfeb" />
-          <stop offset="100%" stopColor={SKIN_DARK} />
-        </radialGradient>
-        <linearGradient id="bodyShade" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="rgba(0,0,0,.15)" />
-          <stop offset="50%" stopColor="rgba(0,0,0,0)" />
-          <stop offset="100%" stopColor="rgba(0,0,0,.15)" />
-        </linearGradient>
-      </defs>
+    <svg viewBox="0 0 200 460" style={{ height: '100%', maxWidth: '100%', display: 'block' }}>
+      <Defs prefix={p} />
 
-      {/* === SILHUETA DE FUNDO (skin) === */}
-      {/* Cabeça */}
+      {/* Sombra de chão */}
+      <ellipse cx="100" cy="450" rx="50" ry="6" fill={`url(#${p}-ground)`} />
+
+      {/* ═══════════════════ SILHUETA DE FUNDO ═══════════════════ */}
+
+      {/* Cabeça — formato mais orgânico, mandíbula sugerida */}
       <path
-        d="M 100 12 C 86 12 76 22 76 38 C 76 48 79 56 84 62 C 84 68 82 72 80 76 L 120 76 C 118 72 116 68 116 62 C 121 56 124 48 124 38 C 124 22 114 12 100 12 Z"
-        fill="url(#skinGradFront)" stroke={SHADOW} strokeWidth="0.6"
+        d="M 100 14
+           C 84 14 73 24 72 40
+           C 71 50 74 60 80 67
+           C 80 72 79 76 77 80
+           L 88 84
+           Q 100 89 112 84
+           L 123 80
+           C 121 76 120 72 120 67
+           C 126 60 129 50 128 40
+           C 127 24 116 14 100 14 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.5"
       />
-      {/* Mandíbula sombra */}
-      <path d="M 88 60 Q 100 66 112 60" stroke="rgba(0,0,0,.15)" strokeWidth="0.8" fill="none" />
-      {/* Sobrancelhas/olhos sutis */}
-      <ellipse cx="92" cy="38" rx="2.4" ry="1.4" fill="rgba(0,0,0,.4)" />
-      <ellipse cx="108" cy="38" rx="2.4" ry="1.4" fill="rgba(0,0,0,.4)" />
+      {/* Sombra mandíbula */}
+      <path d="M 84 70 Q 100 78 116 70" stroke="rgba(0,0,0,.18)" strokeWidth="0.7" fill="none" />
+      {/* Olhos */}
+      <ellipse cx="91" cy="42" rx="2.2" ry="1.4" fill="rgba(0,0,0,.55)" />
+      <ellipse cx="109" cy="42" rx="2.2" ry="1.4" fill="rgba(0,0,0,.55)" />
+      {/* Nariz */}
+      <path d="M 100 48 L 99 56 Q 100 58 101 56 Z" fill="rgba(0,0,0,.18)" />
 
-      {/* Pescoço com esterno */}
-      <path d="M 88 76 L 87 96 Q 100 102 113 96 L 112 76 Z" fill="url(#skinGradFront)" stroke={SHADOW} strokeWidth="0.6" />
-      <line x1="100" y1="82" x2="100" y2="98" stroke="rgba(0,0,0,.18)" strokeWidth="0.6" />
-
-      {/* Trapézio (decorativo, não mapeado) */}
-      <path d="M 75 95 Q 88 88 100 92 Q 112 88 125 95 L 130 105 L 70 105 Z" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.5" />
-
-      {/* TRONCO base (silhueta inferior dos músculos) */}
+      {/* Pescoço com esternocleidomastoideo */}
       <path
-        d="M 60 100 Q 56 120 56 145 L 56 175 Q 58 195 62 215 L 70 235 L 130 235 L 138 215 Q 142 195 144 175 L 144 145 Q 144 120 140 100 Z"
-        fill="url(#skinGradFront)" stroke={SHADOW} strokeWidth="0.7"
+        d="M 87 84 L 86 102 Q 100 110 114 102 L 113 84 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.5"
+      />
+      {/* SCM esquerdo + direito (linhas) */}
+      <path d="M 89 86 Q 95 96 98 106" stroke="rgba(0,0,0,.22)" strokeWidth="0.7" fill="none" />
+      <path d="M 111 86 Q 105 96 102 106" stroke="rgba(0,0,0,.22)" strokeWidth="0.7" fill="none" />
+      {/* Fossa supraesternal */}
+      <ellipse cx="100" cy="106" rx="2" ry="1.2" fill="rgba(0,0,0,.35)" />
+
+      {/* Trapézio frontal (entre pescoço e ombros) */}
+      <path
+        d="M 75 105 Q 86 100 100 102 Q 114 100 125 105 L 134 116 L 66 116 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.5"
       />
 
-      {/* Antebraços (não mapeados) */}
-      <path d="M 32 175 Q 30 195 32 215 L 36 248 Q 40 252 46 250 L 48 215 Q 48 195 46 175 Z" fill="url(#skinGradFront)" stroke={SHADOW} strokeWidth="0.6" />
-      <path d="M 168 175 Q 170 195 168 215 L 164 248 Q 160 252 154 250 L 152 215 Q 152 195 154 175 Z" fill="url(#skinGradFront)" stroke={SHADOW} strokeWidth="0.6" />
+      {/* Tronco — silhueta com V-taper masculino */}
+      <path
+        d="M 56 110
+           Q 50 130 50 150
+           L 52 180
+           Q 56 210 64 240
+           L 76 268
+           L 124 268
+           L 136 240
+           Q 144 210 148 180
+           L 150 150
+           Q 150 130 144 110 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.6"
+      />
+
+      {/* Antebraços (flexores) */}
+      <path
+        d="M 28 175 Q 25 200 28 225 L 33 265 Q 38 270 45 268 L 47 225 Q 47 200 45 175 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.5"
+      />
+      <path
+        d="M 172 175 Q 175 200 172 225 L 167 265 Q 162 270 155 268 L 153 225 Q 153 200 155 175 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.5"
+      />
+      {/* Sulcos do antebraço */}
+      <path d="M 33 195 Q 35 220 36 250" stroke="rgba(0,0,0,.18)" strokeWidth="0.5" fill="none" />
+      <path d="M 41 195 Q 39 220 40 250" stroke="rgba(0,0,0,.15)" strokeWidth="0.4" fill="none" />
+      <path d="M 167 195 Q 165 220 164 250" stroke="rgba(0,0,0,.18)" strokeWidth="0.5" fill="none" />
+      <path d="M 159 195 Q 161 220 160 250" stroke="rgba(0,0,0,.15)" strokeWidth="0.4" fill="none" />
+
       {/* Mãos */}
-      <ellipse cx="42" cy="262" rx="9" ry="14" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.6" />
-      <ellipse cx="158" cy="262" rx="9" ry="14" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.6" />
+      <path
+        d="M 32 268 Q 28 274 30 286 Q 34 295 42 296 Q 50 294 50 285 L 48 268 Z"
+        fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5"
+      />
+      <path
+        d="M 168 268 Q 172 274 170 286 Q 166 295 158 296 Q 150 294 150 285 L 152 268 Z"
+        fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5"
+      />
 
-      {/* Quadril/cintura (silhueta) */}
-      <path d="M 70 235 Q 65 250 65 268 L 70 285 L 130 285 L 135 268 Q 135 250 130 235 Z" fill="url(#skinGradFront)" stroke={SHADOW} strokeWidth="0.7" />
+      {/* Quadril/cintura */}
+      <path
+        d="M 76 268
+           Q 70 282 70 302
+           L 78 322
+           L 122 322
+           L 130 302
+           Q 130 282 124 268 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.6"
+      />
+      {/* Linha do íliaco / V-cut sutil */}
+      <path d="M 78 308 Q 100 318 122 308" stroke="rgba(0,0,0,.28)" strokeWidth="0.7" fill="none" />
+      <path d="M 82 296 Q 100 306 118 296" stroke="rgba(0,0,0,.16)" strokeWidth="0.5" fill="none" />
 
-      {/* Coxas silhueta (atrás das pernas mapeadas) */}
-      <path d="M 68 280 Q 62 320 62 360 L 68 392 L 96 392 L 100 350 L 100 280 Z" fill="url(#skinGradFront)" stroke={SHADOW} strokeWidth="0.6" />
-      <path d="M 132 280 Q 138 320 138 360 L 132 392 L 104 392 L 100 350 L 100 280 Z" fill="url(#skinGradFront)" stroke={SHADOW} strokeWidth="0.6" />
+      {/* Coxas silhueta */}
+      <path
+        d="M 70 318 Q 62 360 62 405 L 70 432 L 98 432 L 100 390 L 100 318 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.6"
+      />
+      <path
+        d="M 130 318 Q 138 360 138 405 L 130 432 L 102 432 L 100 390 L 100 318 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.6"
+      />
 
-      {/* Joelhos */}
-      <ellipse cx="82" cy="395" rx="11" ry="6" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.5" />
-      <ellipse cx="118" cy="395" rx="11" ry="6" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.5" />
+      {/* Joelhos com patela */}
+      <ellipse cx="83" cy="436" rx="11" ry="6" fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
+      <ellipse cx="117" cy="436" rx="11" ry="6" fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
+      <circle cx="83" cy="436" r="3.5" fill="rgba(0,0,0,.15)" />
+      <circle cx="117" cy="436" r="3.5" fill="rgba(0,0,0,.15)" />
 
-      {/* === MÚSCULOS PINTÁVEIS === */}
+      {/* ═══════════════════ MÚSCULOS PINTÁVEIS ═══════════════════ */}
 
-      {/* OMBROS — deltoides triangulares, frente */}
+      {/* OMBROS — deltoide com 3 cabeças (anterior, lateral, posterior) */}
       <g {...handler('ombros')}>
-        <path d="M 60 100 Q 50 105 46 122 Q 44 135 50 145 Q 58 142 64 132 Q 66 118 64 105 Z" />
-        <path d="M 140 100 Q 150 105 154 122 Q 156 135 150 145 Q 142 142 136 132 Q 134 118 136 105 Z" />
+        {/* Esquerdo */}
+        <path
+          d="M 56 113
+             Q 44 118 40 135
+             Q 38 152 46 162
+             Q 56 158 62 148
+             Q 65 132 64 115 Z"
+          fill={fillFor(p, lvl('ombros'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        {/* Direito */}
+        <path
+          d="M 144 113
+             Q 156 118 160 135
+             Q 162 152 154 162
+             Q 144 158 138 148
+             Q 135 132 136 115 Z"
+          fill={fillFor(p, lvl('ombros'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+      </g>
+      {/* Linhas das 3 cabeças do deltoide */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.22)" strokeWidth="0.5" fill="none">
+        <path d="M 50 122 Q 52 138 56 152" />
+        <path d="M 58 118 Q 56 138 56 158" />
+        <path d="M 150 122 Q 148 138 144 152" />
+        <path d="M 142 118 Q 144 138 144 158" />
       </g>
 
-      {/* PEITO — peitorais (forma de U invertido com divisão central) */}
+      {/* PEITO — peitorais em U com inserção esternal e linha clavicular */}
       <g {...handler('peito')}>
-        {/* Peitoral esquerdo */}
-        <path d="M 64 105 Q 80 102 99 108 L 99 152 Q 88 158 76 155 Q 66 152 64 142 Z" />
+        {/* Peitoral esquerdo (forma de gota inclinada) */}
+        <path
+          d="M 64 117
+             Q 78 113 99 119
+             L 99 165
+             Q 90 172 76 168
+             Q 66 164 63 152
+             Q 62 135 64 117 Z"
+          fill={fillFor(p, lvl('peito'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
         {/* Peitoral direito */}
-        <path d="M 136 105 Q 120 102 101 108 L 101 152 Q 112 158 124 155 Q 134 152 136 142 Z" />
+        <path
+          d="M 136 117
+             Q 122 113 101 119
+             L 101 165
+             Q 110 172 124 168
+             Q 134 164 137 152
+             Q 138 135 136 117 Z"
+          fill={fillFor(p, lvl('peito'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
       </g>
-      {/* Linha esternal (sulco entre peitos) */}
-      <line x1="100" y1="108" x2="100" y2="152" stroke="rgba(0,0,0,.32)" strokeWidth="0.7" pointerEvents="none" />
-      {/* Sombra inferior do peito */}
-      <path d="M 70 150 Q 88 158 99 152" stroke="rgba(0,0,0,.2)" strokeWidth="0.6" fill="none" pointerEvents="none" />
-      <path d="M 130 150 Q 112 158 101 152" stroke="rgba(0,0,0,.2)" strokeWidth="0.6" fill="none" pointerEvents="none" />
+      {/* Linha clavicular (sob o trapézio) */}
+      <path d="M 64 118 Q 80 122 99 119 Q 100 119 101 119 Q 120 122 136 118"
+        stroke="rgba(0,0,0,.3)" strokeWidth="0.6" fill="none" pointerEvents="none" />
+      {/* Sulco esternal central */}
+      <line x1="100" y1="119" x2="100" y2="166" stroke="rgba(0,0,0,.45)" strokeWidth="0.9" pointerEvents="none" />
+      {/* Sombra inferior do peito (define o "peso") */}
+      <path d="M 65 158 Q 80 168 99 165" stroke="rgba(0,0,0,.28)" strokeWidth="0.7" fill="none" pointerEvents="none" />
+      <path d="M 135 158 Q 120 168 101 165" stroke="rgba(0,0,0,.28)" strokeWidth="0.7" fill="none" pointerEvents="none" />
+      {/* Mamilo sutil (decoração) */}
+      <circle cx="78" cy="148" r="1.2" fill="rgba(0,0,0,.35)" pointerEvents="none" />
+      <circle cx="122" cy="148" r="1.2" fill="rgba(0,0,0,.35)" pointerEvents="none" />
 
-      {/* BÍCEPS — forma de "amendoim" alongado */}
+      {/* SERRÁTIL ANTERIOR (parte de "peito" — músculo sob a axila) */}
+      <g {...handler('peito')}>
+        <path d="M 60 165 Q 58 175 62 185 Q 70 188 73 180 L 75 168 Z"
+          fill={fillFor(p, lvl('peito'))} stroke="rgba(0,0,0,.35)" strokeWidth="0.5" />
+        <path d="M 140 165 Q 142 175 138 185 Q 130 188 127 180 L 125 168 Z"
+          fill={fillFor(p, lvl('peito'))} stroke="rgba(0,0,0,.35)" strokeWidth="0.5" />
+      </g>
+      {/* Estriações do serrátil */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.22)" strokeWidth="0.4" fill="none">
+        <path d="M 62 172 L 72 174" />
+        <path d="M 62 178 L 72 180" />
+        <path d="M 138 172 L 128 174" />
+        <path d="M 138 178 L 128 180" />
+      </g>
+
+      {/* BÍCEPS — 2 cabeças (longa + curta) com pico */}
       <g {...handler('biceps')}>
-        <path d="M 46 122 Q 36 132 34 155 Q 33 175 38 188 Q 46 190 50 178 Q 52 158 50 138 Z" />
-        <path d="M 154 122 Q 164 132 166 155 Q 167 175 162 188 Q 154 190 150 178 Q 148 158 150 138 Z" />
+        <path
+          d="M 40 135
+             Q 30 148 28 172
+             Q 27 195 33 212
+             Q 42 215 47 200
+             Q 50 175 48 152 Z"
+          fill={fillFor(p, lvl('biceps'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        <path
+          d="M 160 135
+             Q 170 148 172 172
+             Q 173 195 167 212
+             Q 158 215 153 200
+             Q 150 175 152 152 Z"
+          fill={fillFor(p, lvl('biceps'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
       </g>
-      {/* Sombra divisória do bíceps */}
-      <path d="M 42 145 Q 44 165 44 180" stroke="rgba(0,0,0,.18)" strokeWidth="0.5" fill="none" pointerEvents="none" />
-      <path d="M 158 145 Q 156 165 156 180" stroke="rgba(0,0,0,.18)" strokeWidth="0.5" fill="none" pointerEvents="none" />
+      {/* Pico do bíceps + sulco */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.22)" strokeWidth="0.5" fill="none">
+        <path d="M 36 158 Q 38 178 38 200" />
+        <path d="M 44 158 Q 42 178 42 200" />
+        <path d="M 164 158 Q 162 178 162 200" />
+        <path d="M 156 158 Q 158 178 158 200" />
+      </g>
 
-      {/* ABDOMEN — retos abdominais (6-pack) + oblíquos */}
+      {/* ABDOMEN — retos abdominais (8-pack) + oblíquos + V-cut */}
       <g {...handler('abdomen')}>
-        {/* Bloco central dos retos */}
-        <path d="M 82 152 L 118 152 Q 122 158 122 185 Q 122 215 118 235 L 82 235 Q 78 215 78 185 Q 78 158 82 152 Z" />
+        {/* Bloco central dos retos (forma orgânica, não retangular) */}
+        <path
+          d="M 84 165
+             Q 86 162 100 162
+             Q 114 162 116 165
+             Q 120 175 120 200
+             Q 120 230 116 260
+             Q 110 268 100 268
+             Q 90 268 84 260
+             Q 80 230 80 200
+             Q 80 175 84 165 Z"
+          fill={fillFor(p, lvl('abdomen'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
         {/* Oblíquos esquerdo */}
-        <path d="M 70 158 Q 64 175 64 200 Q 64 220 68 235 L 78 235 Q 78 215 78 185 Q 78 168 80 152 Z" />
+        <path
+          d="M 70 170
+             Q 64 188 64 215
+             Q 64 240 70 262
+             L 80 262
+             Q 80 240 80 215
+             Q 80 190 82 170 Z"
+          fill={fillFor(p, lvl('abdomen'))}
+          stroke="rgba(0,0,0,.35)" strokeWidth="0.5"
+        />
         {/* Oblíquos direito */}
-        <path d="M 130 158 Q 136 175 136 200 Q 136 220 132 235 L 122 235 Q 122 215 122 185 Q 122 168 120 152 Z" />
+        <path
+          d="M 130 170
+             Q 136 188 136 215
+             Q 136 240 130 262
+             L 120 262
+             Q 120 240 120 215
+             Q 120 190 118 170 Z"
+          fill={fillFor(p, lvl('abdomen'))}
+          stroke="rgba(0,0,0,.35)" strokeWidth="0.5"
+        />
       </g>
-      {/* Linhas divisórias do 6-pack (decorativas) */}
-      <g pointerEvents="none" stroke="rgba(0,0,0,.32)" strokeWidth="0.7" fill="none">
-        <line x1="100" y1="155" x2="100" y2="232" />
-        <path d="M 82 175 Q 100 178 118 175" />
-        <path d="M 80 195 Q 100 198 120 195" />
-        <path d="M 80 215 Q 100 218 120 215" />
-        {/* Linha alba inferior */}
+      {/* Linhas do 8-pack — curvas anatômicas */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.4)" strokeWidth="0.7" fill="none">
+        <line x1="100" y1="166" x2="100" y2="262" />
+        <path d="M 84 178 Q 100 182 116 178" />
+        <path d="M 82 198 Q 100 202 118 198" />
+        <path d="M 80 220 Q 100 224 120 220" />
+        <path d="M 80 244 Q 100 248 120 244" />
       </g>
-
+      {/* Estriações dos oblíquos */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.18)" strokeWidth="0.4" fill="none">
+        <path d="M 67 195 Q 73 200 79 200" />
+        <path d="M 66 215 Q 72 220 78 220" />
+        <path d="M 66 235 Q 72 240 78 240" />
+        <path d="M 133 195 Q 127 200 121 200" />
+        <path d="M 134 215 Q 128 220 122 220" />
+        <path d="M 134 235 Q 128 240 122 240" />
+      </g>
       {/* Umbigo */}
-      <ellipse cx="100" cy="222" rx="1.6" ry="2.2" fill="rgba(0,0,0,.4)" pointerEvents="none" />
+      <ellipse cx="100" cy="248" rx="1.6" ry="2.2" fill="rgba(0,0,0,.55)" pointerEvents="none" />
 
-      {/* Cintura/V-cut (decoração) */}
-      <path d="M 75 248 Q 100 260 125 248" stroke="rgba(0,0,0,.22)" strokeWidth="0.7" fill="none" pointerEvents="none" />
-
-      {/* PERNAS — quadríceps (3 cabeças cada) + panturrilhas */}
+      {/* PERNAS — quadríceps com 4 cabeças (vasto lateral, reto femoral, vasto medial) */}
       <g {...handler('pernas')}>
-        {/* Coxa esquerda — vasto lateral + reto femoral + vasto medial */}
-        <path d="M 70 285 Q 64 320 65 360 L 73 388 L 92 388 L 95 360 Q 96 320 92 285 Z" />
+        {/* Coxa esquerda — silhueta dos quads */}
+        <path
+          d="M 70 322
+             Q 64 360 64 400
+             L 73 428
+             L 96 428
+             L 99 400
+             Q 100 360 95 322 Z"
+          fill={fillFor(p, lvl('pernas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
         {/* Coxa direita */}
-        <path d="M 130 285 Q 136 320 135 360 L 127 388 L 108 388 L 105 360 Q 104 320 108 285 Z" />
+        <path
+          d="M 130 322
+             Q 136 360 136 400
+             L 127 428
+             L 104 428
+             L 101 400
+             Q 100 360 105 322 Z"
+          fill={fillFor(p, lvl('pernas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
       </g>
-      {/* Sulcos do quadríceps esquerdo */}
-      <g pointerEvents="none" stroke="rgba(0,0,0,.22)" strokeWidth="0.6" fill="none">
-        <path d="M 75 295 Q 73 330 78 380" />
-        <path d="M 88 295 Q 90 330 86 380" />
-        <path d="M 125 295 Q 127 330 122 380" />
-        <path d="M 112 295 Q 110 330 114 380" />
+      {/* Sulcos do quadríceps — vasto lateral, reto femoral, vasto medial */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.28)" strokeWidth="0.55" fill="none">
+        {/* Esquerda: vasto lateral (externo) */}
+        <path d="M 71 335 Q 67 365 70 410" />
+        {/* Reto femoral (centro da coxa) */}
+        <path d="M 84 335 Q 84 370 84 415" />
+        {/* Vasto medial (gota perto do joelho) */}
+        <path d="M 90 380 Q 92 405 92 425" />
+        {/* Linha lateral / sartório */}
+        <path d="M 78 330 Q 86 365 92 405" />
+        {/* Direita */}
+        <path d="M 129 335 Q 133 365 130 410" />
+        <path d="M 116 335 Q 116 370 116 415" />
+        <path d="M 110 380 Q 108 405 108 425" />
+        <path d="M 122 330 Q 114 365 108 405" />
       </g>
 
-      {/* Panturrilhas (parte de pernas) */}
+      {/* PANTURRILHAS frente — tibial anterior visível */}
       <g {...handler('pernas')}>
-        <path d="M 73 401 Q 70 415 71 430 L 76 460 L 90 460 L 92 435 Q 93 415 90 401 Z" />
-        <path d="M 127 401 Q 130 415 129 430 L 124 460 L 110 460 L 108 435 Q 107 415 110 401 Z" />
+        <path
+          d="M 73 442
+             Q 68 460 70 480
+             L 76 510
+             L 90 510
+             L 92 485
+             Q 93 460 90 442 Z"
+          fill={fillFor(p, lvl('pernas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        <path
+          d="M 127 442
+             Q 132 460 130 480
+             L 124 510
+             L 110 510
+             L 108 485
+             Q 107 460 110 442 Z"
+          fill={fillFor(p, lvl('pernas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+      </g>
+      {/* Sulco tibial */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.28)" strokeWidth="0.5" fill="none">
+        <path d="M 80 450 Q 82 475 84 505" />
+        <path d="M 87 450 Q 88 475 90 505" />
+        <path d="M 120 450 Q 118 475 116 505" />
+        <path d="M 113 450 Q 112 475 110 505" />
       </g>
 
       {/* Pés */}
-      <ellipse cx="83" cy="468" rx="11" ry="5" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.6" />
-      <ellipse cx="117" cy="468" rx="11" ry="5" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.6" />
+      <ellipse cx="83" cy="514" rx="11" ry="4" fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
+      <ellipse cx="117" cy="514" rx="11" ry="4" fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
 
-      {/* Shading vertical pra dar profundidade no corpo */}
-      <rect x="56" y="100" width="88" height="135" fill="url(#bodyShade)" pointerEvents="none" opacity="0.6" />
+      {/* ═══════════════ OVERLAYS DE LUZ E SOMBRA ═══════════════ */}
+      {/* AO lateral (escurece bordas) */}
+      <rect x="40" y="100" width="120" height="430" fill={`url(#${p}-aoSide)`} pointerEvents="none" opacity="0.8" />
+      {/* Rim light azulado borda direita */}
+      <rect x="40" y="100" width="120" height="430" fill={`url(#${p}-rim)`} pointerEvents="none" opacity="0.6" />
     </svg>
   )
 }
 
 /* ────────────────────────────────────────────────────────────
-   BACK VIEW
-   viewBox 200×420
-   Grupos: costas, ombros (delt posterior), triceps, gluteos, pernas
+   BACK VIEW — viewBox 200×460
+   Anatomia: trapézio + romboides, latíssimo V-taper agressivo,
+   eretores espinhais, deltoide posterior, tríceps 3 cabeças,
+   glúteos dois lobos com sulco, isquios em 3 fascículos,
+   gastrocnêmio bicéfalo + sóleo.
    ──────────────────────────────────────────────────────────── */
-function BackView({ intensity, hovered, onHover }: ViewProps) {
+function BackView({ stats, hovered, onHover }: ViewProps) {
+  const uid = useId().replace(/:/g, '')
+  const p = `b${uid}`
   const handler = (m: MuscleGroup) => ({
     onPointerEnter: () => onHover(m),
     onPointerLeave: () => onHover(null),
-    style: muscleStyle(intensity[m], hovered === m),
+    'data-level': stats.intensityByMuscle[m],
+    className: 'mb-muscle',
   })
+  const lvl = (m: MuscleGroup) => stats.intensityByMuscle[m]
 
   return (
-    <svg viewBox="0 0 200 420" style={{ height: '100%', maxWidth: '100%', display: 'block' }}>
-      <defs>
-        <radialGradient id="skinGradBack" cx="50%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#d8dfeb" />
-          <stop offset="100%" stopColor={SKIN_DARK} />
-        </radialGradient>
-        <linearGradient id="bodyShadeBack" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="rgba(0,0,0,.15)" />
-          <stop offset="50%" stopColor="rgba(0,0,0,0)" />
-          <stop offset="100%" stopColor="rgba(0,0,0,.15)" />
-        </linearGradient>
-      </defs>
+    <svg viewBox="0 0 200 460" style={{ height: '100%', maxWidth: '100%', display: 'block' }}>
+      <Defs prefix={p} />
 
-      {/* === SILHUETA === */}
+      <ellipse cx="100" cy="450" rx="50" ry="6" fill={`url(#${p}-ground)`} />
+
+      {/* ═══════════════ SILHUETA DE FUNDO ═══════════════ */}
+
       {/* Cabeça (atrás) */}
       <path
-        d="M 100 12 C 86 12 76 22 76 38 C 76 48 79 56 84 62 C 84 68 82 72 80 76 L 120 76 C 118 72 116 68 116 62 C 121 56 124 48 124 38 C 124 22 114 12 100 12 Z"
-        fill="url(#skinGradBack)" stroke={SHADOW} strokeWidth="0.6"
+        d="M 100 14
+           C 84 14 73 24 72 40
+           C 71 50 74 60 80 67
+           C 80 72 79 76 77 80
+           L 88 84
+           Q 100 89 112 84
+           L 123 80
+           C 121 76 120 72 120 67
+           C 126 60 129 50 128 40
+           C 127 24 116 14 100 14 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.5"
       />
-      {/* Pescoço */}
-      <path d="M 88 76 L 87 96 Q 100 102 113 96 L 112 76 Z" fill="url(#skinGradBack)" stroke={SHADOW} strokeWidth="0.6" />
+      {/* Linha occipital */}
+      <path d="M 80 60 Q 100 65 120 60" stroke="rgba(0,0,0,.18)" strokeWidth="0.6" fill="none" />
 
-      {/* Tronco silhueta */}
+      {/* Pescoço */}
       <path
-        d="M 60 100 Q 56 120 56 145 L 56 175 Q 58 195 62 215 L 70 235 L 130 235 L 138 215 Q 142 195 144 175 L 144 145 Q 144 120 140 100 Z"
-        fill="url(#skinGradBack)" stroke={SHADOW} strokeWidth="0.7"
+        d="M 87 84 L 86 102 Q 100 110 114 102 L 113 84 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.5"
+      />
+      {/* C7 vertebra */}
+      <ellipse cx="100" cy="106" rx="1.5" ry="2" fill="rgba(0,0,0,.4)" />
+
+      {/* Tronco */}
+      <path
+        d="M 56 110
+           Q 50 130 50 150
+           L 52 180
+           Q 56 210 64 240
+           L 76 268
+           L 124 268
+           L 136 240
+           Q 144 210 148 180
+           L 150 150
+           Q 150 130 144 110 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.6"
       />
 
       {/* Antebraços */}
-      <path d="M 32 175 Q 30 195 32 215 L 36 248 Q 40 252 46 250 L 48 215 Q 48 195 46 175 Z" fill="url(#skinGradBack)" stroke={SHADOW} strokeWidth="0.6" />
-      <path d="M 168 175 Q 170 195 168 215 L 164 248 Q 160 252 154 250 L 152 215 Q 152 195 154 175 Z" fill="url(#skinGradBack)" stroke={SHADOW} strokeWidth="0.6" />
-      <ellipse cx="42" cy="262" rx="9" ry="14" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.6" />
-      <ellipse cx="158" cy="262" rx="9" ry="14" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.6" />
+      <path
+        d="M 28 175 Q 25 200 28 225 L 33 265 Q 38 270 45 268 L 47 225 Q 47 200 45 175 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.5"
+      />
+      <path
+        d="M 172 175 Q 175 200 172 225 L 167 265 Q 162 270 155 268 L 153 225 Q 153 200 155 175 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.5"
+      />
+      {/* Sulcos extensores */}
+      <path d="M 32 195 Q 34 220 35 250" stroke="rgba(0,0,0,.18)" strokeWidth="0.5" fill="none" />
+      <path d="M 42 195 Q 40 220 41 250" stroke="rgba(0,0,0,.15)" strokeWidth="0.4" fill="none" />
+      <path d="M 168 195 Q 166 220 165 250" stroke="rgba(0,0,0,.18)" strokeWidth="0.5" fill="none" />
+      <path d="M 158 195 Q 160 220 159 250" stroke="rgba(0,0,0,.15)" strokeWidth="0.4" fill="none" />
+
+      {/* Mãos (dorso) */}
+      <path d="M 32 268 Q 28 274 30 286 Q 34 295 42 296 Q 50 294 50 285 L 48 268 Z"
+        fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
+      <path d="M 168 268 Q 172 274 170 286 Q 166 295 158 296 Q 150 294 150 285 L 152 268 Z"
+        fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
 
       {/* Quadril */}
-      <path d="M 70 235 Q 65 250 65 268 L 70 285 L 130 285 L 135 268 Q 135 250 130 235 Z" fill="url(#skinGradBack)" stroke={SHADOW} strokeWidth="0.7" />
+      <path
+        d="M 76 268 Q 70 282 70 302 L 78 322 L 122 322 L 130 302 Q 130 282 124 268 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.6"
+      />
 
-      {/* Coxas silhueta */}
-      <path d="M 68 280 Q 62 320 62 360 L 68 392 L 96 392 L 100 350 L 100 280 Z" fill="url(#skinGradBack)" stroke={SHADOW} strokeWidth="0.6" />
-      <path d="M 132 280 Q 138 320 138 360 L 132 392 L 104 392 L 100 350 L 100 280 Z" fill="url(#skinGradBack)" stroke={SHADOW} strokeWidth="0.6" />
+      {/* Coxas */}
+      <path d="M 70 318 Q 62 360 62 405 L 70 432 L 98 432 L 100 390 L 100 318 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.6" />
+      <path d="M 130 318 Q 138 360 138 405 L 130 432 L 102 432 L 100 390 L 100 318 Z"
+        fill={`url(#${p}-skin)`} stroke={PALETTE.skinDeep} strokeWidth="0.6" />
 
-      <ellipse cx="82" cy="395" rx="11" ry="6" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.5" />
-      <ellipse cx="118" cy="395" rx="11" ry="6" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.5" />
+      {/* Joelhos (fossa poplítea) */}
+      <ellipse cx="83" cy="436" rx="11" ry="6" fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
+      <ellipse cx="117" cy="436" rx="11" ry="6" fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
 
-      {/* === MÚSCULOS === */}
+      {/* ═══════════════ MÚSCULOS PINTÁVEIS ═══════════════ */}
 
       {/* OMBROS — deltoide posterior */}
       <g {...handler('ombros')}>
-        <path d="M 60 100 Q 50 105 46 122 Q 44 135 50 145 Q 58 142 64 132 Q 66 118 64 105 Z" />
-        <path d="M 140 100 Q 150 105 154 122 Q 156 135 150 145 Q 142 142 136 132 Q 134 118 136 105 Z" />
+        <path
+          d="M 56 113 Q 44 118 40 135 Q 38 152 46 162 Q 56 158 62 148 Q 65 132 64 115 Z"
+          fill={fillFor(p, lvl('ombros'))} stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        <path
+          d="M 144 113 Q 156 118 160 135 Q 162 152 154 162 Q 144 158 138 148 Q 135 132 136 115 Z"
+          fill={fillFor(p, lvl('ombros'))} stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+      </g>
+      {/* Estriações deltoide posterior */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.22)" strokeWidth="0.5" fill="none">
+        <path d="M 50 122 Q 52 138 56 152" />
+        <path d="M 150 122 Q 148 138 144 152" />
       </g>
 
-      {/* COSTAS — trapézio + latíssimo (V-taper) + lombar */}
+      {/* COSTAS — Trapézio + Latíssimo (V-taper) + Lombar */}
       <g {...handler('costas')}>
-        {/* Trapézio superior (forma de losango entre pescoço e ombros) */}
-        <path d="M 87 96 Q 75 105 64 115 L 70 135 Q 85 132 100 132 Q 115 132 130 135 L 136 115 Q 125 105 113 96 Z" />
-        {/* Latíssimo esquerdo (V) */}
-        <path d="M 64 115 Q 62 145 66 180 Q 75 195 88 195 L 99 195 L 99 145 Q 92 138 80 135 Q 70 130 64 115 Z" />
-        {/* Latíssimo direito (V) */}
-        <path d="M 136 115 Q 138 145 134 180 Q 125 195 112 195 L 101 195 L 101 145 Q 108 138 120 135 Q 130 130 136 115 Z" />
-        {/* Lombar (parte inferior das costas) */}
-        <path d="M 78 195 L 122 195 Q 125 215 122 235 L 78 235 Q 75 215 78 195 Z" />
+        {/* Trapézio (forma de losango/diamante) */}
+        <path
+          d="M 87 102
+             Q 75 108 64 116
+             L 70 145
+             Q 85 142 100 142
+             Q 115 142 130 145
+             L 136 116
+             Q 125 108 113 102 Z"
+          fill={fillFor(p, lvl('costas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        {/* Latíssimo esquerdo (asa em V) */}
+        <path
+          d="M 64 142
+             Q 60 165 64 195
+             Q 75 215 90 215
+             L 99 215
+             L 99 168
+             Q 92 156 80 152
+             Q 70 148 64 142 Z"
+          fill={fillFor(p, lvl('costas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        {/* Latíssimo direito */}
+        <path
+          d="M 136 142
+             Q 140 165 136 195
+             Q 125 215 110 215
+             L 101 215
+             L 101 168
+             Q 108 156 120 152
+             Q 130 148 136 142 Z"
+          fill={fillFor(p, lvl('costas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        {/* Lombar (eretores espinhais) */}
+        <path
+          d="M 78 215 L 122 215 Q 126 240 122 268 L 78 268 Q 74 240 78 215 Z"
+          fill={fillFor(p, lvl('costas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
       </g>
-      {/* Coluna (sulco vertical) */}
-      <line x1="100" y1="100" x2="100" y2="232" stroke="rgba(0,0,0,.35)" strokeWidth="0.8" pointerEvents="none" />
-      {/* Sombras decorativas dos lats */}
-      <g pointerEvents="none" stroke="rgba(0,0,0,.22)" strokeWidth="0.55" fill="none">
-        <path d="M 70 130 Q 80 160 92 188" />
-        <path d="M 130 130 Q 120 160 108 188" />
-        <path d="M 75 195 L 75 230" />
-        <path d="M 125 195 L 125 230" />
+      {/* Coluna vertebral (sulco) */}
+      <line x1="100" y1="105" x2="100" y2="265" stroke="rgba(0,0,0,.5)" strokeWidth="1" pointerEvents="none" />
+      {/* Vertebras (pontinhos) */}
+      <g pointerEvents="none" fill="rgba(0,0,0,.35)">
+        {[120, 140, 160, 180, 200, 220, 240, 258].map((y, i) => (
+          <circle key={i} cx="100" cy={y} r="0.9" />
+        ))}
+      </g>
+      {/* Estriações decorativas dos lats e trapézio */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.22)" strokeWidth="0.5" fill="none">
+        {/* Trapézio fibers */}
+        <path d="M 88 108 Q 82 122 76 138" />
+        <path d="M 112 108 Q 118 122 124 138" />
+        {/* Lats fibers */}
+        <path d="M 70 152 Q 78 175 92 200" />
+        <path d="M 80 148 Q 86 175 96 205" />
+        <path d="M 130 152 Q 122 175 108 200" />
+        <path d="M 120 148 Q 114 175 104 205" />
+        {/* Eretores lombares */}
+        <path d="M 90 220 L 90 262" />
+        <path d="M 110 220 L 110 262" />
+      </g>
+      {/* Romboides centrais — pequenos triângulos (decoração visual) */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.18)" strokeWidth="0.4" fill="none">
+        <path d="M 90 138 L 100 145 L 90 152 Z" />
+        <path d="M 110 138 L 100 145 L 110 152 Z" />
       </g>
 
-      {/* TRÍCEPS — 3 cabeças visíveis */}
+      {/* TRÍCEPS — 3 cabeças (longa, lateral, medial) */}
       <g {...handler('triceps')}>
-        <path d="M 46 122 Q 36 132 34 155 Q 33 175 38 188 Q 46 190 50 178 Q 52 158 50 138 Z" />
-        <path d="M 154 122 Q 164 132 166 155 Q 167 175 162 188 Q 154 190 150 178 Q 148 158 150 138 Z" />
+        <path
+          d="M 40 135 Q 30 148 28 172 Q 27 195 33 212 Q 42 215 47 200 Q 50 175 48 152 Z"
+          fill={fillFor(p, lvl('triceps'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        <path
+          d="M 160 135 Q 170 148 172 172 Q 173 195 167 212 Q 158 215 153 200 Q 150 175 152 152 Z"
+          fill={fillFor(p, lvl('triceps'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
       </g>
-      {/* Divisória do tríceps (cabeça longa vs lateral) */}
-      <g pointerEvents="none" stroke="rgba(0,0,0,.22)" strokeWidth="0.55" fill="none">
-        <path d="M 40 140 Q 42 160 42 182" />
-        <path d="M 48 142 Q 47 162 47 184" />
-        <path d="M 160 140 Q 158 160 158 182" />
-        <path d="M 152 142 Q 153 162 153 184" />
+      {/* Sulcos das 3 cabeças do tríceps */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.24)" strokeWidth="0.55" fill="none">
+        {/* Esquerda */}
+        <path d="M 33 158 Q 34 178 36 200" />
+        <path d="M 41 158 Q 40 178 42 205" />
+        <path d="M 47 165 Q 47 185 47 205" />
+        {/* Direita */}
+        <path d="M 167 158 Q 166 178 164 200" />
+        <path d="M 159 158 Q 160 178 158 205" />
+        <path d="M 153 165 Q 153 185 153 205" />
       </g>
 
-      {/* GLÚTEOS — duas cúpulas arredondadas */}
+      {/* GLÚTEOS — duas cúpulas com sulco profundo */}
       <g {...handler('gluteos')}>
-        <path d="M 68 240 Q 60 255 62 280 Q 70 295 88 295 Q 99 290 99 270 L 99 245 Q 85 240 68 240 Z" />
-        <path d="M 132 240 Q 140 255 138 280 Q 130 295 112 295 Q 101 290 101 270 L 101 245 Q 115 240 132 240 Z" />
+        <path
+          d="M 70 268
+             Q 60 285 62 315
+             Q 70 332 88 330
+             Q 99 326 99 305
+             L 99 268 Z"
+          fill={fillFor(p, lvl('gluteos'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        <path
+          d="M 130 268
+             Q 140 285 138 315
+             Q 130 332 112 330
+             Q 101 326 101 305
+             L 101 268 Z"
+          fill={fillFor(p, lvl('gluteos'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
       </g>
-      {/* Sulco glúteo central */}
-      <line x1="100" y1="245" x2="100" y2="295" stroke="rgba(0,0,0,.4)" strokeWidth="0.8" pointerEvents="none" />
+      {/* Sulco intergluteo */}
+      <line x1="100" y1="270" x2="100" y2="328" stroke="rgba(0,0,0,.55)" strokeWidth="1.1" pointerEvents="none" />
+      {/* Linha do glúteo médio (curva superior) */}
+      <path d="M 70 280 Q 78 272 90 273" stroke="rgba(0,0,0,.2)" strokeWidth="0.5" fill="none" pointerEvents="none" />
+      <path d="M 130 280 Q 122 272 110 273" stroke="rgba(0,0,0,.2)" strokeWidth="0.5" fill="none" pointerEvents="none" />
 
-      {/* PERNAS posterior — isquiotibiais + panturrilhas */}
+      {/* PERNAS posterior — isquiotibiais (3 fascículos) */}
       <g {...handler('pernas')}>
-        {/* Posterior coxa esquerda */}
-        <path d="M 68 295 Q 62 325 64 360 L 73 388 L 92 388 L 95 360 Q 96 325 92 295 Z" />
-        {/* Posterior coxa direita */}
-        <path d="M 132 295 Q 138 325 136 360 L 127 388 L 108 388 L 105 360 Q 104 325 108 295 Z" />
+        {/* Coxa esquerda posterior */}
+        <path
+          d="M 68 330
+             Q 62 365 64 405
+             L 73 428
+             L 96 428
+             L 99 400
+             Q 100 365 95 330 Z"
+          fill={fillFor(p, lvl('pernas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        {/* Coxa direita posterior */}
+        <path
+          d="M 132 330
+             Q 138 365 136 405
+             L 127 428
+             L 104 428
+             L 101 400
+             Q 100 365 105 330 Z"
+          fill={fillFor(p, lvl('pernas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
       </g>
-      {/* Sulcos isquiotibiais (bíceps femoral / semitendinoso) */}
-      <g pointerEvents="none" stroke="rgba(0,0,0,.22)" strokeWidth="0.55" fill="none">
-        <path d="M 78 305 Q 78 340 80 380" />
-        <path d="M 88 305 Q 88 340 86 380" />
-        <path d="M 122 305 Q 122 340 120 380" />
-        <path d="M 112 305 Q 112 340 114 380" />
+      {/* Sulcos isquios — bíceps femoral, semitendinoso, semimembranoso */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.26)" strokeWidth="0.55" fill="none">
+        <path d="M 73 340 Q 72 380 76 420" />
+        <path d="M 84 340 Q 84 380 84 420" />
+        <path d="M 92 340 Q 93 380 92 420" />
+        <path d="M 127 340 Q 128 380 124 420" />
+        <path d="M 116 340 Q 116 380 116 420" />
+        <path d="M 108 340 Q 107 380 108 420" />
       </g>
 
-      {/* Panturrilhas — gastrocnêmio bicéfalo (forma de coração) */}
+      {/* PANTURRILHAS — gastrocnêmio bicéfalo + sóleo */}
       <g {...handler('pernas')}>
-        <path d="M 72 401 Q 67 420 70 440 L 78 460 L 90 460 L 93 435 Q 94 415 90 401 Z" />
-        <path d="M 128 401 Q 133 420 130 440 L 122 460 L 110 460 L 107 435 Q 106 415 110 401 Z" />
+        <path
+          d="M 73 442
+             Q 67 462 70 485
+             L 78 510
+             L 90 510
+             L 92 485
+             Q 93 462 90 442 Z"
+          fill={fillFor(p, lvl('pernas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
+        <path
+          d="M 127 442
+             Q 133 462 130 485
+             L 122 510
+             L 110 510
+             L 108 485
+             Q 107 462 110 442 Z"
+          fill={fillFor(p, lvl('pernas'))}
+          stroke="rgba(0,0,0,.4)" strokeWidth="0.6"
+        />
       </g>
-      {/* Sulco central da panturrilha */}
-      <g pointerEvents="none" stroke="rgba(0,0,0,.25)" strokeWidth="0.6" fill="none">
-        <line x1="82" y1="408" x2="82" y2="455" />
-        <line x1="118" y1="408" x2="118" y2="455" />
+      {/* Sulco central da panturrilha (gastroc bicéfalo) */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.32)" strokeWidth="0.7" fill="none">
+        <line x1="82" y1="450" x2="82" y2="498" />
+        <line x1="118" y1="450" x2="118" y2="498" />
+      </g>
+      {/* Linhas do sóleo */}
+      <g pointerEvents="none" stroke="rgba(0,0,0,.18)" strokeWidth="0.4" fill="none">
+        <path d="M 76 470 Q 82 472 88 470" />
+        <path d="M 78 488 Q 83 490 88 488" />
+        <path d="M 124 470 Q 118 472 112 470" />
+        <path d="M 122 488 Q 117 490 112 488" />
       </g>
 
-      {/* Pés */}
-      <ellipse cx="83" cy="468" rx="11" ry="5" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.6" />
-      <ellipse cx="117" cy="468" rx="11" ry="5" fill={SKIN_DARK} stroke={SHADOW} strokeWidth="0.6" />
+      {/* Pés (calcanhar) */}
+      <ellipse cx="83" cy="514" rx="11" ry="4" fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
+      <ellipse cx="117" cy="514" rx="11" ry="4" fill={PALETTE.skinMid} stroke={PALETTE.skinDeep} strokeWidth="0.5" />
 
-      <rect x="56" y="100" width="88" height="135" fill="url(#bodyShadeBack)" pointerEvents="none" opacity="0.6" />
+      {/* ═══════════════ OVERLAYS DE LUZ E SOMBRA ═══════════════ */}
+      <rect x="40" y="100" width="120" height="430" fill={`url(#${p}-aoSide)`} pointerEvents="none" opacity="0.8" />
+      <rect x="40" y="100" width="120" height="430" fill={`url(#${p}-rim)`} pointerEvents="none" opacity="0.6" />
     </svg>
   )
 }
