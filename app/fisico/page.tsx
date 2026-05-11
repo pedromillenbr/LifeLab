@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback, useMemo, ReactNode, CSSProperties } from 'react'
+import dynamic from 'next/dynamic'
 import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
 import { ExerciseSelector } from '@/components/ui/ExerciseSelector'
@@ -13,7 +14,16 @@ import { ExerciseTemplate, MUSCLE_COLORS, MUSCLE_GROUP_LABELS } from '@/lib/exer
 import { NumberDrum } from '@/components/ui/NumberDrum'
 import { PEDRO } from '@/lib/pedroProfile'
 import { getWeeklyMuscleStats } from '@/lib/muscleVolume'
-import { MuscleBody3D } from '@/components/MuscleBody3D'
+
+// Carrega o canvas 3D só no cliente (Three.js precisa de WebGL).
+const MuscleBody3D = dynamic(
+  () => import('@/components/MuscleBody3D').then(m => m.MuscleBody3D),
+  { ssr: false, loading: () => (
+    <div style={{ height: 420, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,.4)', fontSize: 12 }}>
+      Carregando boneco 3D…
+    </div>
+  )}
+)
 
 function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36) }
 
@@ -567,7 +577,7 @@ export default function FisicoPage() {
                   {trainedMuscleCount}/8 grupos
                 </div>
               </div>
-              <MuscleBody3D stats={muscleStats} height={380} />
+              <MuscleBody3D stats={muscleStats} height={420} />
             </div>
 
             <div className="freq-section">
