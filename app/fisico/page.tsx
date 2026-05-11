@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useRef, useCallback, useMemo, ReactNode, CSSProperties } from 'react'
-import dynamic from 'next/dynamic'
 import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
 import { ExerciseSelector } from '@/components/ui/ExerciseSelector'
@@ -14,12 +13,7 @@ import { ExerciseTemplate, MUSCLE_COLORS, MUSCLE_GROUP_LABELS } from '@/lib/exer
 import { NumberDrum } from '@/components/ui/NumberDrum'
 import { PEDRO } from '@/lib/pedroProfile'
 import { getWeeklyMuscleStats } from '@/lib/muscleVolume'
-import { MuscleBody3DBoundary } from '@/components/MuscleBody3DBoundary'
-
-const MuscleBody3D = dynamic(
-  () => import('@/components/MuscleBody3D').then(m => m.MuscleBody3D),
-  { ssr: false, loading: () => <div style={{ height: 380 }} /> }
-)
+import { MuscleBody3D } from '@/components/MuscleBody3D'
 
 function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36) }
 
@@ -573,9 +567,7 @@ export default function FisicoPage() {
                   {trainedMuscleCount}/8 grupos
                 </div>
               </div>
-              <MuscleBody3DBoundary height={380}>
-                <MuscleBody3D stats={muscleStats} height={380} />
-              </MuscleBody3DBoundary>
+              <MuscleBody3D stats={muscleStats} height={380} />
             </div>
 
             <div className="freq-section">
