@@ -155,7 +155,7 @@ export const useStore = create<AuraStore>()(
       weightLog: [],
       transactions: [],
       bibleReadings: [],
-      activePlanId: 'nt1year',
+      activePlanId: 'biblia-1-ano',
       prayerLog: [],
       accessLog: [],
       routines: defaultRoutines,
@@ -516,6 +516,19 @@ export const useStore = create<AuraStore>()(
     {
       name: 'lifelab-storage',
       skipHydration: true,
+      version: 2,
+      // v1 → v2: activePlanId default was 'nt1year' (invalid id),
+      // causing "Plano não encontrado" when navigating to plan detail.
+      // Repoint any unknown id to the canonical default.
+      migrate: (persistedState, version) => {
+        const s = (persistedState ?? {}) as { activePlanId?: string }
+        if (version < 2) {
+          const stored = s.activePlanId
+          if (!stored || !getBiblePlan(stored)) s.activePlanId = 'biblia-1-ano'
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return s as any
+      },
       partialize: (state) => ({
         profile:        state.profile,
         habits:         state.habits,
