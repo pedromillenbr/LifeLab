@@ -91,6 +91,62 @@ export interface WorkoutSession {
   volume: number // total kg
 }
 
+/* ─────────────────────  METAS DE LONGO PRAZO  ───────────────────── */
+
+export type GoalCategory =
+  | 'fisico' | 'financeiro' | 'estudo' | 'carreira'
+  | 'pessoal' | 'lifestyle' | 'criativo' | 'outro'
+
+export type GoalDirection = 'increase' | 'decrease'
+
+/** Snapshot do valor da meta numa data (para a timeline). */
+export interface GoalLog {
+  id: string
+  date: string         // ISO YYYY-MM-DD
+  value: number        // valor *absoluto* na data
+  note?: string
+  createdAt: number    // epoch ms
+}
+
+export interface GoalMilestone {
+  id: string
+  label: string
+  /** Valor que destrava o marco (ex: 1000 reais para meta 10k). */
+  targetValue: number
+  /** ISO date quando bateu — undefined enquanto não atingido. */
+  achievedAt?: string
+  /** Marco gerado automaticamente em 25/50/75/100% — não editável. */
+  auto?: boolean
+  emoji?: string
+}
+
+export interface Goal {
+  id: string
+  title: string
+  subtitle?: string                // frase motivacional
+  category: GoalCategory
+  /** URL pública opcional para imagem de capa. Se vazio, usa preset por categoria. */
+  coverImage?: string
+  /** ID do preset visual (gradient + ícone). */
+  coverPreset?: string
+
+  startValue: number
+  currentValue: number
+  targetValue: number
+  unit: string                     // 'kg' | 'R$' | 'h' | 'dias' | livre
+  direction: GoalDirection         // 'increase' (subir até alvo) | 'decrease' (descer até alvo)
+
+  startDate: string                // ISO YYYY-MM-DD
+  targetDate?: string              // ISO opcional (deadline)
+
+  logs: GoalLog[]
+  milestones: GoalMilestone[]
+
+  createdAt: number
+  updatedAt: number
+  archived?: boolean
+}
+
 export interface CalendarEvent {
   id: string
   title: string

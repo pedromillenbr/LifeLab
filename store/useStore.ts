@@ -6,6 +6,7 @@ import {
   BibleReading, PrayerEntry, WorkoutRoutine, WorkoutSession,
   CalendarEvent, UserProfile, PillarScores, Pillar, BiblePlanProgress,
   FoodEntry, DietGoals, CustomMeal, WaterLog,
+  Goal, GoalLog, GoalMilestone,
 } from './types'
 import { getBiblePlan, readingsLabel } from '@/lib/bibleData'
 
@@ -117,6 +118,21 @@ interface AuraStore {
   resetWaterToday: () => void
   getTodayWater: () => number  // retorna ml consumidos hoje
 
+  // Goals (metas de longo prazo)
+  goals: Goal[]
+  addGoal: (g: Omit<Goal, 'id' | 'logs' | 'milestones' | 'createdAt' | 'updatedAt' | 'currentValue'> & {
+    currentValue?: number
+    milestones?: Array<Omit<GoalMilestone, 'id'> | GoalMilestone>
+  }) => string
+  updateGoal: (id: string, patch: Partial<Omit<Goal, 'id' | 'logs' | 'milestones' | 'createdAt'>>) => void
+  removeGoal: (id: string) => void
+  archiveGoal: (id: string, archived: boolean) => void
+  /** Adiciona snapshot do valor atual + nota. Atualiza currentValue + checa milestones. */
+  addGoalLog: (goalId: string, log: Omit<GoalLog, 'id' | 'createdAt'>) => void
+  removeGoalLog: (goalId: string, logId: string) => void
+  addGoalMilestone: (goalId: string, m: Omit<GoalMilestone, 'id'>) => void
+  removeGoalMilestone: (goalId: string, milestoneId: string) => void
+
   // Computed
   getPillarScores: () => PillarScores
   getOverallScore: () => number
@@ -171,6 +187,7 @@ export const useStore = create<AuraStore>()(
         { id: 'lanche', label: 'Lanches',       icon: 'cookie' },
       ],
       waterLog: [],
+      goals: [],
 
       updateProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
 
@@ -512,19 +529,100 @@ export const useStore = create<AuraStore>()(
         const t = today()
         return get().habits.filter((h) => h.completions.includes(t))
       },
+
+      /* ─────────  GOALS  ───────── */
+      addGoal: (g) => {
+        const id = generateId()
+        const now = Date.now()
+        const initial = g.currentValue ?? g.startValue
+        const milestones: GoalMilestone[] = (g.milestones ?? []).map((m) =>
+          'id' in m && m.id ? m as GoalMilestone : { ...m, id: generateId() } as GoalMilestone
+        )
+        const goal: Goal = {
+          ...g,
+          id,
+          currentValue: initial,
+          logs: [],
+          milestones,
+          createdAt: now,
+          updatedAt: now,
+        }
+        set((s) => ({ goals: [...s.goals, goal] }))
+        return id
+      },
+
+      updateGoal: (id, patch) => set((s) => ({
+        goals: s.goals.map((g) => g.id === id ? { ...g, ...patch, updatedAt: Date.now() } : g),
+      })),
+
+      removeGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
+
+      archiveGoal: (id, archived) => set((s) => ({
+        goals: s.goals.map((g) => g.id === id ? { ...g, archived, updatedAt: Date.now() } : g),
+      })),
+
+      addGoalLog: (goalId, log) => set((s) => {
+        const goals = s.goals.map((g) => {
+          if (g.id !== goalId) return g
+          const newLog: GoalLog = { ...log, id: generateId(), createdAt: Date.now() }
+          const logs = [...g.logs, newLog].sort((a, b) => a.date.localeCompare(b.date))
+          // Verifica milestones que foram batidas com este novo valor
+          const isIncrease = g.direction === 'increase'
+          const milestones = g.milestones.map((m) => {
+            if (m.achievedAt) return m
+            const hit = isIncrease ? newLog.value >= m.targetValue : newLog.value <= m.targetValue
+            if (hit) return { ...m, achievedAt: log.date }
+            return m
+          })
+          return { ...g, currentValue: newLog.value, logs, milestones, updatedAt: Date.now() }
+        })
+        return { goals }
+      }),
+
+      removeGoalLog: (goalId, logId) => set((s) => ({
+        goals: s.goals.map((g) => {
+          if (g.id !== goalId) return g
+          const logs = g.logs.filter((l) => l.id !== logId)
+          // Recomputa currentValue: último snapshot ou startValue
+          const last = logs[logs.length - 1]
+          const currentValue = last ? last.value : g.startValue
+          // Re-aplica milestones (alguns podem ter sido perdidos)
+          const isIncrease = g.direction === 'increase'
+          const milestones = g.milestones.map((m) => {
+            const hitAfter = isIncrease ? currentValue >= m.targetValue : currentValue <= m.targetValue
+            if (m.achievedAt && !hitAfter) return { ...m, achievedAt: undefined }
+            return m
+          })
+          return { ...g, logs, currentValue, milestones, updatedAt: Date.now() }
+        }),
+      })),
+
+      addGoalMilestone: (goalId, m) => set((s) => ({
+        goals: s.goals.map((g) => g.id === goalId
+          ? { ...g, milestones: [...g.milestones, { ...m, id: generateId() }], updatedAt: Date.now() }
+          : g
+        ),
+      })),
+
+      removeGoalMilestone: (goalId, milestoneId) => set((s) => ({
+        goals: s.goals.map((g) => g.id === goalId
+          ? { ...g, milestones: g.milestones.filter((mm) => mm.id !== milestoneId), updatedAt: Date.now() }
+          : g
+        ),
+      })),
     }),
     {
       name: 'lifelab-storage',
       skipHydration: true,
-      version: 2,
-      // v1 → v2: activePlanId default was 'nt1year' (invalid id),
-      // causing "Plano não encontrado" when navigating to plan detail.
-      // Repoint any unknown id to the canonical default.
+      version: 3,
       migrate: (persistedState, version) => {
-        const s = (persistedState ?? {}) as { activePlanId?: string }
+        const s = (persistedState ?? {}) as { activePlanId?: string; goals?: Goal[] }
         if (version < 2) {
           const stored = s.activePlanId
           if (!stored || !getBiblePlan(stored)) s.activePlanId = 'biblia-1-ano'
+        }
+        if (version < 3) {
+          if (!Array.isArray(s.goals)) s.goals = []
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return s as any
@@ -547,6 +645,7 @@ export const useStore = create<AuraStore>()(
         dietGoals:          state.dietGoals,
         customMeals:        state.customMeals,
         waterLog:           state.waterLog,
+        goals:              state.goals,
       }),
     }
   )

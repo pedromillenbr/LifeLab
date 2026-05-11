@@ -14,7 +14,7 @@ const NAV = [
   { href: '/fisico',     icon: Dumbbell,        label: 'Físico' },
   { href: '/dieta',      icon: UtensilsCrossed, label: 'Dieta' },
   { href: '/habitos',    icon: CheckSquare,     label: 'Hábitos' },
-  { href: '/missoes',    icon: Target,          label: 'Missões' },
+  { href: '/metas',      icon: Target,          label: 'Metas' },
   { href: '/foco',       icon: Timer,           label: 'Foco' },
   { href: '/comunidade', icon: Trophy,          label: 'Comunidade' },
   { href: '/financeiro', icon: DollarSign,      label: 'Financeiro' },
