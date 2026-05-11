@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { use, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '@/store/useStore'
 import { getBiblePlan, localizeReference } from '@/lib/bibleData'
@@ -75,10 +75,11 @@ function PassageBlock({ state, onRetry }: { state: PassageState; onRetry: () => 
   )
 }
 
-export default function LeituraPage({ params }: { params: { id: string; day: string } }) {
+export default function LeituraPage({ params }: { params: Promise<{ id: string; day: string }> }) {
   const router = useRouter()
-  const plan = getBiblePlan(params.id)
-  const day = parseInt(params.day, 10)
+  const { id: planId, day: dayParam } = use(params)
+  const plan = getBiblePlan(planId)
+  const day = parseInt(dayParam, 10)
   const dayDef = plan?.days.find(d => d.day === day)
 
   const { biblePlansProgress, markBiblePlanDayRead, isBiblePlanDayCompleted, startBiblePlan } = useStore()
@@ -114,7 +115,7 @@ export default function LeituraPage({ params }: { params: { id: string; day: str
         })
     })
     return () => { cancelled = true }
-  }, [params.id, params.day, dayDef])
+  }, [planId, dayParam, dayDef])
 
   if (!plan || !dayDef) {
     return (
@@ -163,7 +164,7 @@ export default function LeituraPage({ params }: { params: { id: string; day: str
     () => (dayDef ? imageForReadings(dayDef.readings) : null),
     [dayDef]
   )
-  const imageKey = `${params.id}-${params.day}`
+  const imageKey = `${planId}-${dayParam}`
 
   return (
     <div className="p-4 md:p-6 max-w-[1200px] mx-auto" style={{ animation: 'fadeIn .4s ease both' }}>

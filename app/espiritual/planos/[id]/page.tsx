@@ -4,11 +4,12 @@ import { useRouter } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import { getBiblePlan, readingsLabel } from '@/lib/bibleData'
 import { ArrowLeft, BookOpen, Play, CheckCircle, RotateCcw, Circle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 
-export default function PlanoDetailPage({ params }: { params: { id: string } }) {
+export default function PlanoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const plan = getBiblePlan(params.id)
+  const { id } = use(params)
+  const plan = getBiblePlan(id)
   const { biblePlansProgress, resetBiblePlan, startBiblePlan } = useStore()
   const [confirmReset, setConfirmReset] = useState(false)
 
