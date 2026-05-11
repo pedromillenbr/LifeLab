@@ -11,7 +11,11 @@ import {
 } from '@/lib/muscleVolume'
 
 // Modelo humanoide CC0 hospedado no CDN oficial do three.js examples
-const MODEL_URL = 'https://threejs.org/examples/models/gltf/Soldier.glb'
+// Tenta carregar o GLB local primeiro (em /public/models/body.glb).
+// Se não existir, cai para um humanoide CC0 do CDN oficial do three.js.
+// Para usar o seu próprio: coloque o arquivo em lifelab/public/models/body.glb.
+const LOCAL_MODEL_URL  = '/models/body.glb'
+const REMOTE_MODEL_URL = 'https://threejs.org/examples/models/gltf/Soldier.glb'
 
 interface MuscleBody3DProps {
   stats: MuscleWeekStats
@@ -20,6 +24,27 @@ interface MuscleBody3DProps {
 
 export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
   const [hovered, setHovered] = useState<MuscleGroup | null>(null)
+  const [modelUrl, setModelUrl] = useState<string | null>(null)
+
+  // Detecta se o GLB local existe; senão usa o do CDN.
+  useEffect(() => {
+    let cancelled = false
+    fetch(LOCAL_MODEL_URL, { method: 'HEAD' })
+      .then(r => {
+        if (cancelled) return
+        setModelUrl(r.ok ? LOCAL_MODEL_URL : REMOTE_MODEL_URL)
+      })
+      .catch(() => { if (!cancelled) setModelUrl(REMOTE_MODEL_URL) })
+    return () => { cancelled = true }
+  }, [])
+
+  if (!modelUrl) {
+    return (
+      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,.4)', fontSize: 12 }}>
+        Carregando boneco 3D…
+      </div>
+    )
+  }
 
   return (
     <div style={{ position: 'relative', height, width: '100%' }}>
@@ -37,7 +62,7 @@ export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
 
           <Suspense fallback={null}>
             <Center top>
-              <BodyModel intensity={stats.intensityByMuscle} onHover={setHovered} />
+              <BodyModel url={modelUrl} intensity={stats.intensityByMuscle} onHover={setHovered} />
             </Center>
           </Suspense>
 
@@ -94,16 +119,14 @@ export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
   )
 }
 
-// Pré-carrega o modelo
-useGLTF.preload(MODEL_URL)
-
 interface BodyModelProps {
+  url: string
   intensity: Record<MuscleGroup, MuscleIntensity>
   onHover: (m: MuscleGroup | null) => void
 }
 
-function BodyModel({ intensity, onHover }: BodyModelProps) {
-  const { scene } = useGLTF(MODEL_URL)
+function BodyModel({ url, intensity, onHover }: BodyModelProps) {
+  const { scene } = useGLTF(url)
   const groupRef = useRef<THREE.Group>(null)
 
   // Clone para evitar mutações globais entre re-renders
