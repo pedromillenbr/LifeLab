@@ -15,7 +15,7 @@ export const PEDRO = {
   monthlyIncome: 0,
   monthlyBudget: 0,
   motivationalPhrase: '',
-  spiritualPlan: 'nt1year',
+  spiritualPlan: 'biblia-1-ano',
   pillarsTarget: {
     fisico: 100,
     mental: 100,

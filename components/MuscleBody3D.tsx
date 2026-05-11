@@ -1,7 +1,7 @@
 'use client'
-import { Suspense, useRef, useState, useMemo } from 'react'
+import { Suspense, useRef, useState } from 'react'
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
-import { OrbitControls, Float } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import type { MuscleGroup } from '@/lib/exercises'
 import { MUSCLE_GROUP_LABELS } from '@/lib/exercises'
@@ -31,16 +31,13 @@ export function MuscleBody3D({ stats, height = 380 }: MuscleBody3DProps) {
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true }}
         >
-          <color attach="background" args={['transparent' as unknown as THREE.ColorRepresentation]} />
           <ambientLight intensity={0.55} />
           <directionalLight position={[3, 5, 4]} intensity={1.1} color="#ffffff" />
           <directionalLight position={[-3, 2, -3]} intensity={0.35} color="#3b82f6" />
           <pointLight position={[0, -2, 2]} intensity={0.3} color="#60a5fa" />
 
           <Suspense fallback={null}>
-            <Float speed={1.2} rotationIntensity={0.15} floatIntensity={0.25}>
-              <Body intensity={stats.intensityByMuscle} onHoverMuscle={setHovered} />
-            </Float>
+            <Body intensity={stats.intensityByMuscle} onHoverMuscle={setHovered} />
           </Suspense>
 
           <OrbitControls
@@ -249,14 +246,12 @@ interface MusclePartProps {
 }
 
 function MusclePart({ muscle, intensity, position, rotation, onHover, children }: MusclePartProps) {
-  const meshRef = useRef<THREE.Mesh>(null)
+  const matRef = useRef<THREE.MeshStandardMaterial>(null)
   const [isHover, setIsHover] = useState(false)
 
-  // Pulse animation for intense muscles
   useFrame(({ clock }) => {
-    if (!meshRef.current) return
-    const mat = meshRef.current.material as THREE.MeshStandardMaterial
-    if (!mat || !mat.emissive) return
+    const mat = matRef.current
+    if (!mat) return
     if (intensity === 'intense') {
       const pulse = (Math.sin(clock.getElapsedTime() * 2.5) + 1) / 2
       mat.emissiveIntensity = 0.6 + pulse * 0.5
@@ -270,40 +265,35 @@ function MusclePart({ muscle, intensity, position, rotation, onHover, children }
   const color = INTENSITY_COLOR[intensity]
   const baseScale = isHover ? 1.08 : 1
 
-  const material = useMemo(() => {
-    const m = new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.45,
-      metalness: 0.15,
-      emissive: intensity === 'none' ? '#000000' : color,
-      emissiveIntensity: 0,
-    })
-    return m
-  }, [color, intensity])
-
   const handleOver = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
     setIsHover(true)
     onHover(muscle)
-    document.body.style.cursor = 'pointer'
+    if (typeof document !== 'undefined') document.body.style.cursor = 'pointer'
   }
   const handleOut = () => {
     setIsHover(false)
     onHover(null)
-    document.body.style.cursor = 'auto'
+    if (typeof document !== 'undefined') document.body.style.cursor = 'auto'
   }
 
   return (
     <mesh
-      ref={meshRef}
       position={position}
       rotation={rotation}
       scale={baseScale}
-      material={material}
       onPointerOver={handleOver}
       onPointerOut={handleOut}
     >
       {children}
+      <meshStandardMaterial
+        ref={matRef}
+        color={color}
+        roughness={0.45}
+        metalness={0.15}
+        emissive={intensity === 'none' ? '#000000' : color}
+        emissiveIntensity={0}
+      />
     </mesh>
   )
 }

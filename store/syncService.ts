@@ -2,6 +2,7 @@
 
 import { restFetch } from '@/lib/auth'
 import { useStore } from './useStore'
+import { getBiblePlan } from '@/lib/bibleData'
 
 const LAST_USER_KEY = 'lifelab-last-user-id'
 const STORAGE_KEY   = 'lifelab-storage'
@@ -28,7 +29,7 @@ export function resetStoreToDefaults() {
     weightLog: [],
     transactions: [],
     bibleReadings: [],
-    activePlanId: 'nt1year',
+    activePlanId: 'biblia-1-ano',
     prayerLog: [],
     accessLog: [],
     routines: [],
@@ -198,7 +199,7 @@ export async function pullFromSupabase(userId: string): Promise<'pulled' | 'push
       weightLog:          remote.weightLog          ?? [],
       transactions:       remote.transactions       ?? [],
       bibleReadings:      remote.bibleReadings      ?? [],
-      activePlanId:       remote.activePlanId       ?? 'nt1year',
+      activePlanId:       (remote.activePlanId && getBiblePlan(remote.activePlanId)) ? remote.activePlanId : 'biblia-1-ano',
       prayerLog:          remote.prayerLog          ?? [],
       accessLog:          remote.accessLog          ?? [],
       routines:           remote.routines           ?? [],

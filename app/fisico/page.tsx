@@ -14,6 +14,7 @@ import { ExerciseTemplate, MUSCLE_COLORS, MUSCLE_GROUP_LABELS } from '@/lib/exer
 import { NumberDrum } from '@/components/ui/NumberDrum'
 import { PEDRO } from '@/lib/pedroProfile'
 import { getWeeklyMuscleStats } from '@/lib/muscleVolume'
+import { MuscleBody3DBoundary } from '@/components/MuscleBody3DBoundary'
 
 const MuscleBody3D = dynamic(
   () => import('@/components/MuscleBody3D').then(m => m.MuscleBody3D),
@@ -572,7 +573,9 @@ export default function FisicoPage() {
                   {trainedMuscleCount}/8 grupos
                 </div>
               </div>
-              <MuscleBody3D stats={muscleStats} height={380} />
+              <MuscleBody3DBoundary height={380}>
+                <MuscleBody3D stats={muscleStats} height={380} />
+              </MuscleBody3DBoundary>
             </div>
 
             <div className="freq-section">

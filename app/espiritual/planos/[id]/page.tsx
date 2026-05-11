@@ -14,12 +14,21 @@ export default function PlanoDetailPage({ params }: { params: { id: string } }) 
 
   if (!plan) {
     return (
-      <div className="p-6 max-w-[800px] mx-auto">
-        <Link href="/espiritual/planos" className="inline-flex items-center gap-1.5 text-xs mb-4 hover:opacity-80"
-          style={{ color: 'var(--color-text-subtle)' }}>
-          <ArrowLeft size={12} /> Voltar
-        </Link>
-        <p style={{ color: 'var(--color-text-muted)' }}>Plano não encontrado.</p>
+      <div className="p-6 max-w-[800px] mx-auto" style={{ animation: 'fadeIn .4s ease both' }}>
+        <div className="rounded-2xl p-8 text-center"
+          style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+          <BookOpen size={36} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--color-text-subtle)' }} />
+          <h2 className="text-lg font-bold mb-2">Este plano não existe mais</h2>
+          <p className="text-sm mb-5" style={{ color: 'var(--color-text-muted)' }}>
+            O link que você usou aponta para um plano antigo (id: <code style={{ fontFamily: 'monospace', fontSize: 11 }}>{params.id}</code>) que foi renomeado.
+            Escolha um plano atual na lista.
+          </p>
+          <Link href="/espiritual/planos"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-bold"
+            style={{ background: 'var(--color-primary)', color: '#000', boxShadow: '0 0 18px rgba(var(--color-primary-rgb), .3)' }}>
+            <BookOpen size={14} /> Ver todos os planos
+          </Link>
+        </div>
       </div>
     )
   }
