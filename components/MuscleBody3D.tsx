@@ -10,10 +10,7 @@ import {
   type MuscleIntensity, type MuscleWeekStats,
 } from '@/lib/muscleVolume'
 
-// Modelo humanoide CC0 hospedado no CDN oficial do three.js examples
-// Tenta carregar o GLB local primeiro (em /public/models/body.glb).
-// Se não existir, cai para um humanoide CC0 do CDN oficial do three.js.
-// Para usar o seu próprio: coloque o arquivo em lifelab/public/models/body.glb.
+// Tenta o GLB local primeiro; se não existir cai pro CDN.
 const LOCAL_MODEL_URL  = '/models/body.glb'
 const REMOTE_MODEL_URL = 'https://threejs.org/examples/models/gltf/Soldier.glb'
 
@@ -22,11 +19,16 @@ interface MuscleBody3DProps {
   height?: number
 }
 
+const MUSCLE_ORDER: MuscleGroup[] = [
+  'peito', 'costas', 'ombros',
+  'biceps', 'triceps', 'abdomen',
+  'pernas', 'gluteos',
+]
+
 export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
-  const [hovered, setHovered] = useState<MuscleGroup | null>(null)
+  const [highlighted, setHighlighted] = useState<MuscleGroup | null>(null)
   const [modelUrl, setModelUrl] = useState<string | null>(null)
 
-  // Detecta se o GLB local existe; senão usa o do CDN.
   useEffect(() => {
     let cancelled = false
     fetch(LOCAL_MODEL_URL, { method: 'HEAD' })
@@ -47,8 +49,19 @@ export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
   }
 
   return (
-    <div style={{ position: 'relative', height, width: '100%' }}>
-      <div style={{ height: '100%', width: '100%', cursor: 'grab', touchAction: 'none' }}>
+    <div
+      style={{
+        position: 'relative',
+        height,
+        width: '100%',
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) 200px',
+        gap: 12,
+      }}
+      className="muscle-body-3d-root"
+    >
+      {/* Canvas 3D — sem overlays, modelo limpo */}
+      <div style={{ position: 'relative', height: '100%', cursor: 'grab', touchAction: 'none' }}>
         <Canvas
           camera={{ position: [0, 1.0, 3.2], fov: 35 }}
           dpr={[1, 2]}
@@ -62,7 +75,7 @@ export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
 
           <Suspense fallback={null}>
             <Center top>
-              <BodyModel url={modelUrl} intensity={stats.intensityByMuscle} onHover={setHovered} />
+              <BodyModel url={modelUrl} highlighted={highlighted} />
             </Center>
           </Suspense>
 
@@ -76,74 +89,130 @@ export function MuscleBody3D({ stats, height = 420 }: MuscleBody3DProps) {
             target={[0, 0.85, 0]}
           />
         </Canvas>
-      </div>
 
-      {hovered && (
+        {/* Legenda inferior */}
         <div
           style={{
-            position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
-            padding: '7px 16px', borderRadius: 999,
-            background: 'rgba(15,17,22,.92)',
-            border: `1px solid ${INTENSITY_COLOR[stats.intensityByMuscle[hovered]]}`,
-            color: '#fff', fontSize: 12, fontWeight: 600,
-            backdropFilter: 'blur(12px)', pointerEvents: 'none',
-            boxShadow: `0 0 20px ${INTENSITY_COLOR[stats.intensityByMuscle[hovered]]}66`,
-            whiteSpace: 'nowrap',
+            position: 'absolute', bottom: 6, left: 8, right: 8,
+            display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap',
+            pointerEvents: 'none',
           }}
         >
-          {MUSCLE_GROUP_LABELS[hovered]} · {stats.setsByMuscle[hovered]} séries · {INTENSITY_LABEL[stats.intensityByMuscle[hovered]]}
+          {(['none', 'light', 'intense'] as MuscleIntensity[]).map(level => (
+            <div key={level} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'rgba(255,255,255,.6)' }}>
+              <span
+                style={{
+                  width: 8, height: 8, borderRadius: 999,
+                  background: INTENSITY_COLOR[level],
+                  boxShadow: level !== 'none' ? `0 0 6px ${INTENSITY_COLOR[level]}` : 'none',
+                }}
+              />
+              {INTENSITY_LABEL[level]}
+            </div>
+          ))}
         </div>
-      )}
+      </div>
 
+      {/* Painel lateral — chips dos grupos musculares com heatmap */}
       <div
         style={{
-          position: 'absolute', bottom: 6, left: 12, right: 12,
-          display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap',
-          pointerEvents: 'none',
+          display: 'flex', flexDirection: 'column', gap: 6,
+          overflowY: 'auto', paddingRight: 4,
         }}
+        className="muscle-side-panel"
       >
-        {(['none', 'light', 'intense'] as MuscleIntensity[]).map(level => (
-          <div key={level} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,.7)' }}>
-            <span
+        {MUSCLE_ORDER.map(m => {
+          const level = stats.intensityByMuscle[m]
+          const sets = stats.setsByMuscle[m]
+          const color = INTENSITY_COLOR[level]
+          const isHighlighted = highlighted === m
+          return (
+            <button
+              key={m}
+              type="button"
+              onMouseEnter={() => setHighlighted(m)}
+              onMouseLeave={() => setHighlighted(null)}
+              onFocus={() => setHighlighted(m)}
+              onBlur={() => setHighlighted(null)}
               style={{
-                width: 10, height: 10, borderRadius: 999,
-                background: INTENSITY_COLOR[level],
-                boxShadow: level !== 'none' ? `0 0 8px ${INTENSITY_COLOR[level]}` : 'none',
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 10px',
+                background: isHighlighted ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.03)',
+                border: `1px solid ${level !== 'none' ? color : 'rgba(255,255,255,.09)'}`,
+                borderRadius: 10,
+                cursor: 'pointer',
+                transition: 'background .2s ease, transform .2s ease',
+                transform: isHighlighted ? 'translateX(-2px)' : 'translateX(0)',
+                textAlign: 'left',
+                color: 'var(--color-text-main)',
+                font: 'inherit',
               }}
-            />
-            {INTENSITY_LABEL[level]}
-          </div>
-        ))}
+            >
+              <span
+                style={{
+                  width: 10, height: 10, borderRadius: 999,
+                  background: color, flexShrink: 0,
+                  boxShadow: level !== 'none' ? `0 0 8px ${color}` : 'none',
+                }}
+              />
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 12, fontWeight: 600, lineHeight: 1.15 }}>
+                  {MUSCLE_GROUP_LABELS[m]}
+                </span>
+                <span style={{ display: 'block', fontSize: 10, color: 'var(--color-text-subtle)', marginTop: 1 }}>
+                  {sets > 0 ? `${sets} ${sets === 1 ? 'série' : 'séries'}` : '—'}
+                </span>
+              </span>
+            </button>
+          )
+        })}
       </div>
+
+      <style jsx>{`
+        @media (max-width: 640px) {
+          .muscle-body-3d-root {
+            grid-template-columns: 1fr !important;
+            grid-template-rows: 1fr auto !important;
+          }
+          .muscle-side-panel {
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            padding-bottom: 4px;
+          }
+          .muscle-side-panel button {
+            flex-shrink: 0;
+            min-width: 110px;
+          }
+        }
+      `}</style>
     </div>
   )
 }
 
 interface BodyModelProps {
   url: string
-  intensity: Record<MuscleGroup, MuscleIntensity>
-  onHover: (m: MuscleGroup | null) => void
+  highlighted: MuscleGroup | null
 }
 
-function BodyModel({ url, intensity, onHover }: BodyModelProps) {
+function BodyModel({ url, highlighted }: BodyModelProps) {
   const { scene } = useGLTF(url)
   const groupRef = useRef<THREE.Group>(null)
+  const materialRef = useRef<THREE.MeshStandardMaterial | null>(null)
 
-  // Clone + normalização: medir bounding box e escalar o modelo
-  // para altura unitária 1, recolocando os pés em y=0. Assim os
-  // overlays funcionam para qualquer GLB independente de unidade
-  // (m, cm, polegada) ou orientação salva no arquivo.
-  const { normalized, depth } = useRef(((): { normalized: THREE.Group; depth: number } => {
+  // Clone + normalização (altura unitária 1)
+  const { normalized } = useRef(((): { normalized: THREE.Group } => {
     const cloned = scene.clone(true)
+    const sharedMat = new THREE.MeshStandardMaterial({
+      color: '#d8dde8',
+      roughness: 0.55,
+      metalness: 0.05,
+    })
+    materialRef.current = sharedMat
     cloned.traverse((obj) => {
       if ((obj as THREE.Mesh).isMesh) {
         const mesh = obj as THREE.Mesh
-        const mat = new THREE.MeshStandardMaterial({
-          color: '#d8dde8',
-          roughness: 0.55,
-          metalness: 0.05,
-        })
-        mesh.material = mat
+        mesh.material = sharedMat
         mesh.castShadow = true
         mesh.receiveShadow = true
       }
@@ -155,108 +224,40 @@ function BodyModel({ url, intensity, onHover }: BodyModelProps) {
     box.getCenter(center)
     const height = size.y || 1
     const scale = 1 / height
-    // Pivô: centro horizontal, pés no chão
     cloned.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale)
     cloned.scale.setScalar(scale)
     const wrapper = new THREE.Group()
     wrapper.add(cloned)
-    return { normalized: wrapper, depth: size.z * scale }
+    return { normalized: wrapper }
   })()).current
 
-  // Idle breathing
+  // Emissive sutil quando algum músculo está em hover na lista lateral
+  // Como o GLB não tem meshes separados por grupo, o feedback é global:
+  // o corpo inteiro pulsa levemente na cor do nível em hover.
   useFrame(({ clock }) => {
     if (groupRef.current) {
       groupRef.current.position.y = Math.sin(clock.getElapsedTime() * 1.2) * 0.012
     }
   })
 
+  // Sutil destaque quando algum chip está em hover (apenas mudança de tom)
+  useEffect(() => {
+    if (!materialRef.current) return
+    const mat = materialRef.current
+    if (highlighted) {
+      mat.color.set('#e6ecf5')
+      mat.emissive.set('#3b82f6')
+      mat.emissiveIntensity = 0.05
+    } else {
+      mat.color.set('#d8dde8')
+      mat.emissive.set('#000000')
+      mat.emissiveIntensity = 0
+    }
+  }, [highlighted])
+
   return (
     <group ref={groupRef} scale={1.7}>
       <primitive object={normalized} />
-      {/* Overlays glow por grupo muscular — agora em coordenadas
-          relativas à altura 1 (0 = pé, 1 = topo da cabeça) */}
-      <MuscleOverlays intensity={intensity} onHover={onHover} depth={depth} />
     </group>
-  )
-}
-
-interface MuscleOverlaysProps {
-  intensity: Record<MuscleGroup, MuscleIntensity>
-  onHover: (m: MuscleGroup | null) => void
-  depth: number
-}
-
-/**
- * Overlays semi-transparentes posicionados em cima do modelo, em
- * coordenadas RELATIVAS à altura unitária (0 = pé, 1 = topo da cabeça).
- * Funciona em qualquer GLB porque o BodyModel normaliza a escala.
- * Z é proporcional à espessura medida do modelo.
- */
-function MuscleOverlays({ intensity, onHover, depth }: MuscleOverlaysProps) {
-  // Espessura do corpo (varia por modelo). Usamos pra colocar
-  // os overlays frontais ligeiramente à frente e traseiros atrás.
-  const front = depth * 0.45
-  const back  = -depth * 0.45
-
-  return (
-    <>
-      <Overlay muscle="peito"   intensity={intensity.peito}   position={[0, 0.73, front * 0.85]}     geom={['box',     [0.23, 0.13, 0.10]]} onHover={onHover} />
-      <Overlay muscle="costas"  intensity={intensity.costas}  position={[0, 0.72, back * 0.85]}      geom={['box',     [0.26, 0.24, 0.10]]} onHover={onHover} />
-      <Overlay muscle="ombros"  intensity={intensity.ombros}  position={[-0.16, 0.82, 0]}            geom={['sphere',  [0.075]]}            onHover={onHover} />
-      <Overlay muscle="ombros"  intensity={intensity.ombros}  position={[0.16, 0.82, 0]}             geom={['sphere',  [0.075]]}            onHover={onHover} />
-      <Overlay muscle="biceps"  intensity={intensity.biceps}  position={[-0.20, 0.67, front * 0.4]}  geom={['capsule', [0.045, 0.10]]}      onHover={onHover} />
-      <Overlay muscle="biceps"  intensity={intensity.biceps}  position={[0.20, 0.67, front * 0.4]}   geom={['capsule', [0.045, 0.10]]}      onHover={onHover} />
-      <Overlay muscle="triceps" intensity={intensity.triceps} position={[-0.20, 0.67, back * 0.4]}   geom={['capsule', [0.040, 0.10]]}      onHover={onHover} />
-      <Overlay muscle="triceps" intensity={intensity.triceps} position={[0.20, 0.67, back * 0.4]}    geom={['capsule', [0.040, 0.10]]}      onHover={onHover} />
-      <Overlay muscle="abdomen" intensity={intensity.abdomen} position={[0, 0.58, front * 0.9]}      geom={['box',     [0.15, 0.17, 0.08]]} onHover={onHover} />
-      <Overlay muscle="gluteos" intensity={intensity.gluteos} position={[0, 0.44, back * 0.85]}      geom={['sphere',  [0.115]]}            onHover={onHover} />
-      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[-0.075, 0.28, front * 0.2]} geom={['capsule', [0.07, 0.22]]}       onHover={onHover} />
-      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[0.075, 0.28, front * 0.2]}  geom={['capsule', [0.07, 0.22]]}       onHover={onHover} />
-      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[-0.075, 0.07, 0]}           geom={['capsule', [0.05, 0.13]]}       onHover={onHover} />
-      <Overlay muscle="pernas"  intensity={intensity.pernas}  position={[0.075, 0.07, 0]}            geom={['capsule', [0.05, 0.13]]}       onHover={onHover} />
-    </>
-  )
-}
-
-type GeomDef =
-  | ['box', [number, number, number]]
-  | ['sphere', [number]]
-  | ['capsule', [number, number]]
-
-interface OverlayProps {
-  muscle: MuscleGroup
-  intensity: MuscleIntensity
-  position: [number, number, number]
-  geom: GeomDef
-  onHover: (m: MuscleGroup | null) => void
-}
-
-function Overlay({ muscle, intensity, position, geom, onHover }: OverlayProps) {
-  const [isHover, setIsHover] = useState(false)
-  const isLit = intensity !== 'none'
-  const color = INTENSITY_COLOR[intensity]
-  const opacity = isLit ? (isHover ? 0.85 : 0.55) : (isHover ? 0.35 : 0.12)
-  const scale = isHover ? 1.06 : 1
-
-  return (
-    <mesh
-      position={position}
-      scale={scale}
-      onPointerOver={(e) => { e.stopPropagation(); setIsHover(true); onHover(muscle) }}
-      onPointerOut={() => { setIsHover(false); onHover(null) }}
-    >
-      {geom[0] === 'box' && <boxGeometry args={geom[1]} />}
-      {geom[0] === 'sphere' && <sphereGeometry args={[geom[1][0], 24, 24]} />}
-      {geom[0] === 'capsule' && <capsuleGeometry args={[geom[1][0], geom[1][1], 8, 16]} />}
-      <meshStandardMaterial
-        color={color}
-        emissive={isLit ? color : '#000000'}
-        emissiveIntensity={intensity === 'intense' ? 0.9 : intensity === 'light' ? 0.4 : 0}
-        transparent
-        opacity={opacity}
-        roughness={0.4}
-        metalness={0.1}
-      />
-    </mesh>
   )
 }
