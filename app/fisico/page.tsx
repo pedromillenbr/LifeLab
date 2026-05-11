@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, useRef, useCallback, ReactNode, CSSProperties } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, ReactNode, CSSProperties } from 'react'
+import dynamic from 'next/dynamic'
 import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
 import { ExerciseSelector } from '@/components/ui/ExerciseSelector'
@@ -12,6 +13,12 @@ import { WorkoutRoutine, Exercise, WorkoutSet } from '@/store/types'
 import { ExerciseTemplate, MUSCLE_COLORS, MUSCLE_GROUP_LABELS } from '@/lib/exercises'
 import { NumberDrum } from '@/components/ui/NumberDrum'
 import { PEDRO } from '@/lib/pedroProfile'
+import { getWeeklyMuscleStats } from '@/lib/muscleVolume'
+
+const MuscleBody3D = dynamic(
+  () => import('@/components/MuscleBody3D').then(m => m.MuscleBody3D),
+  { ssr: false, loading: () => <div style={{ height: 380 }} /> }
+)
 
 function genId() { return Math.random().toString(36).slice(2) + Date.now().toString(36) }
 
@@ -251,6 +258,12 @@ export default function FisicoPage() {
   })
   const weeklyVolume = weekSessions.reduce((a, s) => a + s.volume, 0)
   const weeklyVolumeT = +(weeklyVolume / 1000).toFixed(1)
+
+  const muscleStats = useMemo(() => getWeeklyMuscleStats(workoutSessions), [workoutSessions])
+  const trainedMuscleCount = useMemo(
+    () => Object.values(muscleStats.intensityByMuscle).filter(i => i !== 'none').length,
+    [muscleStats]
+  )
 
   const volWeekData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); const offset = (d.getDay() + 6) % 7; d.setDate(d.getDate() - offset + i)
@@ -518,6 +531,50 @@ export default function FisicoPage() {
         {/* ── DASHBOARD TAB ─────────────────────────────────────── */}
         {tab === 'dashboard' && (
           <div className="tab-content">
+
+            {/* ─── BONECO 3D — músculos treinados na semana ─── */}
+            <div
+              className="muscle-3d-card"
+              style={{
+                position: 'relative',
+                marginBottom: 16,
+                padding: '14px 14px 22px',
+                borderRadius: 18,
+                background: 'rgba(255,255,255,.04)',
+                border: '1px solid rgba(255,255,255,.09)',
+                backdropFilter: 'blur(20px)',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                marginBottom: 6, gap: 8, flexWrap: 'wrap',
+              }}>
+                <div>
+                  <div style={{
+                    fontSize: 11, fontWeight: 600, letterSpacing: 1.2,
+                    textTransform: 'uppercase', color: 'var(--text-2)',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                  }}>
+                    <Dumbbell size={11} /> Músculos da semana
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
+                    Arraste para girar · toque num músculo para ver detalhes
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, padding: '5px 10px',
+                  borderRadius: 999,
+                  background: trainedMuscleCount > 0 ? 'rgba(59,130,246,.12)' : 'rgba(255,255,255,.05)',
+                  color: trainedMuscleCount > 0 ? '#60a5fa' : 'var(--text-3)',
+                  border: `1px solid ${trainedMuscleCount > 0 ? 'rgba(59,130,246,.25)' : 'rgba(255,255,255,.09)'}`,
+                }}>
+                  {trainedMuscleCount}/8 grupos
+                </div>
+              </div>
+              <MuscleBody3D stats={muscleStats} height={380} />
+            </div>
+
             <div className="freq-section">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-2)' }}>
