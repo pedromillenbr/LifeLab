@@ -1,10 +1,11 @@
 'use client'
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts'
 
 type Props = {
-  progressData: { day: number; pct: number }[]
+  /** Cobre todo o mês: 1..30/31. Dias futuros vêm com pct = null. */
+  progressData: { day: number; pct: number | null }[]
   completionPct: number
-  monthLabel?: string  // e.g. 'Maio · 2026' — shown under the progress bar
+  monthLabel?: string
 }
 
 export default function HabitosChart({ progressData, completionPct, monthLabel }: Props) {
@@ -162,26 +163,53 @@ export default function HabitosChart({ progressData, completionPct, monthLabel }
         </p>
       </div>
 
-      {/* Gráfico de área */}
+      {/* Gráfico de área — eixo X cobre o mês inteiro */}
       <ResponsiveContainer width="100%" height={140}>
-        <AreaChart data={progressData}>
-          <XAxis dataKey="day" tick={{ fill: '#4b5563', fontSize: 10 }} axisLine={false} tickLine={false} interval={4} />
-          <YAxis domain={[0, 100]} tick={{ fill: '#4b5563', fontSize: 10 }} axisLine={false} tickLine={false} />
+        <AreaChart data={progressData} margin={{ top: 6, right: 8, left: -20, bottom: 0 }}>
+          <XAxis
+            dataKey="day"
+            type="number"
+            domain={[1, daysInMonth]}
+            ticks={Array.from(new Set([1, 5, 10, 15, 20, 25, daysInMonth])).filter(t => t <= daysInMonth)}
+            tick={{ fill: '#6b7280', fontSize: 10 }}
+            axisLine={false} tickLine={false}
+            allowDecimals={false}
+          />
+          <YAxis domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip
             contentStyle={{ backgroundColor: 'var(--color-bg-2)', border: '1px solid rgba(var(--color-accent-rgb), 0.3)', borderRadius: 10, color: '#fff', fontSize: 12 }}
-            formatter={(v: number) => [`${v}%`, 'Conclusão']}
+            formatter={(v: number | null) => v === null ? ['—', 'Futuro'] : [`${v}%`, 'Conclusão']}
+            labelFormatter={(d) => `Dia ${d}`}
           />
           <defs>
             <linearGradient id="habitGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%"  stopColor="var(--color-primary)" stopOpacity={0.28} />
               <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}    />
             </linearGradient>
-            <linearGradient id="goldAccent" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
-            </linearGradient>
           </defs>
-          <Area type="monotone" dataKey="pct" stroke="var(--color-primary)" fill="url(#habitGrad)" strokeWidth={2} dot={false} />
+          {/* Linha vertical em "hoje" — separa passado de futuro */}
+          <ReferenceLine
+            x={dayOfMonth}
+            stroke="var(--gold)"
+            strokeWidth={1}
+            strokeDasharray="3 3"
+            label={{
+              value: 'hoje',
+              position: 'top',
+              fill: 'var(--gold)',
+              fontSize: 9,
+              fontWeight: 700,
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="pct"
+            stroke="var(--color-primary)"
+            fill="url(#habitGrad)"
+            strokeWidth={2}
+            dot={false}
+            connectNulls={false}
+          />
         </AreaChart>
       </ResponsiveContainer>
     </div>

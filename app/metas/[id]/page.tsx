@@ -12,12 +12,13 @@ import { GoalProgressRing } from '@/components/metas/GoalProgressRing'
 import { GoalTimeline } from '@/components/metas/GoalTimeline'
 import { GoalMilestones } from '@/components/metas/GoalMilestones'
 import { AddLogModal } from '@/components/metas/AddLogModal'
+import { MilestoneIcon } from '@/components/metas/MilestoneIcon'
 import { Modal } from '@/components/ui/Modal'
 import {
   getGoalProgress, getGoalRemaining, getGoalStreak,
   getNextMilestone, getEstimatedDaysToFinish,
   getCoverPreset, getPresetForCategory,
-  formatGoalValue, getMotivationalPhrase,
+  formatGoalValue, getMotivationalPhrase, getMilestoneIconKey,
   daysSince, daysUntil,
 } from '@/lib/goals'
 
@@ -88,11 +89,13 @@ export default function MetaDetailPage({ params }: { params: Promise<{ id: strin
     }, 50)
   }
 
+  const heroHeight = goal.subtitle ? 240 : 200
+
   return (
     <div className="max-w-[1100px] mx-auto pb-20">
       {/* HEADER CINEMATOGRÁFICO */}
-      <div style={{ position: 'relative', marginBottom: 18 }}>
-        <GoalCover goal={goal} variant="hero" height={280} rounded={0}>
+      <div style={{ position: 'relative', marginBottom: 20 }}>
+        <GoalCover goal={goal} variant="hero" height={heroHeight} rounded={0}>
           {/* Top bar */}
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0,
@@ -186,27 +189,28 @@ export default function MetaDetailPage({ params }: { params: Promise<{ id: strin
         {/* Frase motivacional + ring + CTA */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) auto',
-          gap: 24, alignItems: 'center', marginBottom: 24,
+          gridTemplateColumns: 'minmax(0, 1fr) 160px',
+          gap: 20, alignItems: 'center', marginBottom: 22,
         }} className="meta-hero-row">
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{
-              fontSize: 11, color: preset.accent, letterSpacing: 1.5,
-              textTransform: 'uppercase', fontWeight: 700, marginBottom: 8,
+              fontSize: 10, color: preset.accent, letterSpacing: 1.5,
+              textTransform: 'uppercase', fontWeight: 700, marginBottom: 6,
               fontFamily: "'JetBrains Mono', monospace",
+              opacity: .9,
             }}>{phrase}</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', marginBottom: remaining > 0 ? 6 : 12 }}>
               <span style={{
-                fontSize: 32, fontWeight: 800, color: '#fff',
+                fontSize: 30, fontWeight: 800, color: '#fff',
                 fontFamily: "'JetBrains Mono', monospace", lineHeight: 1,
               }}>{formatGoalValue(goal.currentValue, goal.unit)}</span>
               <span style={{
-                fontSize: 14, color: 'rgba(255,255,255,.4)',
+                fontSize: 13, color: 'rgba(255,255,255,.4)',
                 fontFamily: "'JetBrains Mono', monospace",
               }}>de {formatGoalValue(goal.targetValue, goal.unit)}</span>
             </div>
             {remaining > 0 && (
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.65)', marginBottom: 14 }}>
+              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,.65)', marginBottom: 12, lineHeight: 1.4 }}>
                 Faltam <strong style={{ color: '#fff' }}>{formatGoalValue(remaining, goal.unit)}</strong>
                 {eta !== null && (
                   <> · estimativa: <strong style={{ color: preset.accent }}>{eta} dias</strong> no ritmo atual</>
@@ -217,30 +221,32 @@ export default function MetaDetailPage({ params }: { params: Promise<{ id: strin
               onClick={() => setShowLog(true)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '12px 22px', borderRadius: 12,
+                padding: '11px 20px', borderRadius: 12,
                 background: preset.accent, color: '#0a0d14',
                 border: 'none', cursor: 'pointer',
-                fontSize: 14, fontWeight: 700,
+                fontSize: 13, fontWeight: 700,
                 boxShadow: `0 4px 20px ${preset.accent}55`,
                 transition: 'transform .2s',
               }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)' }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
             >
-              <Plus size={16} /> Atualizar progresso
+              <Plus size={15} /> Atualizar progresso
             </button>
           </div>
-          <GoalProgressRing pct={pct} size={170} thickness={11} color={preset.accent}>
-            <span style={{
-              fontSize: 36, fontWeight: 800, color: '#fff',
-              fontFamily: "'JetBrains Mono', monospace", lineHeight: 1,
-            }}>{pct.toFixed(0)}<span style={{ fontSize: 18, color: 'rgba(255,255,255,.5)' }}>%</span></span>
-            <span style={{
-              fontSize: 9, color: 'rgba(255,255,255,.5)', letterSpacing: 1,
-              textTransform: 'uppercase', marginTop: 4,
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>concluído</span>
-          </GoalProgressRing>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <GoalProgressRing pct={pct} size={150} thickness={10} color={preset.accent}>
+              <span style={{
+                fontSize: 32, fontWeight: 800, color: '#fff',
+                fontFamily: "'JetBrains Mono', monospace", lineHeight: 1,
+              }}>{pct.toFixed(0)}<span style={{ fontSize: 16, color: 'rgba(255,255,255,.5)' }}>%</span></span>
+              <span style={{
+                fontSize: 9, color: 'rgba(255,255,255,.5)', letterSpacing: 1,
+                textTransform: 'uppercase', marginTop: 3,
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>concluído</span>
+            </GoalProgressRing>
+          </div>
         </div>
 
         {/* Stats compactas */}
@@ -302,8 +308,11 @@ export default function MetaDetailPage({ params }: { params: Promise<{ id: strin
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: `${preset.accent}22`,
                   border: `1px solid ${preset.accent}55`,
-                  fontSize: 24, flexShrink: 0,
-                }}>{nextMs.emoji ?? '✦'}</div>
+                  flexShrink: 0,
+                  color: preset.accent,
+                }}>
+                  <MilestoneIcon iconKey={getMilestoneIconKey(nextMs)} size={22} />
+                </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{nextMs.label}</div>
                   <div style={{
@@ -420,7 +429,13 @@ export default function MetaDetailPage({ params }: { params: Promise<{ id: strin
 
       <style jsx>{`
         @media (max-width: 600px) {
-          .meta-hero-row { grid-template-columns: 1fr !important; }
+          .meta-hero-row {
+            grid-template-columns: 1fr !important;
+            text-align: left;
+          }
+          .meta-hero-row > div:last-child {
+            justify-self: center;
+          }
         }
       `}</style>
     </div>

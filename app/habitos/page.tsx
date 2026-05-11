@@ -46,22 +46,27 @@ export default function HabitosPage() {
     return d.toISOString().split('T')[0];
   });
 
-  // Mês civil corrente: 1º até hoje. Reinicia todo dia 1º.
-  const monthYear  = todayDate.getFullYear();
-  const monthIndex = todayDate.getMonth();
-  const todayDay   = todayDate.getDate();
-  const chartDates = Array.from({ length: todayDay }, (_, i) => {
+  // Mês civil corrente: cobre 1º até último dia do mês (28-31). Reinicia dia 1º.
+  // Dias futuros aparecem no eixo X mas com pct=null (linha cortada — sem mentira).
+  const monthYear   = todayDate.getFullYear();
+  const monthIndex  = todayDate.getMonth();
+  const todayDay    = todayDate.getDate();
+  const daysInMonth = new Date(monthYear, monthIndex + 1, 0).getDate();
+  const chartDates  = Array.from({ length: daysInMonth }, (_, i) => {
     const d = new Date(monthYear, monthIndex, i + 1);
     return d.toISOString().split('T')[0];
   });
 
-  // Eixo X em dias do mês (1..hoje); pct = % de hábitos completados naquele dia.
-  const progressData = chartDates.map((date, idx) => ({
-    day: idx + 1,
-    pct: habits.length > 0
+  // Eixo X cobre o mês inteiro (1..30/31).
+  // Dias passados/hoje têm pct numérico; dias futuros pct = null para não desenhar.
+  const progressData = chartDates.map((date, idx) => {
+    const day = idx + 1;
+    const isFuture = day > todayDay;
+    const pct = !isFuture && habits.length > 0
       ? Math.round((habits.filter(h => h.completions.includes(date)).length / habits.length) * 100)
-      : 0,
-  }));
+      : (isFuture ? null : 0);
+    return { day, pct };
+  });
 
   const todayCompleted = habits.filter(h => h.completions.includes(today())).length;
   const completionPct  = habits.length > 0 ? Math.round((todayCompleted / habits.length) * 100) : 0;

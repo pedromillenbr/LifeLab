@@ -256,9 +256,29 @@ export function buildAutoMilestones(
       label: `${pct}% — ${formatGoalValue(v, unit)}`,
       targetValue: v,
       auto: true,
-      emoji: pct === 100 ? '🏆' : pct === 75 ? '🔥' : pct === 50 ? '⚡' : '✨',
+      // Mantemos o campo `emoji` por compat — mas a renderização agora usa
+      // ícones lucide (ver getMilestoneIconKey). Nada de emoji do SO.
+      emoji: pct === 100 ? 'trophy' : pct === 75 ? 'flame' : pct === 50 ? 'zap' : 'sparkle',
     }
   })
+}
+
+/**
+ * Mapa "chave de ícone → componente lucide". Usado para substituir emojis
+ * Unicode (que renderizam diferente em Windows/Mac/Linux) por SVG idêntico
+ * em qualquer plataforma.
+ */
+export type MilestoneIconKey = 'trophy' | 'flame' | 'zap' | 'sparkle' | 'check' | 'star'
+
+export function getMilestoneIconKey(m: Pick<GoalMilestone, 'emoji'>): MilestoneIconKey {
+  const e = m.emoji ?? ''
+  // Mapeia tanto chaves novas (string) quanto emojis antigos (compat).
+  if (e === 'trophy' || e === '🏆') return 'trophy'
+  if (e === 'flame'  || e === '🔥') return 'flame'
+  if (e === 'zap'    || e === '⚡') return 'zap'
+  if (e === 'check'  || e === '✓') return 'check'
+  if (e === 'star'   || e === '⭐') return 'star'
+  return 'sparkle' // default ✨
 }
 
 /* ───────────────────────── HELPERS DE SEMANA ───────────────────────── */

@@ -5,9 +5,10 @@ import type { Goal } from '@/store/types'
 import {
   getGoalProgress, getGoalRemaining, getGoalStreak,
   getNextMilestone, getCoverPreset, getPresetForCategory,
-  formatGoalValue, formatRelativeDate, daysUntil,
+  formatGoalValue, daysUntil, getMilestoneIconKey,
 } from '@/lib/goals'
 import { GoalCover } from './GoalCover'
+import { MilestoneIcon } from './MilestoneIcon'
 
 interface GoalCardProps {
   goal: Goal
@@ -170,7 +171,9 @@ export function GoalCard({ goal, index = 0 }: GoalCardProps) {
             display: 'flex', alignItems: 'center', gap: 8,
             fontSize: 11, color: 'rgba(255,255,255,.6)',
           }}>
-            <span style={{ opacity: .7 }}>{nextMs.emoji ?? '✦'}</span>
+            <span style={{ color: preset.accent, opacity: .85, display: 'inline-flex' }}>
+              <MilestoneIcon iconKey={getMilestoneIconKey(nextMs)} size={12} />
+            </span>
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               próximo marco: <strong style={{ color: '#fff' }}>{nextMs.label}</strong>
             </span>

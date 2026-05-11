@@ -2,7 +2,8 @@
 import { useState } from 'react'
 import { Lock, Check, Plus, Trash2 } from 'lucide-react'
 import type { Goal, GoalMilestone } from '@/store/types'
-import { formatGoalValue } from '@/lib/goals'
+import { formatGoalValue, getMilestoneIconKey } from '@/lib/goals'
+import { MilestoneIcon } from './MilestoneIcon'
 
 interface GoalMilestonesProps {
   goal: Goal
@@ -71,10 +72,12 @@ export function GoalMilestones({ goal, accent, onAdd, onRemove }: GoalMilestones
                 color: done ? '#0a0d14' : 'rgba(255,255,255,.3)',
                 flexShrink: 0,
                 boxShadow: done ? `0 0 14px ${accent}88` : 'none',
-                fontSize: 16,
                 position: 'relative', zIndex: 1,
               }}>
-                {done ? <Check size={18} strokeWidth={3} /> : (m.emoji ? <span>{m.emoji}</span> : <Lock size={14} />)}
+                {done
+                  ? <Check size={18} strokeWidth={3} />
+                  : (m.emoji ? <MilestoneIcon iconKey={getMilestoneIconKey(m)} size={16} /> : <Lock size={14} />)
+                }
               </div>
               <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
                 <div style={{

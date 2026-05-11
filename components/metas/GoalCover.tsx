@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import type { Goal } from '@/store/types'
 import { getCoverPreset, getPresetForCategory } from '@/lib/goals'
 
@@ -13,9 +14,12 @@ interface GoalCoverProps {
 
 /**
  * Cover da meta com 3 camadas:
- *   1. Imagem (se houver) ou gradient do preset
+ *   1. Imagem (se houver e carregar) ou gradient do preset
  *   2. Overlay escuro radial (legibilidade do conteúdo sobreposto)
  *   3. Glow de borda + ícone fantasma sutil (só no hero)
+ *
+ * Fallback gracioso: se a URL da imagem falhar (404, CORS, hotlink bloqueado),
+ * volta automaticamente pro gradient do preset sem quebrar layout.
  */
 export function GoalCover({ goal, height = 180, variant = 'card', rounded = 16, children }: GoalCoverProps) {
   const preset = goal.coverPreset
@@ -23,6 +27,17 @@ export function GoalCover({ goal, height = 180, variant = 'card', rounded = 16, 
     : getPresetForCategory(goal.category)
   const Icon = preset.icon
   const isHero = variant === 'hero'
+
+  // Estado da imagem: 'loading' enquanto não responde, 'ok' carregou, 'err' falhou.
+  const [imgState, setImgState] = useState<'loading' | 'ok' | 'err'>(
+    goal.coverImage ? 'loading' : 'err',
+  )
+  // Reset quando o URL muda
+  useEffect(() => {
+    setImgState(goal.coverImage ? 'loading' : 'err')
+  }, [goal.coverImage])
+
+  const useImage = goal.coverImage && imgState !== 'err'
 
   return (
     <div
@@ -32,25 +47,40 @@ export function GoalCover({ goal, height = 180, variant = 'card', rounded = 16, 
         width: '100%',
         borderRadius: rounded,
         overflow: 'hidden',
-        background: goal.coverImage ? '#0a0d14' : preset.gradient,
+        background: useImage ? '#0a0d14' : preset.gradient,
         boxShadow: isHero
           ? `inset 0 -80px 80px -20px rgba(0,0,0,.85), 0 0 1px ${preset.accent}33`
           : `inset 0 -40px 40px -10px rgba(0,0,0,.65)`,
       }}
     >
       {/* Imagem de fundo */}
-      {goal.coverImage && (
+      {useImage && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={goal.coverImage}
           alt=""
           aria-hidden="true"
+          referrerPolicy="no-referrer"
+          onLoad={() => setImgState('ok')}
+          onError={() => setImgState('err')}
           style={{
             position: 'absolute', inset: 0,
             width: '100%', height: '100%',
             objectFit: 'cover',
-            opacity: 0.65,
+            opacity: imgState === 'ok' ? 0.7 : 0,
+            transition: 'opacity .35s ease',
             filter: 'saturate(1.1) contrast(1.05)',
+          }}
+        />
+      )}
+      {/* Enquanto a imagem carrega ou se falhou, o gradient fica visível por baixo */}
+      {goal.coverImage && imgState === 'loading' && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute', inset: 0,
+            background: preset.gradient,
+            opacity: 1,
           }}
         />
       )}

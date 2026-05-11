@@ -14,22 +14,20 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
   if (!open) return null
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Overlay */}
+      {/* Overlay — sólido para esconder conteúdo de fundo */}
       <div
         className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(4px)' }}
+        style={{ background: 'rgba(4,6,10,0.88)', backdropFilter: 'blur(8px)' }}
         onClick={onClose}
       />
 
-      {/* Painel — Glass */}
+      {/* Painel — fundo sólido (não vaza texto atrás) */}
       <div
         className={cn('relative w-full max-w-md z-10 rounded-xl p-5 md:p-6 max-h-[90vh] overflow-y-auto', className)}
         style={{
-          background: 'rgba(255,255,255,0.05)',
-          backdropFilter: 'blur(32px)',
-          WebkitBackdropFilter: 'blur(32px)',
-          border: '1px solid rgba(var(--color-primary-rgb), 0.20)',
-          boxShadow: '0 12px 48px rgba(0,0,0,0.65), 0 0 32px rgba(var(--color-primary-rgb), 0.12)',
+          background: '#0f1218',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.75), 0 0 1px rgba(var(--color-primary-rgb), 0.4) inset',
           animation: 'scaleIn 0.25s var(--ease-out) both',
         }}
       >
