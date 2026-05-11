@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import { getBiblePlan, readingsLabel } from '@/lib/bibleData'
 import { ArrowLeft, BookOpen, Play, CheckCircle, RotateCcw, Circle } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function PlanoDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -12,19 +12,23 @@ export default function PlanoDetailPage({ params }: { params: { id: string } }) 
   const { biblePlansProgress, resetBiblePlan, startBiblePlan } = useStore()
   const [confirmReset, setConfirmReset] = useState(false)
 
+  // Self-heal: id vazio/desconhecido (bookmark antigo, URL truncada,
+  // estado dessincronizado) redireciona para a lista — sem tela morta.
+  useEffect(() => {
+    if (!plan) router.replace('/espiritual/planos')
+  }, [plan, router])
+
   if (!plan) {
     return (
       <div className="p-6 max-w-[800px] mx-auto" style={{ animation: 'fadeIn .4s ease both' }}>
         <div className="rounded-2xl p-8 text-center"
           style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
           <BookOpen size={36} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--color-text-subtle)' }} />
-          <h2 className="text-lg font-bold mb-2">Este plano não existe mais</h2>
-          <p className="text-sm mb-5" style={{ color: 'var(--color-text-muted)' }}>
-            O link que você usou aponta para um plano antigo (id: <code style={{ fontFamily: 'monospace', fontSize: 11 }}>{params.id}</code>) que foi renomeado.
-            Escolha um plano atual na lista.
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            Levando você para a lista de planos…
           </p>
           <Link href="/espiritual/planos"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-bold"
+            className="inline-flex items-center gap-1.5 mt-4 px-4 py-2.5 rounded-md text-sm font-bold"
             style={{ background: 'var(--color-primary)', color: '#000', boxShadow: '0 0 18px rgba(var(--color-primary-rgb), .3)' }}>
             <BookOpen size={14} /> Ver todos os planos
           </Link>

@@ -2,7 +2,7 @@
 import { Suspense, useRef, useState } from 'react'
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import * as THREE from 'three'
+import type * as THREE from 'three'
 import type { MuscleGroup } from '@/lib/exercises'
 import { MUSCLE_GROUP_LABELS } from '@/lib/exercises'
 import {
@@ -12,29 +12,23 @@ import {
 
 interface MuscleBody3DProps {
   stats: MuscleWeekStats
-  /** Altura do canvas em px. Default 380. */
   height?: number
 }
 
-/**
- * Boneco estilizado com músculos pintados por intensidade semanal.
- * Geometria procedural — leve, sem dependência de GLB externo.
- */
 export function MuscleBody3D({ stats, height = 380 }: MuscleBody3DProps) {
   const [hovered, setHovered] = useState<MuscleGroup | null>(null)
 
   return (
-    <div className="muscle-body-3d-wrap" style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
       <div style={{ height, width: '100%', cursor: 'grab', touchAction: 'none' }}>
         <Canvas
           camera={{ position: [0, 0.4, 4.6], fov: 38 }}
           dpr={[1, 2]}
-          gl={{ antialias: true, alpha: true }}
+          gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false }}
         >
-          <ambientLight intensity={0.55} />
-          <directionalLight position={[3, 5, 4]} intensity={1.1} color="#ffffff" />
-          <directionalLight position={[-3, 2, -3]} intensity={0.35} color="#3b82f6" />
-          <pointLight position={[0, -2, 2]} intensity={0.3} color="#60a5fa" />
+          <ambientLight intensity={0.6} />
+          <directionalLight position={[3, 5, 4]} intensity={1.0} />
+          <directionalLight position={[-3, 2, -3]} intensity={0.3} color="#3b82f6" />
 
           <Suspense fallback={null}>
             <Body intensity={stats.intensityByMuscle} onHoverMuscle={setHovered} />
@@ -51,7 +45,6 @@ export function MuscleBody3D({ stats, height = 380 }: MuscleBody3DProps) {
         </Canvas>
       </div>
 
-      {/* Hover badge */}
       {hovered && (
         <div
           style={{
@@ -77,7 +70,7 @@ function Legend() {
   return (
     <div
       style={{
-        position: 'absolute', bottom: 10, left: 12, right: 12,
+        position: 'absolute', bottom: 6, left: 12, right: 12,
         display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap',
         pointerEvents: 'none',
       }}
@@ -105,123 +98,63 @@ interface BodyProps {
 
 function Body({ intensity, onHoverMuscle }: BodyProps) {
   const group = useRef<THREE.Group>(null)
-  // Idle breathing
+
   useFrame(({ clock }) => {
-    if (!group.current) return
-    const t = clock.getElapsedTime()
-    group.current.position.y = Math.sin(t * 1.4) * 0.04
+    if (group.current) {
+      group.current.position.y = Math.sin(clock.getElapsedTime() * 1.4) * 0.04
+    }
   })
 
   return (
     <group ref={group}>
-      {/* Cabeça */}
-      <mesh position={[0, 1.45, 0]} castShadow>
-        <sphereGeometry args={[0.22, 32, 32]} />
-        <meshStandardMaterial color="#e8eef8" roughness={0.55} metalness={0.05} />
+      {/* Cabeça + pescoço */}
+      <mesh position={[0, 1.45, 0]}>
+        <sphereGeometry args={[0.22, 24, 24]} />
+        <meshStandardMaterial color="#e8eef8" roughness={0.55} />
       </mesh>
-      {/* Pescoço */}
       <mesh position={[0, 1.18, 0]}>
-        <cylinderGeometry args={[0.08, 0.1, 0.16, 16]} />
+        <cylinderGeometry args={[0.08, 0.1, 0.16, 12]} />
         <meshStandardMaterial color="#cfd6e2" roughness={0.6} />
       </mesh>
 
-      {/* Tronco base (cinza neutro) */}
+      {/* Tronco base */}
       <mesh position={[0, 0.55, 0]}>
-        <capsuleGeometry args={[0.32, 0.7, 12, 24]} />
+        <capsuleGeometry args={[0.32, 0.7, 8, 16]} />
         <meshStandardMaterial color="#1f2530" roughness={0.7} />
       </mesh>
 
-      {/* PEITO — placa frontal sobre o tronco */}
-      <MusclePart
-        muscle="peito"
-        intensity={intensity.peito}
-        position={[0, 0.78, 0.27]}
-        rotation={[0.15, 0, 0]}
-        onHover={onHoverMuscle}
-      >
-        <boxGeometry args={[0.52, 0.32, 0.12]} />
-      </MusclePart>
+      {/* Músculos */}
+      <MusclePart muscle="peito" intensity={intensity.peito} position={[0, 0.78, 0.27]} rotation={[0.15, 0, 0]} onHover={onHoverMuscle} geom={<boxGeometry args={[0.52, 0.32, 0.12]} />} />
 
-      {/* OMBROS — duas esferas nos topos */}
-      <MusclePart muscle="ombros" intensity={intensity.ombros} position={[-0.38, 0.92, 0]} onHover={onHoverMuscle}>
-        <sphereGeometry args={[0.16, 24, 24]} />
-      </MusclePart>
-      <MusclePart muscle="ombros" intensity={intensity.ombros} position={[0.38, 0.92, 0]} onHover={onHoverMuscle}>
-        <sphereGeometry args={[0.16, 24, 24]} />
-      </MusclePart>
+      <MusclePart muscle="ombros" intensity={intensity.ombros} position={[-0.38, 0.92, 0]} onHover={onHoverMuscle} geom={<sphereGeometry args={[0.16, 16, 16]} />} />
+      <MusclePart muscle="ombros" intensity={intensity.ombros} position={[0.38, 0.92, 0]} onHover={onHoverMuscle} geom={<sphereGeometry args={[0.16, 16, 16]} />} />
 
-      {/* COSTAS — placa traseira */}
-      <MusclePart
-        muscle="costas"
-        intensity={intensity.costas}
-        position={[0, 0.7, -0.27]}
-        rotation={[-0.15, 0, 0]}
-        onHover={onHoverMuscle}
-      >
-        <boxGeometry args={[0.56, 0.6, 0.12]} />
-      </MusclePart>
+      <MusclePart muscle="costas" intensity={intensity.costas} position={[0, 0.7, -0.27]} rotation={[-0.15, 0, 0]} onHover={onHoverMuscle} geom={<boxGeometry args={[0.56, 0.6, 0.12]} />} />
 
-      {/* ABDÔMEN */}
-      <MusclePart
-        muscle="abdomen"
-        intensity={intensity.abdomen}
-        position={[0, 0.32, 0.26]}
-        onHover={onHoverMuscle}
-      >
-        <boxGeometry args={[0.38, 0.36, 0.1]} />
-      </MusclePart>
+      <MusclePart muscle="abdomen" intensity={intensity.abdomen} position={[0, 0.32, 0.26]} onHover={onHoverMuscle} geom={<boxGeometry args={[0.38, 0.36, 0.1]} />} />
 
-      {/* BÍCEPS — esferas nos braços frontais */}
-      <MusclePart muscle="biceps" intensity={intensity.biceps} position={[-0.5, 0.6, 0.08]} onHover={onHoverMuscle}>
-        <capsuleGeometry args={[0.1, 0.22, 8, 16]} />
-      </MusclePart>
-      <MusclePart muscle="biceps" intensity={intensity.biceps} position={[0.5, 0.6, 0.08]} onHover={onHoverMuscle}>
-        <capsuleGeometry args={[0.1, 0.22, 8, 16]} />
-      </MusclePart>
+      <MusclePart muscle="biceps" intensity={intensity.biceps} position={[-0.5, 0.6, 0.08]} onHover={onHoverMuscle} geom={<capsuleGeometry args={[0.1, 0.22, 6, 12]} />} />
+      <MusclePart muscle="biceps" intensity={intensity.biceps} position={[0.5, 0.6, 0.08]} onHover={onHoverMuscle} geom={<capsuleGeometry args={[0.1, 0.22, 6, 12]} />} />
 
-      {/* TRÍCEPS — atrás dos braços */}
-      <MusclePart muscle="triceps" intensity={intensity.triceps} position={[-0.5, 0.6, -0.08]} onHover={onHoverMuscle}>
-        <capsuleGeometry args={[0.09, 0.22, 8, 16]} />
-      </MusclePart>
-      <MusclePart muscle="triceps" intensity={intensity.triceps} position={[0.5, 0.6, -0.08]} onHover={onHoverMuscle}>
-        <capsuleGeometry args={[0.09, 0.22, 8, 16]} />
-      </MusclePart>
+      <MusclePart muscle="triceps" intensity={intensity.triceps} position={[-0.5, 0.6, -0.08]} onHover={onHoverMuscle} geom={<capsuleGeometry args={[0.09, 0.22, 6, 12]} />} />
+      <MusclePart muscle="triceps" intensity={intensity.triceps} position={[0.5, 0.6, -0.08]} onHover={onHoverMuscle} geom={<capsuleGeometry args={[0.09, 0.22, 6, 12]} />} />
 
-      {/* Antebraços (neutros) */}
+      {/* Antebraços neutros */}
       <mesh position={[-0.5, 0.28, 0]}>
-        <capsuleGeometry args={[0.075, 0.26, 8, 16]} />
+        <capsuleGeometry args={[0.075, 0.26, 6, 12]} />
         <meshStandardMaterial color="#cfd6e2" roughness={0.6} />
       </mesh>
       <mesh position={[0.5, 0.28, 0]}>
-        <capsuleGeometry args={[0.075, 0.26, 8, 16]} />
+        <capsuleGeometry args={[0.075, 0.26, 6, 12]} />
         <meshStandardMaterial color="#cfd6e2" roughness={0.6} />
       </mesh>
 
-      {/* GLÚTEOS — atrás do quadril */}
-      <MusclePart
-        muscle="gluteos"
-        intensity={intensity.gluteos}
-        position={[0, 0.12, -0.22]}
-        onHover={onHoverMuscle}
-      >
-        <sphereGeometry args={[0.26, 24, 24]} />
-      </MusclePart>
+      <MusclePart muscle="gluteos" intensity={intensity.gluteos} position={[0, 0.12, -0.22]} onHover={onHoverMuscle} geom={<sphereGeometry args={[0.26, 16, 16]} />} />
 
-      {/* PERNAS — dois grandes blocos (quadríceps frontais) */}
-      <MusclePart muscle="pernas" intensity={intensity.pernas} position={[-0.18, -0.32, 0.06]} onHover={onHoverMuscle}>
-        <capsuleGeometry args={[0.14, 0.6, 10, 20]} />
-      </MusclePart>
-      <MusclePart muscle="pernas" intensity={intensity.pernas} position={[0.18, -0.32, 0.06]} onHover={onHoverMuscle}>
-        <capsuleGeometry args={[0.14, 0.6, 10, 20]} />
-      </MusclePart>
-
-      {/* Panturrilhas (parte do grupo pernas) */}
-      <MusclePart muscle="pernas" intensity={intensity.pernas} position={[-0.18, -0.95, 0]} onHover={onHoverMuscle}>
-        <capsuleGeometry args={[0.1, 0.32, 8, 16]} />
-      </MusclePart>
-      <MusclePart muscle="pernas" intensity={intensity.pernas} position={[0.18, -0.95, 0]} onHover={onHoverMuscle}>
-        <capsuleGeometry args={[0.1, 0.32, 8, 16]} />
-      </MusclePart>
+      <MusclePart muscle="pernas" intensity={intensity.pernas} position={[-0.18, -0.32, 0.06]} onHover={onHoverMuscle} geom={<capsuleGeometry args={[0.14, 0.6, 8, 16]} />} />
+      <MusclePart muscle="pernas" intensity={intensity.pernas} position={[0.18, -0.32, 0.06]} onHover={onHoverMuscle} geom={<capsuleGeometry args={[0.14, 0.6, 8, 16]} />} />
+      <MusclePart muscle="pernas" intensity={intensity.pernas} position={[-0.18, -0.95, 0]} onHover={onHoverMuscle} geom={<capsuleGeometry args={[0.1, 0.32, 6, 12]} />} />
+      <MusclePart muscle="pernas" intensity={intensity.pernas} position={[0.18, -0.95, 0]} onHover={onHoverMuscle} geom={<capsuleGeometry args={[0.1, 0.32, 6, 12]} />} />
 
       {/* Pés */}
       <mesh position={[-0.18, -1.2, 0.08]}>
@@ -242,57 +175,40 @@ interface MusclePartProps {
   position: [number, number, number]
   rotation?: [number, number, number]
   onHover: (m: MuscleGroup | null) => void
-  children: React.ReactNode
+  geom: React.ReactElement
 }
 
-function MusclePart({ muscle, intensity, position, rotation, onHover, children }: MusclePartProps) {
-  const matRef = useRef<THREE.MeshStandardMaterial>(null)
+function MusclePart({ muscle, intensity, position, rotation, onHover, geom }: MusclePartProps) {
   const [isHover, setIsHover] = useState(false)
-
-  useFrame(({ clock }) => {
-    const mat = matRef.current
-    if (!mat) return
-    if (intensity === 'intense') {
-      const pulse = (Math.sin(clock.getElapsedTime() * 2.5) + 1) / 2
-      mat.emissiveIntensity = 0.6 + pulse * 0.5
-    } else if (intensity === 'light') {
-      mat.emissiveIntensity = 0.35
-    } else {
-      mat.emissiveIntensity = 0
-    }
-  })
-
   const color = INTENSITY_COLOR[intensity]
-  const baseScale = isHover ? 1.08 : 1
+  const isLit = intensity !== 'none'
+  const scale = isHover ? 1.08 : 1
 
   const handleOver = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
     setIsHover(true)
     onHover(muscle)
-    if (typeof document !== 'undefined') document.body.style.cursor = 'pointer'
   }
   const handleOut = () => {
     setIsHover(false)
     onHover(null)
-    if (typeof document !== 'undefined') document.body.style.cursor = 'auto'
   }
 
   return (
     <mesh
       position={position}
       rotation={rotation}
-      scale={baseScale}
+      scale={scale}
       onPointerOver={handleOver}
       onPointerOut={handleOut}
     >
-      {children}
+      {geom}
       <meshStandardMaterial
-        ref={matRef}
         color={color}
         roughness={0.45}
         metalness={0.15}
-        emissive={intensity === 'none' ? '#000000' : color}
-        emissiveIntensity={0}
+        emissive={isLit ? color : '#000000'}
+        emissiveIntensity={intensity === 'intense' ? 0.8 : intensity === 'light' ? 0.35 : 0}
       />
     </mesh>
   )
