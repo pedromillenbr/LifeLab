@@ -4,21 +4,20 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
-import { Select } from '@/components/ui/Select'
 import { CyberInput } from '@/components/ui/CyberInput'
 import { FuturisticButton } from '@/components/ui/FuturisticButton'
 import { SpotCard } from '@/components/dashboard/SpotCard'
 import { AnimatedRadar } from '@/components/dashboard/AnimatedRadar'
 import { BibleIllustration } from '@/components/dashboard/BibleIllustration'
 import { CreditCard } from '@/components/dashboard/CreditCard'
+import { GoalsWidget } from '@/components/metas/GoalsWidget'
 import {
-  Dumbbell, Wallet, Brain, Activity, Target, BookOpen, CheckSquare,
-  ArrowUpRight, Eye, EyeOff, TrendingUp, TrendingDown, Flame, Zap,
-  Plus, ChevronLeft, ChevronRight, CircleDashed, BookMarked, ExternalLink,
+  Dumbbell, Wallet, Brain, Activity, BookOpen, CheckSquare,
+  ArrowUpRight, Eye, EyeOff, TrendingUp, TrendingDown, Flame,
+  Plus, BookMarked, ExternalLink,
   X,
 } from 'lucide-react'
 import { getGreeting, formatCurrency, today } from '@/lib/utils'
-import { Pillar } from '@/store/types'
 import { getTodayReading, getReadingForDay, getBiblePlan } from '@/lib/bibleData'
 import { PEDRO, getTodayMotivation } from '@/lib/pedroProfile'
 import {
@@ -28,8 +27,8 @@ import {
 export default function DashboardPage() {
   const router = useRouter()
   const {
-    profile, habits, missions, weightLog, transactions,
-    bibleReadings, activePlanId, toggleMission, addMission,
+    profile, habits, weightLog, transactions,
+    bibleReadings, activePlanId,
     toggleHabitCompletion, addWeight, getPillarScores,
     getOverallScore, getBalance, getBibleStreak, completeBibleReading,
     getAccessStreak,
@@ -38,9 +37,6 @@ export default function DashboardPage() {
 
   const [hideBalance, setHideBalance] = useState(false)
   const [radarTab, setRadarTab] = useState<'hoje' | 'mes'>('hoje')
-  const [missionDate, setMissionDate] = useState(today())
-  const [showAddMission, setShowAddMission] = useState(false)
-  const [newMission, setNewMission] = useState({ title: '', xpReward: 10, pillar: 'fisico' as Pillar })
   const [showWeightModal, setShowWeightModal] = useState(false)
   const [newWeight, setNewWeight] = useState('')
 
@@ -54,9 +50,6 @@ export default function DashboardPage() {
   const currentWeight = weightLog.length > 0 ? weightLog[weightLog.length - 1].weight : PEDRO.currentWeight
   const weightProgress = Math.min(100, Math.max(0, Math.round(((currentWeight - 60) / (PEDRO.targetWeight - 60)) * 100)))
   const weightToGoal = +(PEDRO.targetWeight - currentWeight).toFixed(1)
-
-  const todayMissions = missions.filter(m => m.date === missionDate)
-  const todayMissionXP = todayMissions.filter(m => m.completed).reduce((a, m) => a + m.xpReward, 0)
 
   const bibleStreak = getBibleStreak()
   const todayBibleDone = bibleReadings.some(r => r.date === today() && r.completed && r.planId === activePlanId)
@@ -75,26 +68,6 @@ export default function DashboardPage() {
   const radarLabels = ['Foco', 'Mental', 'Finanças', 'Disciplina', 'Saúde']
   const radarValues = [scores.produtividade, scores.mental, scores.financeiro, scores.disciplina, scores.fisico]
 
-  function navigateDay(dir: number) {
-    const d = new Date(missionDate)
-    d.setDate(d.getDate() + dir)
-    setMissionDate(d.toISOString().split('T')[0])
-  }
-  function formatNavDate(dateStr: string) {
-    const t = today()
-    if (dateStr === t) return 'Hoje'
-    const y = new Date(); y.setDate(y.getDate() - 1)
-    if (dateStr === y.toISOString().split('T')[0]) return 'Ontem'
-    const tm = new Date(); tm.setDate(tm.getDate() + 1)
-    if (dateStr === tm.toISOString().split('T')[0]) return 'Amanhã'
-    return new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-  }
-  function handleAddMission() {
-    if (!newMission.title.trim()) return
-    addMission({ title: newMission.title, date: missionDate, completed: false, xpReward: newMission.xpReward, pillar: newMission.pillar })
-    setNewMission({ title: '', xpReward: 10, pillar: 'fisico' })
-    setShowAddMission(false)
-  }
   function handleAddWeight() {
     const w = parseFloat(newWeight)
     if (!isNaN(w) && w > 0) { addWeight(w); setNewWeight(''); setShowWeightModal(false) }
@@ -332,52 +305,11 @@ export default function DashboardPage() {
         </SpotCard>
       </div>
 
-      {/* ROW 3 — Missions + Habits */}
+      {/* ROW 3 — Goals + Habits */}
       <div className="grid-2">
-        {/* Missions */}
+        {/* Metas (long-term) */}
         <SpotCard className="fade-up" style={{ animationDelay: '.31s' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div
-              className="card-title"
-              style={{ fontSize: 13, textTransform: 'none', letterSpacing: 0, color: 'var(--text-1)', cursor: 'pointer' }}
-              onClick={() => router.push('/missoes')}
-            >
-              <Target size={14} style={{ color: 'var(--green)' }} />Missões do Dia
-              <ArrowUpRight size={12} style={{ color: 'var(--text-3)', marginLeft: 2 }} />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div className="xp-badge"><Zap size={10} />+{todayMissionXP} XP</div>
-              <button className="add-btn" onClick={() => setShowAddMission(true)}><Plus size={14} /></button>
-            </div>
-          </div>
-          <div className="nav-row">
-            <button className="nav-arrow" onClick={() => navigateDay(-1)}><ChevronLeft size={12} /></button>
-            <span className="date-label">{formatNavDate(missionDate)}</span>
-            <button className="nav-arrow" onClick={() => navigateDay(1)}><ChevronRight size={12} /></button>
-          </div>
-          {todayMissions.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon"><CircleDashed size={32} /></div>
-              <p>Nenhuma missão para este dia</p>
-              <a onClick={() => setShowAddMission(true)}>+ Adicionar missão</a>
-            </div>
-          ) : (
-            <div style={{ marginTop: 4 }}>
-              {todayMissions.map(m => (
-                <div
-                  key={m.id}
-                  className={`mission-row-v2 ${m.completed ? 'done' : ''}`}
-                  onClick={() => toggleMission(m.id)}
-                >
-                  <span className="mission-name">{m.title}</span>
-                  <span className="xp-badge" style={{ padding: '2px 7px' }}>+{m.xpReward}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="add-mission-row" onClick={() => setShowAddMission(true)}>
-            <Plus size={13} />Adicionar Missão
-          </div>
+          <GoalsWidget />
         </SpotCard>
 
         {/* Habits */}
@@ -414,48 +346,6 @@ export default function DashboardPage() {
           })}
         </SpotCard>
       </div>
-
-      {/* Add Mission Modal */}
-      <Modal open={showAddMission} onClose={() => setShowAddMission(false)} title="Nova Missão">
-        <div className="space-y-4">
-          <CyberInput
-            label="Missão"
-            placeholder="Descreva a missão..."
-            value={newMission.title}
-            onChange={e => setNewMission(p => ({ ...p, title: e.target.value }))}
-            onKeyDown={e => e.key === 'Enter' && handleAddMission()}
-            autoFocus
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">XP Reward</label>
-              <Select
-                value={String(newMission.xpReward)}
-                onChange={(v) => setNewMission(p => ({ ...p, xpReward: parseInt(v) }))}
-                options={[5, 10, 15, 20, 25, 30, 50].map(v => ({ value: String(v), label: `+${v} XP` }))}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">Evolução</label>
-              <Select
-                value={newMission.pillar}
-                onChange={(v) => setNewMission(p => ({ ...p, pillar: v as Pillar }))}
-                options={[
-                  { value: 'fisico',        label: 'Físico' },
-                  { value: 'mental',        label: 'Mental' },
-                  { value: 'financeiro',    label: 'Financeiro' },
-                  { value: 'produtividade', label: 'Produtividade' },
-                  { value: 'disciplina',    label: 'Disciplina' },
-                  { value: 'espiritual',    label: 'Espiritual' },
-                ]}
-              />
-            </div>
-          </div>
-          <FuturisticButton variant="primary" fullWidth onClick={handleAddMission}>
-            Adicionar Missão
-          </FuturisticButton>
-        </div>
-      </Modal>
 
       {/* Weight Modal */}
       <Modal open={showWeightModal} onClose={() => setShowWeightModal(false)} title="Registrar Peso">
