@@ -8,8 +8,7 @@ const nextConfig = {
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  experimental: {
-    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion'],
-  },
+  // experimental.optimizePackageImports desabilitado: estava travando o build
+  // de produção do Next 16 (Turbopack/webpack) na fase de compilação.
 }
 module.exports = nextConfig
