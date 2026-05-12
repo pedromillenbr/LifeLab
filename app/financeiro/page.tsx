@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import dynamic from 'next/dynamic'
 import { Plus, Eye, EyeOff, TrendingUp, TrendingDown, DollarSign, Trash2, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { cn, formatCurrency, CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/utils'
+import { cn, formatCurrency, CATEGORY_LABELS, CATEGORY_COLORS, toLocalDateString } from '@/lib/utils'
 import { Transaction } from '@/store/types'
 import { PEDRO } from '@/lib/pedroProfile'
 
@@ -37,7 +37,7 @@ export default function FinanceiroPage() {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({
     description: '', amount: '', type: 'despesa' as 'receita' | 'despesa',
-    category: 'outros' as Transaction['category'], date: new Date().toISOString().split('T')[0]
+    category: 'outros' as Transaction['category'], date: toLocalDateString(new Date())
   })
 
   const balance = getBalance()
@@ -60,7 +60,7 @@ export default function FinanceiroPage() {
   const now = new Date()
   const evolutionData = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
-    const monthStr = d.toISOString().slice(0, 7)
+    const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const entradas = transactions.filter(t => t.date.startsWith(monthStr) && t.type === 'receita').reduce((a, t) => a + t.amount, 0)
     const saidas = Math.abs(transactions.filter(t => t.date.startsWith(monthStr) && t.type === 'despesa').reduce((a, t) => a + t.amount, 0))
     return { month: d.toLocaleDateString('pt-BR', { month: 'short' }), entradas, saidas, saldo: entradas - saidas }
@@ -76,7 +76,7 @@ export default function FinanceiroPage() {
       category: form.type === 'receita' ? 'receita' : form.category,
       date: form.date,
     })
-    setForm({ description: '', amount: '', type: 'despesa', category: 'outros', date: new Date().toISOString().split('T')[0] })
+    setForm({ description: '', amount: '', type: 'despesa', category: 'outros', date: toLocalDateString(new Date()) })
     setShowModal(false)
   }
 

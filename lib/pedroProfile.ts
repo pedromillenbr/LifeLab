@@ -25,7 +25,7 @@ export const PEDRO = {
     espiritual: 100,
   },
   badges: [] as string[],
-  joinDate: new Date().toISOString().split('T')[0],
+  joinDate: (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}` })(),
   bmi: 0,
   weightToGain: 0,
   joinDaysAgo: 0,

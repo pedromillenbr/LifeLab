@@ -6,7 +6,7 @@ import {
   TrendingUp, Layers, Activity, Calendar, Feather,
   ArrowUpRight, Sparkles, X, Check, Edit3, Save, Sunrise,
 } from 'lucide-react'
-import { today } from '@/lib/utils'
+import { today, toLocalDateString } from '@/lib/utils'
 import { BIBLE_PLANS, getTodayReading, getPlanProgress } from '@/lib/bibleData'
 import {
   divisionForUser, nextDivision, divisionProgress, xpToNextDivision,
@@ -222,7 +222,7 @@ export default function EspiritualPage() {
   const currentPlan = BIBLE_PLANS.find(p => p.id === activePlanId)
 
   const last30 = useMemo(() => Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (29 - i)); return d.toISOString().split('T')[0]
+    const d = new Date(); d.setDate(d.getDate() - (29 - i)); return toLocalDateString(d)
   }), [])
   const last7 = last30.slice(-7)
 

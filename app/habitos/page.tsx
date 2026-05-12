@@ -6,7 +6,7 @@ import { Select } from '@/components/ui/Select'
 import { Badge, PillarBadge } from '@/components/ui/Badge'
 import dynamic from 'next/dynamic'
 import { Plus, CheckCircle2, Circle, Trash2, Flame, TrendingUp } from 'lucide-react'
-import { cn, PILLAR_LABELS, PILLAR_COLORS, today, computeHabitXP } from '@/lib/utils'
+import { cn, PILLAR_LABELS, PILLAR_COLORS, today, toLocalDateString, computeHabitXP } from '@/lib/utils'
 import { Pillar } from '@/store/types'
 
 const HabitosChart = dynamic(() => import('./HabitosChart'), {
@@ -34,8 +34,10 @@ export default function HabitosPage() {
 
 
   // --- NOVA LÓGICA: datas relativas ao onboarding ---
-  const onboardingDate = useStore((s) => s.profile?.createdAt || new Date().toISOString().split('T')[0]);
-  const onboarding = new Date(onboardingDate);
+  const onboardingDate = useStore((s) => s.profile?.createdAt || toLocalDateString(new Date()));
+  // Parse YYYY-MM-DD como data local (evita shift de fuso de new Date('YYYY-MM-DD'))
+  const [obY, obM, obD] = onboardingDate.split('-').map(Number);
+  const onboarding = new Date(obY, obM - 1, obD);
   const todayDate = new Date();
   const daysSinceOnboarding = Math.max(0, Math.floor((todayDate.getTime() - onboarding.getTime()) / (1000 * 60 * 60 * 24)));
 
@@ -43,7 +45,7 @@ export default function HabitosPage() {
   const lastNDays = Array.from({ length: Math.min(daysSinceOnboarding + 1, 30) }, (_, i) => {
     const d = new Date(onboarding);
     d.setDate(onboarding.getDate() + i);
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   });
 
   // Mês civil corrente: cobre 1º até último dia do mês (28-31). Reinicia dia 1º.
@@ -54,7 +56,7 @@ export default function HabitosPage() {
   const daysInMonth = new Date(monthYear, monthIndex + 1, 0).getDate();
   const chartDates  = Array.from({ length: daysInMonth }, (_, i) => {
     const d = new Date(monthYear, monthIndex, i + 1);
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   });
 
   // Eixo X cobre o mês inteiro (1..30/31).
@@ -78,7 +80,7 @@ export default function HabitosPage() {
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   });
 
   function handleAdd() {
@@ -182,8 +184,7 @@ export default function HabitosPage() {
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <th className="text-left py-3 pr-4" style={{ fontSize: 11, color: TT, fontWeight: 500, width: '140px' }}>Hábito</th>
                   {weekDates.map((date, i) => {
-                    const d = new Date(date);
-                    const dayNum = d.getDate();
+                    const dayNum = Number(date.split('-')[2]);
                     return (
                       <th key={date} className="text-center py-3 px-2" style={{ fontSize: 11, color: TT, fontWeight: 500 }}>
                         <div style={{ fontWeight: 600, fontSize: 10 }}>{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][i]}</div>

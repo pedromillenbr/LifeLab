@@ -2,6 +2,7 @@
 import { useEffect } from 'react'
 import { useStore } from '@/store/useStore'
 import { fireDailyReminderIfDue } from '@/lib/notifications'
+import { today } from '@/lib/utils'
 
 // Note: localStorage hydration is now handled by AuthGuard so it can
 // coordinate with user-switch detection. This component only runs
@@ -13,7 +14,7 @@ export function StoreHydration() {
       state.recordAccess()
       if (state.profile.notifications) {
         const pendingHabits = state.habits.filter(
-          h => !h.completions.includes(new Date().toISOString().split('T')[0]),
+          h => !h.completions.includes(today()),
         ).length
         if (pendingHabits > 0) {
           fireDailyReminderIfDue(

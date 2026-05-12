@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
-import { today } from '@/lib/utils'
+import { today, toLocalDateString } from '@/lib/utils'
 import { FoodEntry } from '@/store/types'
 import { FOOD_DB, FoodDBItem, searchFoods } from '@/lib/foodDatabase'
 import { MEAL_ICONS, ICON_OPTIONS } from '@/lib/mealIcons'
@@ -34,7 +34,7 @@ function getLast7Days() {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
-    return d.toISOString().split('T')[0]
+    return toLocalDateString(d)
   })
 }
 function shortDay(dateStr: string) {

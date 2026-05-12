@@ -7,7 +7,7 @@ import {
   Dumbbell, Scale, TrendingDown, TrendingUp, Plus, Play,
   Pencil, Trash2, Check, X, Zap, Activity, BarChart2, Flame,
 } from 'lucide-react'
-import { today } from '@/lib/utils'
+import { today, toLocalDateString } from '@/lib/utils'
 import { WorkoutRoutine, Exercise, WorkoutSet } from '@/store/types'
 import { ExerciseTemplate, MUSCLE_COLORS, MUSCLE_GROUP_LABELS } from '@/lib/exercises'
 import { NumberDrum } from '@/components/ui/NumberDrum'
@@ -262,7 +262,7 @@ export default function FisicoPage() {
 
   const volWeekData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); const offset = (d.getDay() + 6) % 7; d.setDate(d.getDate() - offset + i)
-    const ds = d.toISOString().split('T')[0]
+    const ds = toLocalDateString(d)
     const vol = workoutSessions.filter(s => s.date === ds).reduce((a, s) => a + s.volume, 0)
     return +(vol / 1000).toFixed(1)
   })
@@ -279,7 +279,7 @@ export default function FisicoPage() {
     const y = now.getFullYear(), m = now.getMonth()
     const daysInMonth = new Date(y, m + 1, 0).getDate()
     return Array.from({ length: daysInMonth }, (_, i) => {
-      const ds = new Date(y, m, i + 1).toISOString().split('T')[0]
+      const ds = toLocalDateString(new Date(y, m, i + 1))
       const trained = workoutSessions.some(s => s.date === ds)
       const isToday = ds === today()
       return { date: ds, trained, isToday }
@@ -290,7 +290,7 @@ export default function FisicoPage() {
   /* week calendar */
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); const offset = (d.getDay() + 6) % 7; d.setDate(d.getDate() - offset + i)
-    const ds = d.toISOString().split('T')[0]
+    const ds = toLocalDateString(d)
     const session = workoutSessions.find(s => s.date === ds)
     const isToday = ds === today()
     const dayLabels = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM']

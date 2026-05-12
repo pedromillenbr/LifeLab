@@ -5,7 +5,7 @@ import { useStore } from '@/store/useStore'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { ChevronLeft, ChevronRight, Plus, Calendar, Dumbbell, Star, X } from 'lucide-react'
-import { cn, getDaysInMonth, getFirstDayOfMonth, today } from '@/lib/utils'
+import { cn, getDaysInMonth, getFirstDayOfMonth, today, toLocalDateString } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
 type ViewMode = 'mes' | 'semana'
@@ -66,7 +66,7 @@ export default function CalendarioPage() {
   weekStart.setDate(currentDate.getDate() - ((currentDate.getDay() + 6) % 7))
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart); d.setDate(weekStart.getDate() + i)
-    return d.toISOString().split('T')[0]
+    return toLocalDateString(d)
   })
 
   const hours = Array.from({ length: 24 }, (_, i) => i)

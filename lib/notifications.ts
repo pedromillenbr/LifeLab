@@ -68,7 +68,8 @@ export function fireDailyReminderIfDue(
   const now = new Date()
   if (now.getHours() < hourStart) return false
 
-  const todayKey = now.toISOString().split('T')[0]
+  const y = now.getFullYear(), m = String(now.getMonth() + 1).padStart(2, '0'), d = String(now.getDate()).padStart(2, '0')
+  const todayKey = `${y}-${m}-${d}`
   const last = window.localStorage.getItem(STORAGE_KEY)
   if (last === todayKey) return false
 

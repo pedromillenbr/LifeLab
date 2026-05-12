@@ -14,8 +14,15 @@ function generateId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
+function toLocalDateString(d: Date) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function today() {
-  return new Date().toISOString().split('T')[0]
+  return toLocalDateString(new Date())
 }
 
 const XP_PER_LEVEL = [0, 100, 250, 520, 1000, 2000, 4000, 8000, 16000, 32000]
@@ -297,7 +304,7 @@ export const useStore = create<AuraStore>()(
         let streak = 0
         const d = new Date()
         while (true) {
-          const ds = d.toISOString().split('T')[0]
+          const ds = toLocalDateString(d)
           if (set.has(ds)) { streak++; d.setDate(d.getDate() - 1) }
           else break
         }
@@ -461,7 +468,7 @@ export const useStore = create<AuraStore>()(
         const { habits, bibleReadings, workoutSessions } = get()
         const t = today()
         const last30 = Array.from({ length: 30 }, (_, i) => {
-          const d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().split('T')[0]
+          const d = new Date(); d.setDate(d.getDate() - i); return toLocalDateString(d)
         })
 
         const calcScore = (pillarHabits: Habit[]) => {
@@ -502,7 +509,7 @@ export const useStore = create<AuraStore>()(
         let streak = 0
         const d = new Date()
         while (true) {
-          const dateStr = d.toISOString().split('T')[0]
+          const dateStr = toLocalDateString(d)
           if (habit.completions.includes(dateStr)) { streak++; d.setDate(d.getDate() - 1) }
           else break
         }
@@ -514,7 +521,7 @@ export const useStore = create<AuraStore>()(
         let streak = 0
         const d = new Date()
         while (true) {
-          const dateStr = d.toISOString().split('T')[0]
+          const dateStr = toLocalDateString(d)
           if (bibleReadings.some((r) => r.date === dateStr && r.completed)) { streak++; d.setDate(d.getDate() - 1) }
           else break
         }
